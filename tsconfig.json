@@ -1,0 +1,33 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es2017",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"sourceMap": true,
+		"declaration": true,
+		"strict": true,
+		"strictPropertyInitialization": false,
+		"declarationMap": true,
+		//		"noUnusedLocals": true,
+		//		"noUnusedParameters": true,
+
+		"outDir": "./dist",
+		"baseUrl": "./",
+		"moduleResolution": "node",
+		"lib": [
+			"esnext"
+		],
+		"types": [
+			"reflect-metadata"
+		]
+	},
+	"include": [
+		"./**/*.ts"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
+}
+

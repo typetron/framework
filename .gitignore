@@ -1,0 +1,7 @@
+node_modules
+.idea
+#*.js
+#*.js.map
+tsconfig.tsbuildinfo
+.nyc_output
+dist
