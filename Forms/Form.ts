@@ -1,4 +1,4 @@
-import { FormField, FormMetadataKey } from '.';
+import { FormField, FormMetadataKey } from './Decorators';
 import { RuleValue } from '../Validation';
 import { Injectable } from '../Container';
 import { ChildObject } from '../Support';

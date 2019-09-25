@@ -7,7 +7,7 @@ allows you to build fully featured web applications.
 Typetron is best suited for small sized to enterprise level apps.
 Most of the core packages it uses were built from scratch in order to preserve the performance of the framework. 
 
-_(check [this repo](https://github.com/typetron/app) on how to create an app with Typetron)_
+_(check [this repo](https://github.com/typetron/typetron) on how to create an app with Typetron)_
 
 ### Prerequisites
 - [NodeJs 10](https://nodejs.org)

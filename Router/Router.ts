@@ -6,6 +6,7 @@ import { Controller } from './Controller';
 import { Middleware, RequestHandler } from './Middleware';
 import { Route } from './Route';
 import { HttpError } from './Errors/HttpError';
+import { Application } from '../Framework';
 
 export class Router {
 
@@ -23,8 +24,8 @@ export class Router {
         this.routes.push(new Route(uri, method, controller, action, name));
     }
 
-    async handle(request: Request): Promise<Response> {
-        const container = this.app.createChildContainer();
+    async handle(app: Application, request: Request): Promise<Response> {
+        const container = app.createChildContainer();
 
         container.set(Request, request);
 

@@ -3,14 +3,15 @@ import { HttpError, Router } from '../Router';
 import { Http } from './index';
 import { Request } from './Request';
 import { Response } from './Response';
+import { Application } from '../Framework';
 
 export class Handler {
     @Inject()
     router: Router;
 
-    async handle(request: Request) {
+    async handle(app: Application, request: Request) {
         try {
-            return await this.router.handle(request);
+            return await this.router.handle(app, request);
         } catch (error) {
             return this.handleError(error);
         }

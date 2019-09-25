@@ -89,7 +89,8 @@ export class Container {
     }
 
     private getResolver<T>(abstract: ServiceIdentifier<T>, abstractName: string, metadata: InjectableMetadata) {
-        let resolver = metadata.resolver;
+        // let resolver = metadata.resolver;
+        let resolver;
         if (!resolver) {
             resolver = this.resolvers.find(item => item.canResolve(abstract));
         }
@@ -112,7 +113,13 @@ export class Container {
         if (instance instanceof Map) {
             instance = instance.get(abstract);
         }
-        if (instance && typeof abstract !== 'string' && instance.constructor !== abstract) {
+        if (instance &&
+            typeof abstract !== 'string' &&
+            !(instance.constructor === String) &&
+            !(instance.constructor === Number) &&
+            !(instance.constructor === Boolean) &&
+            instance.constructor !== abstract
+        ) {
             return undefined;
         }
         return instance;

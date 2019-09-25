@@ -8,6 +8,7 @@ import {
     Where,
     WhereBetween,
     WhereIn,
+    WhereLike,
     WhereNull,
     WhereValue
 } from './Types';
@@ -178,6 +179,13 @@ export class Query<T = {}> {
             this.bindings.push(value);
         });
         this.components.wheres.push(new WhereIn(column, values, boolean, not));
+
+        return this;
+    }
+
+    whereLike(column: string, value: SqlValue, boolean: Boolean = 'AND', not = false): this {
+        this.bindings.push(value);
+        this.components.wheres.push(new WhereLike(column, value, boolean, not));
 
         return this;
     }

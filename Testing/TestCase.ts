@@ -4,6 +4,7 @@ import '../Support/Math';
 import { Handler, Http, Request } from '../Http';
 import { IncomingHttpHeaders } from 'http';
 import { Container } from '../Container';
+import { Application } from '../Framework';
 
 export abstract class TestCase {
     app: Container;
@@ -47,7 +48,7 @@ export abstract class TestCase {
         //     return oldWrite(response.content);
         // };
 
-        return await this.app.get(Handler).handle(request);
+        return await this.app.get(Handler).handle(this.app as Application, request);
         //
         // return new Promise<Response>(resolve => {
         //     response.response.end = function () {

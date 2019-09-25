@@ -103,6 +103,15 @@ export class WhereBetween implements WhereClause {
     }
 }
 
+export class WhereLike implements WhereClause {
+    constructor(public column: string, public values: SqlValue, public boolean: Boolean, public not = false) {
+    }
+
+    toSql() {
+        return `${this.boolean} ${wrap(this.column)} ${this.not ? 'NOT ' : ''}LIKE ?`;
+    }
+}
+
 export class WhereIn implements WhereClause {
     constructor(public column: string, public values: SqlValue[], public boolean: Boolean, public not = false) {
     }
