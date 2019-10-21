@@ -12,7 +12,7 @@ export class Request {
         public query: ParsedUrlQuery = {},
         public cookies: Parameters = {},
         public headers: IncomingHttpHeaders = {},
-        public content?: string | object) {
+        public content: string | object = {}) {
     }
 
     // get headers() {

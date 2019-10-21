@@ -2,7 +2,7 @@ export const CONFIG_FILE = 'CONFIG_FILE';
 
 export function BaseConfig<T>(file: string) {
     const baseConfigClass = class {
-        constructor(values: { [K in keyof T]?: T[K] }) {
+        constructor(values: T) {
             Object.assign(this, values);
         }
     };

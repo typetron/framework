@@ -25,28 +25,43 @@ export class Connection {
         // this.execute();
     }
 
-    async run(query: Query): Promise<number> {
-        return new Promise<number>((resolve, reject) => {
+    async run(query: Query): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const stack = Error('SQL Error').stack;
             this.db.run(query.toSql(), query.getBindings(), (error, ...args) => {
                 if (error) {
-                    return reject(new Error(`${error} in '${query.toSql()}'`));
+                    const e = new Error(`${error} in '${query.toSql()}' `);
+                    e.stack = stack;
+                    return reject(e);
                 }
 
-                this.db.get('SELECT last_insert_rowid() as id;', [], (e, lastInsert) => {
-                    if (e) {
-                        return reject(e);
-                    }
-                    resolve(lastInsert.id);
-                });
+                resolve();
             });
         });
     }
 
+    async lastInsertedId(): Promise<number | string> {
+        return new Promise<number | string>(((resolve, reject) => {
+            const stack = Error('SQL Error').stack;
+            this.db.get('SELECT last_insert_rowid() as id;', [], (error, lastInsert) => {
+                if (error) {
+                    const e = new Error(`${error} when trying to get the last inserted id`);
+                    e.stack = stack;
+                    return reject(e);
+                }
+                resolve(lastInsert.id);
+            });
+        }));
+    }
+
     async get<T>(query: Query<T>): Promise<T[]> {
         return new Promise<T[]>((resolve, reject) => {
+            const stack = Error('SQL Error').stack;
             this.db.all(query.toSql(), query.getBindings(), (error, rows) => {
                 if (error) {
-                    return reject(new Error(`${error} in '${query.toSql()}'`));
+                    const e = new Error(`${error} in '${query.toSql()}' `);
+                    e.stack = stack;
+                    return reject(e);
                 }
                 resolve(rows);
             });
@@ -55,9 +70,12 @@ export class Connection {
 
     async first<T>(query: Query<T>): Promise<T> {
         return new Promise<T>((resolve, reject) => {
+            const stack = Error('SQL Error').stack;
             this.db.get(query.toSql(), query.getBindings(), (error, rows) => {
                 if (error) {
-                    return reject(new Error(`${error} in '${query.toSql()}'`));
+                    const e = new Error(`${error} in '${query.toSql()}' `);
+                    e.stack = stack;
+                    return reject(e);
                 }
                 resolve(rows);
             });

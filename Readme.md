@@ -37,7 +37,7 @@ Also, every package can be tuned for performance or updated in no time if needed
 * [ ] Migrations
 * [ ] Intuitive directory structure
 * [ ] Deployment(aws, azure, GCP, DO etc or custom server)
-* [x] Views
+* [x] Models
 * [x] Forms
 * [x] Validations
 * [ ] Sessions
@@ -73,8 +73,8 @@ This separation led to two different camps that have a very distinct line betwee
 
 ##### Entities 
 ```ts
-@Entity()
-export class User extends EntityBase {
+@Meta()
+export class User extends Entity {
 
     @Column()
     id: ID;
@@ -129,7 +129,7 @@ export class UserController {
     @Get()
     async browse() {
         const users = await User.get();
-        return UserView.from(users);
+        return UserModel.from(users);
     }
 
     @Get('{user}')

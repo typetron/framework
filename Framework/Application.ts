@@ -6,7 +6,7 @@ import { AppConfig } from './AppConfig';
 import { Config } from './Config/Config';
 import { Configurator } from './Config/Configurator';
 import { FormResolver } from './Resolvers/FormResolver';
-import { ModelResolver } from './Resolvers/ModelResolver';
+import { EntityResolver } from './Resolvers/EntityResolver';
 import { RootDir } from './RootDir';
 
 export class Application extends Container {
@@ -49,6 +49,6 @@ export class Application extends Container {
 
     private registerResolvers() {
         this.resolvers.unshift(new FormResolver(this));
-        this.resolvers.unshift(new ModelResolver(this));
+        this.resolvers.unshift(new EntityResolver(this));
     }
 }

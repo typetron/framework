@@ -1,7 +1,6 @@
 import { suite, test } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { Column, Entity } from '../../Database/Decorators';
-import { EntityBase, Query } from '../../Database';
+import { Column, Entity, Meta, Query } from '../../Database';
 import { anyOfClass, instance, mock, when } from 'ts-mockito';
 import { Connection } from '../../Database/Connection';
 
@@ -50,10 +49,10 @@ class EntityTest {
     }
 }
 
-@Entity<User>({
+@Meta<User>({
     table: 'users'
 })
-class User extends EntityBase {
+class User extends Entity {
     @Column()
     id: number;
     @Column()

@@ -15,7 +15,10 @@ export class Update extends Statement {
         const columns = [];
         const values = this.components.update || {};
         for (const column in values) {
-            columns.push(`${wrap(column)} = ?`);
+            if (values.hasOwnProperty(column)) {
+                this.bindings.push(values[column]);
+                columns.push(`${wrap(column)} = ?`);
+            }
         }
         return columns.join(', ');
     }

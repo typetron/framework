@@ -69,10 +69,10 @@ export class Route {
         });
     }
 
-    private resolveParameters(parameters: Type<Function>[], newValues: ((...args: object[]) => string | number) [], container: Container) {
+    private async resolveParameters(parameters: Type<Function>[], newValues: ((...args: object[]) => string | number) [], container: Container) {
         let parameterIndex = 0;
         const routeParameters = Object.values(this.parameters);
-        return parameters.map((parameter, index) => {
+        return parameters.mapAsync(async (parameter, index) => {
             const newValueFunction = newValues[index];
             if (newValueFunction) {
                 return newValueFunction.call(undefined, container.get(Request));

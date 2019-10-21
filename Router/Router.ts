@@ -1,11 +1,10 @@
 import { Container, Inject } from '../Container';
 import { Filesystem } from '../Filesystem';
-import { Http, Request, Response } from '../Http';
+import { ErrorHandlerInterface, Http, Request, Response } from '../Http';
 import { Abstract } from '../Support';
 import { Controller } from './Controller';
-import { Middleware, RequestHandler } from './Middleware';
+import { MiddlewareInterface, RequestHandler } from './Middleware';
 import { Route } from './Route';
-import { HttpError } from './Errors/HttpError';
 import { Application } from '../Framework';
 
 export class Router {
@@ -16,8 +15,11 @@ export class Router {
     @Inject()
     filesystem: Filesystem;
 
+    @Inject()
+    errorHandler: ErrorHandlerInterface;
+
     public routes: Route[] = [];
-    middlewares: Abstract<Middleware>[];
+    middleware: Abstract<MiddlewareInterface>[];
 
     add(uri: string, method: Http.Method, controller: typeof Controller, action: string, name: string = action) {
         uri = this.prepareUri(uri);
@@ -38,25 +40,17 @@ export class Router {
 
             container.set(Route, route);
 
-            let content: object;
-            try {
-                content = await route.run(request2, container);
-            } catch (error) {
-                if (error instanceof HttpError) {
-                    return new Response(error.status, {}, error.httpMessage);
-                }
-                return new Response(error.status, {}, error.message);
-            }
+            const content = await route.run(request2, container);
 
             if (content instanceof Response) {
                 return content;
             }
 
-            return new Response(Http.Status.OK, {}, content);
+            return Response.ok(content);
         };
 
-        for (let index = this.middlewares.length - 1; index >= 0; index--) {
-            const middleware = container.get(this.middlewares[index]);
+        for (let index = this.middleware.length - 1; index >= 0; index--) {
+            const middleware = container.get(this.middleware[index]);
 
             stack = middleware.handle.bind(middleware, request, stack);
 

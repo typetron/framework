@@ -1,5 +1,5 @@
 export type RuleValue = string | number | {} | boolean | undefined;
-export * from './Rule';
+export * from './RuleInterface';
 export * from './Validator';
 export * from './Rules';
 export * from './Rules/Max';

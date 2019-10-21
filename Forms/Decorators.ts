@@ -1,10 +1,11 @@
-import { Rule } from '../Validation';
+import { RuleInterface } from '../Validation';
+import { Type } from '../Support';
 
 export const FormMetadataKey = 'form:fields';
 
 export interface FormField {
     name: string;
-    rules: Rule[];
+    rules: (Type<RuleInterface> | RuleInterface) [];
 }
 
 export function Field<T>(name?: string) {
@@ -21,7 +22,7 @@ export function Field<T>(name?: string) {
     };
 }
 
-export function Rules(...rules: Rule[]) {
+export function Rules(...rules: (Type<RuleInterface> | RuleInterface)[]) {
     return function (target: Object, property: string) {
         const fields: {[key: string]: FormField} = Reflect.getMetadata(FormMetadataKey, target.constructor) || {};
         const emptyField: FormField = {

@@ -3,13 +3,13 @@ import { Router } from './Router';
 import { Type } from '../Support';
 import { Controller as BaseController } from './Controller';
 import { Http, Request } from '../Http';
-import { Middleware } from './Middleware';
+import { MiddlewareInterface } from './Middleware';
 import { InjectableMetadata } from '../Container';
 
 class ControllerOptions {
     path?: string;
     prefix?: string;
-    middleware?: Middleware[] = [];
+    middleware?: MiddlewareInterface[] = [];
 }
 
 export enum Metadata {
@@ -71,6 +71,12 @@ export function Post(path: string = '', name?: string) {
 export function Put(path: string = '', name?: string) {
     return (target: Object, action: string, descriptor: PropertyDescriptor) => {
         App.get(Router).add(path, Http.Method.PUT, target.constructor as typeof BaseController, action, name);
+    };
+}
+
+export function Delete(path: string = '', name?: string) {
+    return (target: Object, action: string, descriptor: PropertyDescriptor) => {
+        App.get(Router).add(path, Http.Method.DELETE, target.constructor as typeof BaseController, action, name);
     };
 }
 

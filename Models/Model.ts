@@ -1,9 +1,9 @@
 import { Constructor } from '../Support';
-import { ViewField, ViewMetadataKey } from './index';
+import { ModelField, ModelMetadataKey } from './index';
 
-export class View {
-    static from<K extends View, Q>(this: Constructor<K>, entities: Q[]): K[] {
-        const fields: {[key: string]: ViewField} = Reflect.getMetadata(ViewMetadataKey, this) || {};
+export class Model {
+    static from<K extends Model, Q>(this: Constructor<K>, entities: Q[]): K[] {
+        const fields: {[key: string]: ModelField} = Reflect.getMetadata(ModelMetadataKey, this) || {};
 
         return entities.map(entity => {
             const data: { [key in keyof K]?: Q[keyof Q] } = {};

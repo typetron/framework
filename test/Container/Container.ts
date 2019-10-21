@@ -99,6 +99,21 @@ class ContainerTest {
     }
 
     @test
+    bindsClassToInterface() {
+        abstract class StorageInterface {}
+
+        class DiskStorage implements StorageInterface {}
+
+        class CloudStorage implements StorageInterface {}
+
+        const container = new Container();
+        container.set(StorageInterface, new DiskStorage);
+        expect(container.get(StorageInterface)).to.be.instanceOf(DiskStorage);
+        container.set(StorageInterface, new CloudStorage());
+        expect(container.get(StorageInterface)).to.be.instanceOf(CloudStorage);
+    }
+
+    @test
     throwsExceptionIfCannotResolve() {
         const container = new Container;
         expect(() => container.get('DoesNotExist')).to.throw(`Resolver not found for 'DoesNotExist'`);

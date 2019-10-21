@@ -1,16 +1,15 @@
+import { RuleInterface, RuleValue } from '..';
 import { Rule } from '../Rule';
-import { RuleValue } from '..';
+import { Type } from '../../Support';
 
-export class Max implements Rule {
-    constructor(public max: number) {
+export function Max(max: number): Type<RuleInterface> {
+    return class extends Rule {
+        passes(attribute: string, value: RuleValue): boolean {
+            return Boolean(value && String(value).length <= max);
+        }
 
-    }
-
-    passes(attribute: string, value: RuleValue): boolean {
-        return Boolean(value && String(value).length <= this.max);
-    }
-
-    message(attribute: string): string {
-        return `The attribute '${attribute}' must have at most ${this.max} characters`;
-    }
+        message(attribute: string): string {
+            return `The attribute '${attribute}' must have at most ${max} characters`;
+        }
+    };
 }

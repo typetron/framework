@@ -300,7 +300,7 @@ class QueryTest {
     async updateWithCondition() {
         this.query.table('users').where('name', 'John').update('name', 'Doe');
         (await this.expectSql()).to.equal('UPDATE `users` SET `name` = ? WHERE `name` = ?');
-        this.expectBindings().to.deep.equal(['John', 'Doe']);
+        this.expectBindings().to.deep.equal(['Doe', 'John']);
     }
 
     // @test

@@ -114,11 +114,8 @@ export class Container {
             instance = instance.get(abstract);
         }
         if (instance &&
-            typeof abstract !== 'string' &&
-            !(instance.constructor === String) &&
-            !(instance.constructor === Number) &&
-            !(instance.constructor === Boolean) &&
-            instance.constructor !== abstract
+            this.getAbstractName(instance.constructor) === abstractName &&
+            !(instance instanceof (abstract as Function))
         ) {
             return undefined;
         }

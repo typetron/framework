@@ -1,8 +1,7 @@
-import { RuleValue } from '.';
+import { RuleInterface } from './RuleInterface';
 
-export interface Rule {
-    passes(attribute: string, value: RuleValue): boolean;
+export abstract class Rule implements RuleInterface {
+    abstract message(attribute: string, value: string | number | {} | boolean | undefined): string;
 
-    message(attribute: string, value: RuleValue): string;
+    abstract passes(attribute: string, value: string | number | {} | boolean | undefined): boolean ;
 }
-

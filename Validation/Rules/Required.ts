@@ -1,7 +1,7 @@
-import { Rule } from '../Rule';
 import { RuleValue } from '..';
+import { Rule } from '../Rule';
 
-export class Required implements Rule {
+export class Required extends Rule {
     passes(attribute: string, value: RuleValue): boolean {
         return !!value;
     }

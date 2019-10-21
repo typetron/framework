@@ -1,5 +1,6 @@
-import { Query } from './Query';
 import { Entity } from './Entity';
+import { EntityQuery } from './EntityQuery';
+import { EntityConstructor } from './index';
 
 export class EntityProxyHandler {
     constructor(private object: typeof Entity | Entity) {
@@ -12,8 +13,8 @@ export class EntityProxyHandler {
 
     get(target: Entity, prop: keyof Entity) {
         if (!(prop in this.object)) {
-            const query = new Query;
-            const queryProperty = query[prop as keyof Query] as Function;
+            const query = new EntityQuery(target.constructor as EntityConstructor<Entity>);
+            const queryProperty = query[prop as keyof EntityQuery<Entity>] as Function;
             if (typeof queryProperty === 'function') {
                 // @ts-ignore
                 query.table(this.object.constructor.getTable());

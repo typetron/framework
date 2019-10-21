@@ -35,10 +35,6 @@ export class Query<T = {}> {
         orders: [],
         havings: [],
     };
-    private bindings: SqlValue[] = [];
-
-    constructor() {
-    }
 
     get statement(): Statement {
         return new this.statementType(this.components);
@@ -48,16 +44,32 @@ export class Query<T = {}> {
         return (new this as Query<T>).table(table);
     }
 
-    getBindings() {
-        return this.bindings;
+    static async lastInsertedId(): Promise<number | string> {
+        return await Query.connection.lastInsertedId();
     }
 
-    toSql() {
-        return this.statement.toSql().replace(/\s{2,}/g, ' ').trim();
+    getBindings() {
+        const statement = this.statement;
+        statement.toSql();
+        return statement.bindings;
     }
 
     async get<K extends keyof T>(columns?: (K | string)[]): Promise<T[]> {
         return Query.connection.get(this.select(columns || this.components.columns));
+    }
+
+    toSql() {
+        const statement = this.statement;
+        const sql = statement.toSql();
+        return sql.replace(/\s{2,}/g, ' ').trim();
+    }
+
+    async first<K extends keyof T>(columns?: (K | string)[]): Promise<T | undefined> {
+        return Query.connection.first(this.select(columns || this.components.columns));
+    }
+
+    async run<K extends keyof T>(): Promise<void> {
+        await Query.connection.run(this);
     }
 
     // compileSelect(columns: string[]) {
@@ -118,10 +130,6 @@ export class Query<T = {}> {
         return this;
     }
 
-    async first<K extends keyof T>(columns?: (K | string)[]): Promise<T | undefined> {
-        return Query.connection.first(this.select(columns || this.components.columns));
-    }
-
     select<K extends keyof T>(columns: (K | string)[]) {
         this.components.columns = columns as string[];
 
@@ -164,7 +172,6 @@ export class Query<T = {}> {
             return this;
         }
 
-        this.bindings.push(value as SqlValue);
         this.components.wheres.push(new Where(column as string, operator as Operator, value as WhereValue, boolean));
 
         return this;
@@ -175,17 +182,13 @@ export class Query<T = {}> {
     }
 
     whereIn(column: string, values: SqlValue[], boolean: Boolean = 'AND', not = false): this {
-        values.forEach(value => {
-            this.bindings.push(value);
-        });
         this.components.wheres.push(new WhereIn(column, values, boolean, not));
 
         return this;
     }
 
-    whereLike(column: string, value: SqlValue, boolean: Boolean = 'AND', not = false): this {
-        this.bindings.push(value);
-        this.components.wheres.push(new WhereLike(column, value, boolean, not));
+    whereLike<K extends keyof T>(column: K, value: SqlValue, boolean: Boolean = 'AND', not = false): this {
+        this.components.wheres.push(new WhereLike(column as string, value, boolean, not));
 
         return this;
     }
@@ -209,8 +212,6 @@ export class Query<T = {}> {
     }
 
     whereBetween(column: string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND', not = false): this {
-        this.bindings.push(values[0]);
-        this.bindings.push(values[1]);
         this.components.wheres.push(new WhereBetween(column, values, boolean, not));
 
         return this;
@@ -291,31 +292,25 @@ export class Query<T = {}> {
     //     return this.join(table, first, operator, second, 'LEFT');
     // }
 
-    insert(data: SqlValueMap | [SqlValueMap, ...SqlValueMap[]]) {
+    async insert(data: SqlValueMap | [SqlValueMap, ...SqlValueMap[]]) {
         this.statementType = Insert;
 
         if (!Array.isArray(data)) {
             data = [data];
         }
 
-        data.forEach(values => {
-            Object.values(values).forEach(value => {
-                this.bindings.push(value);
-            });
-        });
-
         this.components.insert = data;
+
+        await this.run();
     }
 
-    delete(id?: number) {
+    async delete() {
         this.statementType = Delete;
 
-        if (id) {
-            this.where('id' as keyof T, id);
-        }
+        await this.run();
     }
 
-    update(name: string | SqlValueMap, value?: SqlValue) {
+    async update(name: string | SqlValueMap, value?: SqlValue) {
         this.statementType = Update;
 
         let data: SqlValueMap;
@@ -325,8 +320,10 @@ export class Query<T = {}> {
             data = name;
         }
 
-        this.bindings = this.bindings.concat(Object.values(data));
+        // this.bindings = this.bindings.concat(Object.values(data));
 
         this.components.update = data;
+
+        await this.run();
     }
 }

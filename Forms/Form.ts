@@ -1,21 +1,15 @@
 import { FormField, FormMetadataKey } from './Decorators';
-import { RuleValue } from '../Validation';
-import { Injectable } from '../Container';
-import { ChildObject } from '../Support';
+import { RuleInterface, RuleValue } from '../Validation';
+import { ChildObject, Constructor } from '../Support';
+import { Rule } from '../Validation/Rule';
 
-type FormFields<T extends Form<T>> = ChildObject<T, Form<T>>;
+export type FormFields<T> = ChildObject<T, Form>;
 
-@Injectable()
-export abstract class Form<T extends Form<T>> {
+export abstract class Form {
 
-    errors: {[key: string]: string[]} = {};
+    readonly errors: {[key: string]: string[]} = {};
 
-    constructor(public data: FormFields<T>) {
-        // @ts-ignore
-        this.loadData(data);
-    }
-
-    get fields(): { [key in keyof FormFields<T>]: FormField } {
+    get fields(): { [key in keyof FormFields<this>]: FormField } {
         return Reflect.getMetadata(FormMetadataKey, this.constructor);
     }
 
@@ -23,9 +17,12 @@ export abstract class Form<T extends Form<T>> {
         const fields = Object.values(this.fields) as FormField[];
         fields.forEach(field => {
             field.rules.forEach(rule => {
-                if (!rule.passes(field.name, this.data[field.name as keyof FormFields<T>])) {
+                if (!(rule instanceof Rule)) {
+                    rule = new (rule as Constructor<RuleInterface>);
+                }
+                if (!rule.passes(field.name, this[field.name as keyof FormFields<this>])) {
                     const fieldErrors = this.errors[field.name] || [];
-                    fieldErrors.push(rule.message(field.name, this.data[field.name as keyof FormFields<T>]));
+                    fieldErrors.push(rule.message(field.name, this[field.name as keyof FormFields<this>]));
                     this.errors[field.name] = fieldErrors;
                 }
             });
@@ -38,7 +35,7 @@ export abstract class Form<T extends Form<T>> {
         const fields = Object.values(this.fields) as FormField[];
         return fields.filter(field => !this.errors[field.name])
             .reduce((obj, field) => {
-                const value = this[field.name as keyof this] || this.data[field.name as keyof FormFields<T>];
+                const value = this[field.name as keyof this];
                 if (value) {
                     obj[field.name] = value;
                 }
@@ -46,11 +43,11 @@ export abstract class Form<T extends Form<T>> {
             }, <{[key: string]: RuleValue}>{});
     }
 
-    loadData(this: T, data: FormFields<T>) {
+    fill(data: FormFields<this>) {
         const fields = Object.values(this.fields) as FormField[];
         fields.forEach(field => {
             // @ts-ignore
-            this[field.name as keyof FormFields<T>] = data[field.name as keyof FormFields<T>];
+            this[field.name as keyof FormFields<this>] = data[field.name as keyof FormFields<this>];
         });
     }
 }

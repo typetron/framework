@@ -10,9 +10,10 @@ export class Insert extends Statement {
     }
 
     get values() {
-        return (this.components.insert || []).map(values => {
-            const parameters = Object.values(values);
-            return '(' + [...Array(parameters.length)].map(() => '?').join(', ') + ')';
+        return (this.components.insert || []).map(valuesMap => {
+            const values = Object.values(valuesMap);
+            this.bindings = this.bindings.concat(values);
+            return '(' + [...Array(values.length)].map(() => '?').join(', ') + ')';
         }).join(', ');
     }
 

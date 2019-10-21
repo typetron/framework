@@ -48,8 +48,14 @@ export abstract class TestCase {
         //     return oldWrite(response.content);
         // };
 
-        return await this.app.get(Handler).handle(this.app as Application, request);
-        //
+        const response = await this.app.get(Handler).handle(this.app as Application, request);
+
+        if (response.content instanceof Buffer) {
+            response.content = response.content.toString();
+        }
+
+        return response;
+
         // return new Promise<Response>(resolve => {
         //     response.response.end = function () {
         //         resolve(response);

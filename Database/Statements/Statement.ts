@@ -1,4 +1,4 @@
-import { Components } from '../Types';
+import { Components, SqlValue } from '../Types';
 import { wrap } from '../Helpers';
 
 export const ToSqlInterface = Symbol();
@@ -8,6 +8,8 @@ interface ToSql {
 }
 
 export abstract class Statement implements ToSql {
+    bindings: SqlValue[] = [];
+
     constructor(public components: Components) {
     }
 
@@ -18,7 +20,10 @@ export abstract class Statement implements ToSql {
     get wheres() {
         const wheres = this.components.wheres || [];
 
-        return wheres.map(where => where.toSql()).join(' ').replace(/^(and |or )/i, '');
+        return wheres.map(where => {
+            this.bindings = this.bindings.concat(where.getValues());
+            return where.toSql();
+        }).join(' ').replace(/^(and |or )/i, '');
     }
 
     get limit() {

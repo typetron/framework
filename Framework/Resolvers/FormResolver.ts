@@ -1,24 +1,35 @@
-import { BaseResolver } from '../../Container';
+import { BaseResolver, ClassResolver, Container, InjectableMetadata, Scope } from '../../Container';
 import { Constructor } from '../../Support';
-import { Form } from '../../Forms';
-import { Http, Request } from '../../Http';
-import { HttpError } from '../../Router';
+import { Form, FormFields } from '../../Forms';
+import { Http, HttpError, Request } from '../../Http';
 
 export class FormResolver extends BaseResolver {
 
-    canResolve<T>(abstract: Constructor<T>): boolean {
-        return abstract.prototype instanceof Form;
+    constructor(container: Container) {
+        super(container);
+        this.setFormScopeToRequest();
     }
 
-    // tslint:disable-next-line:no-any
-    resolve<T>(abstract: Constructor<T & Form<any>>, parameters: object[]): T {
+    resolve<T>(abstract: Constructor<T & Form>, parameters: object[]): T {
         const request = this.container.get(Request);
-        const form = new abstract(request.content);
+        const classResolver = new ClassResolver(this.container);
+        const form = classResolver.resolve(abstract, parameters);
+        form.fill(request.content as FormFields<Form>);
 
         if (!form.valid()) {
             throw new HttpError(form.errors, Http.Status.UNPROCESSABLE_ENTITY);
         }
 
         return form;
+    }
+
+    canResolve<T>(abstract: Constructor<T>): boolean {
+        return abstract.prototype instanceof Form;
+    }
+
+    private setFormScopeToRequest() {
+        const metadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, Form) || InjectableMetadata.DEFAULT();
+        metadata.scope = Scope.REQUEST;
+        Reflect.defineMetadata(InjectableMetadata.KEY, metadata, Form);
     }
 }

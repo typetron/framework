@@ -3,11 +3,11 @@ declare global {
     interface Array<T> {
         empty(): boolean;
 
-        random<T>(this: T[]): T;
+        random(): T;
+
+        randomIndex(): number;
 
         pluck<K extends keyof T>(this: T[], key: K): T[K][];
-
-        groupBy<K extends keyof T>(this: T[], key: K): { [key in K]: T[] };
 
         mapAsync<U>(callback: (value: T, index: number, array: T[]) => U, thisArg?: this): Promise<T>;
 
@@ -17,17 +17,13 @@ declare global {
 
         first(this: T[], defaultValue?: Object): T;
 
-        contains(this: T[], value: T): boolean;
-
         remove<T>(this: T[], item: T): boolean;
 
         where<K extends keyof T>(this: T[], property: K, value: T[K]): T[];
 
         whereIn<K extends keyof T>(this: T[], property: K, value: T[K][]): T[];
 
-        whereEmpty<K extends keyof T>(this: T[], property: K): T[];
-
-        whereNotEmpty<K extends keyof T>(this: T[], property: K): T[];
+        groupBy<K extends keyof T>(this: T[], key: K): { [key in K]: T[] };
     }
 }
 
@@ -37,6 +33,10 @@ Array.prototype.empty = function () {
 
 Array.prototype.random = function () {
     return this[Math.randomInt(0, this.length - 1)];
+};
+
+Array.prototype.randomIndex = function () {
+    return Math.randomInt(0, this.length - 1);
 };
 
 Array.prototype.findWhere = function (property, value) {
@@ -66,16 +66,6 @@ Array.prototype.whereIn = function (property, values) {
 
 Array.prototype.first = function (defaultValue = undefined) {
     return this[0] || defaultValue;
-};
-Array.prototype.contains = function (value) {
-    return this.indexOf(value) !== -1;
-};
-
-Array.prototype.whereEmpty = function (property) {
-    return this.filter(item => !item[property]);
-};
-Array.prototype.whereNotEmpty = function (property) {
-    return this.filter(item => item[property]);
 };
 
 Array.prototype.groupBy = function (key) {
