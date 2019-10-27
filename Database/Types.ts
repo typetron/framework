@@ -1,5 +1,4 @@
 import { Query } from './Query';
-import { wrap } from './Helpers';
 
 export enum Operators {
     '=' = '=',
@@ -16,15 +15,19 @@ export enum Operators {
     'IS NOT' = 'IS NOT',
 }
 
-export type Operator = keyof typeof Operators;
-export type JoinType = 'LEFT' | 'RIGHT' | 'INNER' | 'CROSS';
-export type Boolean = 'AND' | 'OR' | 'XOR';
+export enum JoinType {
+    INNER = 'INNER',
+    LEFT = 'LEFT',
+    RIGHT = 'RIGHT'
+}
 
+export type Boolean = 'AND' | 'OR' | 'XOR';
+export type Operator = keyof typeof Operators;
 export type SqlValue = string | number | Date | undefined;
 export type SqlValueMap = {[key: string]: SqlValue};
 
-class Join {
-    type: JoinType;
+class JoinClause {
+    type: keyof typeof JoinType;
     table: string;
     first: string;
     operator: Operator;
@@ -39,11 +42,11 @@ export interface SelectComponents extends BaseComponents {
     distinct?: boolean;
     columns: string[];
     aggregate?: [string, string | string[]];
-    joins: Join[];
+    joins: JoinClause[];
     wheres: SqlClause[];
     groups?: string[];
     orders?: [string, Direction][];
-    havings?: Where[];
+    having?: Where[];
     limit?: {from: number, count: number};
 }
 
@@ -63,7 +66,7 @@ export interface Components extends BaseComponents, SelectComponents, InsertComp
 //     select: string[] = ['*'];
 //     insert?: {};
 //     delete?: boolean;
-//     joins?: Join[];
+//     joins?: JoinClause[];
 //     wheres?: Where[];
 //     orderBy?: OrderBy[];
 // }
@@ -93,7 +96,7 @@ export class Where implements SqlClause {
     }
 
     toSql() {
-        return `${this.boolean} ${wrap(this.column as string)} ${this.operator} ?`;
+        return `${this.boolean} ${this.column} ${this.operator} ?`;
     }
 
     getValues() {
@@ -106,7 +109,7 @@ export class WhereBetween implements SqlClause {
     }
 
     toSql() {
-        return `${this.boolean} ${wrap(this.column)} ${this.not ? 'NOT ' : ''}BETWEEN ? AND ?`;
+        return `${this.boolean} ${this.column} ${this.not ? 'NOT ' : ''}BETWEEN ? AND ?`;
     }
 
     getValues() {
@@ -119,7 +122,7 @@ export class WhereLike implements SqlClause {
     }
 
     toSql() {
-        return `${this.boolean} ${wrap(this.column)} ${this.not ? 'NOT ' : ''}LIKE ?`;
+        return `${this.boolean} ${this.column} ${this.not ? 'NOT ' : ''}LIKE ?`;
     }
 
     getValues() {
@@ -133,7 +136,7 @@ export class WhereIn implements SqlClause {
 
     toSql() {
         const values = this.values.map(() => '?').join(', ');
-        return `${this.boolean} ${wrap(this.column)} ${this.not ? 'NOT ' : ''}IN (${values})`;
+        return `${this.boolean} ${this.column} ${this.not ? 'NOT ' : ''}IN (${values})`;
     }
 
     getValues() {
@@ -146,7 +149,7 @@ export class WhereNull implements SqlClause {
     }
 
     toSql() {
-        return `${this.boolean} ${wrap(this.column)} IS ${this.not ? 'NOT ' : ''}NULL`;
+        return `${this.boolean} ${this.column} IS ${this.not ? 'NOT ' : ''}NULL`;
     }
 
     getValues() {

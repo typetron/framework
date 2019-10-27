@@ -1,6 +1,7 @@
-import { Constructor, KeysOfType } from '../Support';
+import { KeysOfType } from '../Support';
 import { Entity } from './Entity';
 import { ColumnField, ManyToManyField, ManyToOneField, OneToManyField } from './Fields';
+import { EntityConstructor } from './index';
 
 export const EntityMetadataKey = 'framework:entity';
 
@@ -19,61 +20,60 @@ export class EntityOptions<T> {
 // };
 
 export class EntityMetadata<T = {}> extends EntityOptions<T> {
-    columns: {[key: string]: ColumnField} = {};
+    columns: {[key: string]: ColumnField<Entity>} = {};
 
-    static get(target: Entity) {
+    static get(parent: Entity) {
         const entityMetadata = new this();
-        const metadata: EntityMetadata<Entity> = Reflect.getMetadata(EntityMetadataKey, target);
+        const metadata: EntityMetadata<Entity> = Reflect.getMetadata(EntityMetadataKey, parent);
         return Object.assign(entityMetadata, metadata);
     }
 }
 
 export function Meta<T extends Entity>(options: EntityOptions<T> = {}) {
-    return (target: typeof Entity) => {
-        let entityMetadata = EntityMetadata.get(target.prototype);
-        entityMetadata = Object.assign(entityMetadata, options);
-        Reflect.defineMetadata(EntityMetadataKey, entityMetadata, target.prototype);
+    return (parent: typeof Entity) => {
+        let metadata = EntityMetadata.get(parent.prototype);
+        metadata = Object.assign(metadata, options);
+        Reflect.defineMetadata(EntityMetadataKey, metadata, parent.prototype);
     };
 }
 
-function setEntityMetadata(target: Entity, field: ColumnField) {
-    const entityMetadata = EntityMetadata.get(target);
-    entityMetadata.columns[field.name] = field;
-    Reflect.defineMetadata(EntityMetadataKey, entityMetadata, target);
+function setEntityMetadata(parent: Entity, field: ColumnField<Entity>) {
+    const entityMetadata = EntityMetadata.get(parent);
+    entityMetadata.columns[field.property] = field;
+    Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
 }
 
 export function Column<T extends Entity>(column?: string) {
-    return function (target: T, name: string) {
-        const type = Reflect.getMetadata('design:type', target, name);
-        const field = new ColumnField(name, type, column || name);
-        setEntityMetadata(target, field);
+    return function (parent: T, name: string) {
+        const type = Reflect.getMetadata('design:type', parent, name);
+        const field = new ColumnField(parent.constructor as EntityConstructor<T>, name, type, column || name);
+        setEntityMetadata(parent, field);
     };
 }
 
 export type ID = number;
 
-export function OneToMany<T extends Entity>(type: Constructor<T>, inverseBy: KeysOfType<T, Entity>, column?: string) {
-    return function (target: Entity, name: string) {
-        const field = new OneToManyField(name, type, inverseBy as string, column || name);
-        setEntityMetadata(target, field);
+export function OneToMany<T extends Entity, R extends Entity>(type: () => EntityConstructor<R>, inverseBy: KeysOfType<R, Entity>, column?: string) {
+    return function (parent: T, property: string) {
+        const field = new OneToManyField(parent.constructor as EntityConstructor<Entity>, property, type, inverseBy as string, 'one_to_many_has_no_column');
+        setEntityMetadata(parent, field);
     };
 }
 
-export function ManyToOne<T extends Entity>(entity: Constructor<T>, inverseBy: KeysOfType<T, Entity[]>, column?: string) {
-    return function (target: Entity, name: string) {
-        const type = Reflect.getMetadata('design:type', target, name);
-        const field = new ManyToOneField(name, type, inverseBy as string, column || name);
-        setEntityMetadata(target, field);
+export function ManyToOne<T extends Entity, R extends Entity>(type: () => EntityConstructor<R>, inverseBy: KeysOfType<R, Entity[]>, column?: string) {
+    return function (parent: T, property: string) {
+        const parentConstructor = parent.constructor as EntityConstructor<T>;
+        column = column || property + (parentConstructor.getPrimaryKey() as string).capitalize();
+        const field = new ManyToOneField(parentConstructor, property, type, inverseBy as string, column);
+        setEntityMetadata(parent, field);
     };
 }
 
-export function ManyToMany<T extends Entity>(entity: () => Constructor<T>, inverseBy: KeysOfType<T, Entity[]>, joinTable: string, tableColumn?: string, foreignColumn?: string) {
-    return function (target: Entity, name: string) {
-        setTimeout(() => {
-            const type = Reflect.getMetadata('design:type', target, name);
-            const field = new ManyToManyField(name, type, inverseBy as string, joinTable, tableColumn || target.constructor.name, foreignColumn || entity().name);
-            setEntityMetadata(target, field);
-        }, 0);
+export function ManyToMany<T extends Entity, R extends Entity>(type: () => EntityConstructor<R>, inverseBy: KeysOfType<R, Entity[]>, joinTable?: string, tableColumn?: string, foreignColumn?: string) {
+    return function (parent: T, name: string) {
+        const parentConstructor = parent.constructor as EntityConstructor<T>;
+        const field = new ManyToManyField<T, R>(parentConstructor, name, type, inverseBy as string, joinTable, tableColumn, foreignColumn);
+        setEntityMetadata(parent, field);
     };
 }
 

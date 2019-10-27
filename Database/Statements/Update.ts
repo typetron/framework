@@ -1,5 +1,4 @@
 import { Statement } from './Statement';
-import { wrap } from '../Helpers';
 
 export class Update extends Statement {
 
@@ -17,7 +16,7 @@ export class Update extends Statement {
         for (const column in values) {
             if (values.hasOwnProperty(column)) {
                 this.bindings.push(values[column]);
-                columns.push(`${wrap(column)} = ?`);
+                columns.push(`${column} = ?`);
             }
         }
         return columns.join(', ');

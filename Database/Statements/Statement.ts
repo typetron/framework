@@ -34,7 +34,9 @@ export abstract class Statement implements ToSql {
     }
 
     get joins() {
-        return '';
+        return this.components.joins.map(join => {
+            return `${join.type} JOIN ${wrap(join.table)} ON ${join.first} ${join.operator} ${join.second}`;
+        }).join(' ');
     }
 
     get groups() {

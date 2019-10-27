@@ -2,6 +2,7 @@ import {
     Boolean,
     Components,
     Direction,
+    JoinType,
     Operator,
     SqlValue,
     SqlValueMap,
@@ -33,7 +34,7 @@ export class Query<T = {}> {
         wheres: [],
         groups: [],
         orders: [],
-        havings: [],
+        having: [],
     };
 
     get statement(): Statement {
@@ -72,26 +73,6 @@ export class Query<T = {}> {
         await Query.connection.run(this);
     }
 
-    // compileSelect(columns: string[]) {
-    //     if (this.aggregate) {
-    //         return this.compileAggregate(this.aggregate);
-    //     }
-    //
-    //     const select = this.useDistinct ? 'SELECT DISTINCT ' : 'SELECT ';
-    //
-    //     return select + columns.join(', ');
-    // }
-
-    // compileInsert(data) {
-    //     const columns = Object.keys(data).map(value => `'${value}'`);
-    //     const values = Object.values(data).map(value => `'${value}'`);
-    //     const table = this.components.table;
-    //
-    //     delete this.components.table;
-    //
-    //     return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
-    // }
-
     compileAggregate(aggregate: [string, string]) {
         const [aggregateFunction, column] = aggregate;
 
@@ -99,30 +80,6 @@ export class Query<T = {}> {
 
         return `SELECT ${aggregateFunction}(${distinct}${column}) as aggregate`;
     }
-
-    compileTable(table: string) {
-        return 'FROM ' + table;
-    }
-
-    compileWheres(wheres: Where[]) {
-        return wheres.map((where, index) => {
-            const boolean = index === 0 ? 'WHERE' : where.boolean;
-            return [boolean, where.column, where.operator, '?'].join(' ');
-        }).join(' ');
-    }
-
-    compileOrderBy(value: [string, string][]) {
-        if (!value.length) {
-            return;
-        }
-        return 'ORDER BY ' + value.map(orderBy => orderBy.join(' ')).join(', ');
-    }
-
-    // compileJoins(value: [string, string][]) {
-    //     return this.components.joins.map((join: Join) => {
-    //         return [join.type, 'JOIN', join.table, 'ON', join.first, join.operator, join.second].join(' ');
-    //     }).join(' ');
-    // }
 
     table(table: string) {
         this.components.table = table;
@@ -136,13 +93,13 @@ export class Query<T = {}> {
         return this;
     }
 
-    // where(column: WhereFunction | WhereCondition): this;
-    // where(column: string, value: WhereValue): this;
-    // where(column: string, operator: Operator, value: WhereValue): this;
-    // where(column: WhereFunction): this;
-    // where(column: string, operator: WhereValue): this;
-    // where(column: string, operator: Operator, value: WhereValue): this;
-    where<K extends keyof T>(column: K, operator: Operator | WhereValue | T[K], value?: WhereValue | T[K], boolean: Boolean = 'AND'): this {
+    addSelect<K extends keyof T>(columns: (K | string)[]) {
+        this.components.columns.push(...columns as string[]);
+
+        return this;
+    }
+
+    where<K extends keyof T>(column: K | string, operator: Operator | WhereValue | T[K], value?: WhereValue | T[K], boolean: Boolean = 'AND'): this {
         // if (column instanceof Function) {
         //     const query = new WhereNested();
         //     this.components.wheres = query;
@@ -177,35 +134,39 @@ export class Query<T = {}> {
         return this;
     }
 
-    orWhere<K extends keyof T>(column: K, operator: Operator | WhereValue | T[K], value?: WhereValue | T[K]): this {
+    orWhere<K extends keyof T>(column: K | string, operator: Operator | WhereValue | T[K], value?: WhereValue | T[K]): this {
         return this.where(column, operator, value, 'OR');
     }
 
-    whereIn(column: string, values: SqlValue[], boolean: Boolean = 'AND', not = false): this {
-        this.components.wheres.push(new WhereIn(column, values, boolean, not));
+    andWhere<K extends keyof T>(column: K | string, operator: Operator | WhereValue | T[K], value?: WhereValue | T[K]): this {
+        return this.where(column, operator, value);
+    }
+
+    whereIn<K extends keyof T>(column: K | string, values: WhereValue[] | T[K][], boolean: Boolean = 'AND', not = false): this {
+        this.components.wheres.push(new WhereIn(column as string, values as WhereValue[], boolean, not));
 
         return this;
     }
 
-    whereLike<K extends keyof T>(column: K, value: SqlValue, boolean: Boolean = 'AND', not = false): this {
+    whereLike<K extends keyof T>(column: K | string, value: SqlValue, boolean: Boolean = 'AND', not = false): this {
         this.components.wheres.push(new WhereLike(column as string, value, boolean, not));
 
         return this;
     }
 
-    whereNotIn(column: string, values: SqlValue[], boolean: Boolean = 'AND'): this {
+    whereNotIn<K extends keyof T>(column: K | string, values: SqlValue[], boolean: Boolean = 'AND'): this {
         this.whereIn(column, values, boolean, true);
 
         return this;
     }
 
-    orWhereIn(column: string, values: SqlValue[]): this {
+    orWhereIn<K extends keyof T>(column: K | string, values: SqlValue[]): this {
         this.whereIn(column, values, 'OR');
 
         return this;
     }
 
-    orWhereNotIn(column: string, values: SqlValue[]): this {
+    orWhereNotIn<K extends keyof T>(column: K | string, values: SqlValue[]): this {
         this.whereIn(column, values, 'OR', true);
 
         return this;
@@ -265,6 +226,24 @@ export class Query<T = {}> {
         return this;
     }
 
+    join(table: string, first: string, operator: Operator, second: string, type: keyof typeof JoinType = JoinType.INNER) {
+        this.components.joins.push({type, table, first, operator, second});
+
+        return this;
+    }
+
+    innerJoin(table: string, first: string, operator: Operator, second: string) {
+        return this.join(table, first, operator, second, JoinType.INNER);
+    }
+
+    leftJoin(table: string, first: string, operator: Operator, second: string) {
+        return this.join(table, first, operator, second, JoinType.LEFT);
+    }
+
+    rightJoin(table: string, first: string, operator: Operator, second: string) {
+        return this.join(table, first, operator, second, JoinType.RIGHT);
+    }
+
     orderBy(column: string | [string, Direction][], direction: Direction = 'ASC') {
         if (typeof column === 'string') {
             column = [[column, direction]];
@@ -281,16 +260,6 @@ export class Query<T = {}> {
     max(column = '*') {
         this.components.aggregate = ['MAX', column];
     }
-
-    // join(table: string, first: string, operator?: string, second?: string, type = 'INNER') {
-    //     this.components.joins.push({type, table, first, operator, second});
-    //
-    //     return this;
-    // }
-    //
-    // leftJoin(table: string, first: string, operator: string = null, second: string = null) {
-    //     return this.join(table, first, operator, second, 'LEFT');
-    // }
 
     async insert(data: SqlValueMap | [SqlValueMap, ...SqlValueMap[]]) {
         this.statementType = Insert;
@@ -319,8 +288,6 @@ export class Query<T = {}> {
         } else {
             data = name;
         }
-
-        // this.bindings = this.bindings.concat(Object.values(data));
 
         this.components.update = data;
 

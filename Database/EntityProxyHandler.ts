@@ -13,7 +13,8 @@ export class EntityProxyHandler {
 
     get(target: Entity, prop: keyof Entity) {
         if (!(prop in this.object)) {
-            const query = new EntityQuery(target.constructor as EntityConstructor<Entity>);
+            const targetConstructor = target.constructor as EntityConstructor<Entity>;
+            const query = new EntityQuery(targetConstructor, targetConstructor.metadata);
             const queryProperty = query[prop as keyof EntityQuery<Entity>] as Function;
             if (typeof queryProperty === 'function') {
                 // @ts-ignore

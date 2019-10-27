@@ -9,7 +9,7 @@ declare global {
 
         pluck<K extends keyof T>(this: T[], key: K): T[K][];
 
-        mapAsync<U>(callback: (value: T, index: number, array: T[]) => U, thisArg?: this): Promise<T>;
+        mapAsync<U>(callback: (value: T, index: number, array: T[]) => Promise<U>, thisArg?: this): Promise<U[]>;
 
         forEachAsync(callback: (value: T, index: number, array: T[]) => void, thisArg?: this): Promise<void>;
 
@@ -65,7 +65,12 @@ Array.prototype.whereIn = function (property, values) {
 };
 
 Array.prototype.first = function (defaultValue = undefined) {
-    return this[0] || defaultValue;
+    for (const index in this) {
+        if (this[index] !== undefined) {
+            return this[index];
+        }
+    }
+    return defaultValue;
 };
 
 Array.prototype.groupBy = function (key) {

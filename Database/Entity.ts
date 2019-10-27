@@ -3,16 +3,14 @@ import { EntityQuery as Query } from './EntityQuery';
 import { ChildObject, KeysOfType } from '../Support';
 import { EntityMetadata, EntityMetadataKey } from './Decorators';
 import { EntityNotFoundError } from './EntityNotFoundError';
-import { ColumnField, OneToManyField } from './Fields';
+import { ColumnField } from './Fields';
 import { Boolean, Operator, WhereValue } from './Types';
 import { EntityConstructor, EntityKeys } from './index';
 
-// @EntityInheritanceCheck
 export abstract class Entity {
 
     protected exists = false;
-
-    private eagerLoad: string[] = [];
+    public original: {[key: string]: object} = {};
 
     constructor(data?: object) {
         if (data) {
@@ -21,15 +19,15 @@ export abstract class Entity {
         return new Proxy(this, new EntityProxyHandler(this));
     }
 
-    static get _metadata_(): EntityMetadata<Entity> {
+    static get metadata(): EntityMetadata<Entity> {
         return Reflect.getMetadata(EntityMetadataKey, this.prototype);
     }
 
-    get _metadata_(): EntityMetadata<Entity> {
+    get metadata(): EntityMetadata<Entity> {
         return Reflect.getMetadata(EntityMetadataKey, this);
     }
 
-    get class(): EntityConstructor<this> {
+    protected get static(): EntityConstructor<this> {
         return this.constructor as EntityConstructor<this>;
     }
 
@@ -37,60 +35,38 @@ export abstract class Entity {
         return this.newQuery().where(column, operator, value, boolean);
     }
 
+    static whereIn<T extends Entity, K extends EntityKeys<T>>(this: EntityConstructor<T>, column: EntityKeys<T>, value: WhereValue[] | T[K][], boolean?: Boolean): Query<T> {
+        return this.newQuery().whereIn(column, value, boolean);
+    }
+
     static whereLike<T extends Entity, K extends EntityKeys<T>>(this: EntityConstructor<T>, column: EntityKeys<T>, value?: WhereValue | T[K], boolean?: Boolean): Query<T> {
         return this.newQuery().whereLike(column, value as WhereValue, boolean);
     }
 
     static getTable<T extends Entity>(this: EntityConstructor<T>): string {
-        return (new this).getTable();
-    }
-
-    static create<T extends Entity>(this: EntityConstructor<T>, data: ChildObject<T, Entity> | {}): Promise<T> {
-        return (new this).fill(data).save();
-    }
-
-    // whereHas<T extends Entity>(this: T, relation: KeysOfType<T, Entity| Entity[]>) {
-    // }
-    // static whereHas<T extends Entity>(this: EntityConstructor<T>, relation: KeysOfType<T, Entity>) {
-    // }
-
-    // where<T extends Entity>(this: T, column: EntityKeys<T>, operator: Operator | WhereValue, value?: WhereValue, boolean: Boolean = 'AND') {
-    // }
-
-    static newQuery<T extends Entity>(this: EntityConstructor<T>): Query<T> {
-        return (new Query(this)).table(this.getTable());
+        return this.metadata.table || this.name.toLowerCase();
     }
 
     static newInstance<T extends Entity>(this: EntityConstructor<T>, data = {}, exists = false): T {
         const instance = new this;
         instance.fill(data);
         instance.exists = exists;
+        instance.original = data;
 
         return instance as T;
     }
 
+    static create<T extends Entity>(this: EntityConstructor<T>, data: ChildObject<T, Entity> | {}): Promise<T> {
+        return (new this).fill(data).save();
+    }
+
     static async get<T extends Entity>(this: EntityConstructor<T>, columns: (EntityKeys<T> | '*')[] = ['*']): Promise<T[]> {
-        const model = new this;
-        return model.get.call(model, columns);
+        return this.newQuery().get(columns);
     }
 
-    static with<T extends Entity>(this: EntityConstructor<T>, relations: string | string[]): T {
-        const model = new this;
-        return model.with.call(model, relations) as T;
+    static with<T extends Entity, K extends KeysOfType<T, Entity | Entity[]>>(this: EntityConstructor<T>, ...relations: K[]) {
+        return this.newQuery().with(...relations);
     }
-
-    // private static addRelationsToEntities(models: Entity[], relationships: Entity[], relation: string) {
-    //     const groups = relationships.groupBy('user_id');
-    //
-    //     groups.forEach((group, modelId) => {
-    //         const model = models.findWhere('id/primaryKey', modelId);
-    //         model[relationKey] = group;
-    //     });
-    // }
-
-    // static where<T extends Entity, K extends keyof T>(this: EntityConstructor<T>, column: EntityKeys<T>, operator: Operator | WhereValue | T[K], value?: WhereValue | T[K], boolean: Boolean = 'AND'): Query<T> {
-    //     return this.newQuery<T>().where(column as string, operator, value, boolean);
-    // }
 
     static async find<T extends Entity>(this: EntityConstructor<T>, id: number): Promise<T> {
         const query = this.newQuery().where('id' as keyof T, id);
@@ -111,79 +87,38 @@ export abstract class Entity {
         });
     }
 
-    with(relations: string | string[]) {
-        if (typeof relations === 'string') {
-            relations = [relations];
-        }
-        this.eagerLoad = this.eagerLoad.concat(relations);
+    static newQuery<T extends Entity>(this: EntityConstructor<T>): Query<T> {
+        return (new Query(this, this.metadata)).table(this.getTable());
+    }
+
+    getTable(): string {
+        return this.static.getTable();
+    }
+
+    async load<K extends KeysOfType<this, Entity | Entity[]>>(...relations: K[]) {
+        await this.newQuery().with(...relations).eagerLoadRelationships([this]);
 
         return this;
     }
 
-    async load<T extends Entity, K extends KeysOfType<T, Entity | Entity[]>>(this: T, relationship: K) {
-        const metadata = this._metadata_;
-        const relationMetadata = metadata.columns[relationship as keyof EntityMetadata] as OneToManyField;
-
-        const relationshipEntity = relationMetadata.type.prototype as T;
-        const relationshipEntityMetadata = relationshipEntity._metadata_;
-
-        const instanceId = this[this.getPrimaryKey()];
-        const relationshipsQuery = this.newQuery()
-            .table(relationshipEntity.getTable())
-            .where(relationshipEntityMetadata.columns[relationMetadata.inverseBy].column as K, instanceId as unknown as string);
-
-        return relationshipsQuery.get();
-    }
-
     newQuery(): Query<this> {
-        return this.class.newQuery();
-    }
-
-    async get(columns: (EntityKeys<this> | '*')[] = ['*']): Promise<this[]> {
-        const query = this.newQuery().select(columns);
-        let models = await query.get();
-        models = this.class.hydrate(this.class, models) as this[];
-
-        // const dictionary: { [key in keyof this]?: this } = {};
-        // models.forEach(model => {
-        //     const modePrimaryKeyValue = model[model.getPrimaryKey()];
-        //     dictionary[modePrimaryKeyValue] = model;
-        // });
-
-        const metadata = this._metadata_;
-        await this.eagerLoad.forEachAsync(async (relation) => {
-            const relationshipsIds = models.pluck(this.getPrimaryKey()) as unknown as string[];
-            const relationMetadata = metadata.columns[relation as keyof EntityMetadata] as OneToManyField;
-            const relationshipEntity = relationMetadata.type.prototype as Entity;
-            const relationshipEntityMetadata = relationshipEntity._metadata_;
-            const relationshipsQuery = this.newQuery()
-                .table(relationshipEntity.getTable())
-                .whereIn(relationshipEntityMetadata.columns[relationMetadata.inverseBy].column, relationshipsIds);
-            const relationships = await relationshipsQuery.get();
-            const relatedModels = this.class.hydrate(relationMetadata.type as EntityConstructor<this>, relationships);
-            console.log('relatioships ->', relatedModels);
-            // this.addRelationsToEntities(relationships, relation);
-        });
-
-        return models as this[];
+        return this.static.newQuery();
     }
 
     async save(): Promise<this> {
-        const columns = this._metadata_.columns;
+        const columns = this.metadata.columns;
 
-        if (this._metadata_.timestamps) {
+        if (this.metadata.timestamps) {
             this.updateTimestamps();
         }
 
         // tslint:disable-next-line:no-any
         const data: {[key: string]: any} = {};
 
-        Object.keys(columns).forEach(column => {
+        Object.keys(columns).forEach((column) => {
             const type = columns[column];
-            // @ts-ignore
-            const newVar = type.value(this, this[column]);
-            if (type.constructor === ColumnField) {
-                // @ts-ignore
+            const newVar = type.value(this, this[column as keyof Entity]);
+            if (type instanceof ColumnField && type.column) {
                 data[type.column] = newVar;
             }
         });
@@ -202,11 +137,6 @@ export abstract class Entity {
         return this;
     }
 
-    getTable(): string {
-        // return (this.constructor as typeof Entity).getTable();
-        return this._metadata_.table ? this._metadata_.table : this.constructor.name.toLowerCase();
-    }
-
     async delete() {
         if (!this.exists) {
             return;
@@ -219,7 +149,7 @@ export abstract class Entity {
         Object.keys(data).forEach(key => {
             // @ts-ignore
             const value = data[key];
-            const property = this._metadata_.columns[key];
+            const property = this.metadata.columns[key];
             if (property) {
                 this[key as keyof this] = this.convertValueToType(value, property);
             }
@@ -229,7 +159,7 @@ export abstract class Entity {
     }
 
     getPrimaryKey<T extends Entity>(this: T): EntityKeys<T> {
-        return this.class.getPrimaryKey();
+        return this.static.getPrimaryKey();
     }
 
     toString() {
@@ -237,7 +167,7 @@ export abstract class Entity {
     }
 
     toObject() {
-        return Object.keys(this._metadata_.columns)
+        return Object.keys(this.metadata.columns)
             .reduce((obj, key) => {
                 obj[key as keyof this] = this[key as keyof this];
                 return obj;
@@ -259,7 +189,7 @@ export abstract class Entity {
         });
     }
 
-    private convertValueToType(value: object, property: ColumnField) {
+    private convertValueToType(value: object, property: ColumnField<Entity>) {
         const converter = types.get(property.type) || (() => value);
         return converter(value);
     }

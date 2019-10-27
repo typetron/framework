@@ -1,19 +1,41 @@
 import { Query } from './Query';
 import { Entity } from './Entity';
-import { EntityConstructor } from './index';
+import { EntityConstructor, EntityMetadata } from './index';
+import { KeysOfType } from '../Support';
+import { Relation } from './Fields';
 
 export class EntityQuery<T extends Entity> extends Query<T> {
-    constructor(public entity: EntityConstructor<T>) {
+
+    private eagerLoad: string[] = [];
+
+    constructor(public entity: EntityConstructor<T>, public metadata: EntityMetadata<Entity>) {
         super();
     }
 
     async get<K extends keyof T>(columns?: (K | string)[]): Promise<T[]> {
-        const records = await super.get(columns);
-        return this.entity.hydrate(this.entity, records, true);
+        let entities = await super.get(columns);
+
+        entities = await this.eagerLoadRelationships(entities);
+
+        return this.entity.hydrate(this.entity, entities, true);
+    }
+
+    public async eagerLoadRelationships(entities: T[]) {
+        await this.eagerLoad.forEachAsync(async (field) => {
+            const relation = this.metadata.columns[field as keyof EntityMetadata] as Relation<T, Entity>;
+            const results = await relation.getResults(entities);
+            entities = relation.match(entities, results);
+        });
+        return entities;
     }
 
     async first<K extends keyof T>(columns?: (K | string)[]): Promise<T | undefined> {
-        const data = await super.first(columns);
-        return this.entity.newInstance(data, true);
+        return (await this.get(columns)).first();
+    }
+
+    with<K extends KeysOfType<T, Entity | Entity[]>>(...relations: K[]) {
+        this.eagerLoad = this.eagerLoad.concat(relations as string[]);
+
+        return this;
     }
 }
