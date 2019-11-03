@@ -1,6 +1,7 @@
 import { Constructor } from '../Support';
 import { BaseResolver } from './Resolver';
-import { InjectableMetadata } from './Metadata';
+import { InjectableMetadata, Scope } from './Metadata';
+import { Container } from './Container';
 
 export class ClassResolver extends BaseResolver {
 
@@ -24,8 +25,7 @@ export class ClassResolver extends BaseResolver {
 
         const metadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, abstract) || InjectableMetadata.DEFAULT();
         Object.keys(metadata.dependencies).forEach(dependency => {
-            // @ts-ignore
-            instance[dependency] = this.container.get(metadata.dependencies[dependency]);
+            instance[dependency as keyof T] = this.container.get(metadata.dependencies[dependency]) as T[keyof T];
         });
 
         return instance;
@@ -40,4 +40,18 @@ export class ClassResolver extends BaseResolver {
         return value.abstract;
     }
 
+    reload<T>(abstract: Constructor<T>, concrete: T, container: Container = this.container): Promise<T> | T {
+        const metadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, abstract) || InjectableMetadata.DEFAULT();
+        for (const dependencyName in metadata.dependencies) {
+            if (!metadata.dependencies[dependencyName]) {
+                continue;
+            }
+            const dependency = metadata.dependencies[dependencyName];
+            const dependencyMetadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, dependency) || InjectableMetadata.DEFAULT();
+            if (dependencyMetadata.scope === Scope.REQUEST) {
+                concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T];
+            }
+        }
+        return concrete;
+    }
 }

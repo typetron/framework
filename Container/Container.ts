@@ -54,7 +54,7 @@ export class Container {
             return concrete;
         }
         if (metadata.scope !== Scope.REQUEST && this.parent && (concrete = this.parent.get(abstract))) {
-            return concrete;
+            return metadata.resolver ? metadata.resolver.reload(abstract, concrete, this) : concrete;
         }
         const resolver = this.getResolver(abstract, abstractName, metadata);
         concrete = resolver.resolve(abstract, parameters) as T;
@@ -89,8 +89,7 @@ export class Container {
     }
 
     private getResolver<T>(abstract: ServiceIdentifier<T>, abstractName: string, metadata: InjectableMetadata) {
-        // let resolver = metadata.resolver;
-        let resolver;
+        let resolver = metadata.resolver;
         if (!resolver) {
             resolver = this.resolvers.find(item => item.canResolve(abstract));
         }

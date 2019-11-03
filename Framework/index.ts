@@ -3,6 +3,7 @@ export * from './Config/Configurator';
 export * from './Provider';
 export * from './App';
 export * from './AppConfig';
+export * from './AuthConfig';
 export * from './ResourcesConfig';
 export * from './RootDir';
 export * from './Config/Config';
