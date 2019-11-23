@@ -2,13 +2,19 @@ import { Entity } from './Entity';
 import { EntityConstructor, EntityKeys, EntityMetadata } from './index';
 
 export interface ColumnInterface<T> {
-    value<K extends keyof T>(model: T, value: T[K]): T[K] | string | number | undefined;
+    value<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined;
+
+    relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined;
 }
 
 export class ColumnField<T extends Entity> implements ColumnInterface<T> {
     constructor(public parent: EntityConstructor<T>, public property: string, public type: () => Function, public column: string) {}
 
-    value<K extends keyof T>(model: T, value: T[K]): T[K] | string | number | undefined {
+    value<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined {
+        return value;
+    }
+
+    relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined {
         return value;
     }
 }
@@ -54,25 +60,31 @@ export class ManyToOneField<T extends Entity, R extends Entity> extends Relation
         super(parent, property, type, column);
     }
 
-    value<K extends keyof T>(model: T, value: T[K]) {
-        if (!value) {
-            return;
-        }
+    value<K extends keyof T>(entity: T, value: T[K]) {
+        return entity[this.property as keyof T] as unknown as T[K];
+    }
+
+    relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]) {
         if (value instanceof Entity) {
             return value[value.getPrimaryKey()] as unknown as T[K];
         }
-        throw new Error('Many to One: Invalid value');
+        return entity.original[this.column] as unknown as T[K];
     }
 
     async getResults(parents: R[]) {
-        const relationIds = parents.pluck(this.column as EntityKeys<Entity>) as number[];
-        return await this.related.whereIn(this.related.getPrimaryKey() as EntityKeys<R>, relationIds).get();
+        const relationIds = parents
+            .pluck(parent => parent[this.column as keyof R] as unknown)
+            .filter(item => item !== undefined) as number[];
+        if (relationIds.length) {
+            return await this.related.whereIn(this.related.getPrimaryKey() as EntityKeys<R>, relationIds).get();
+        }
+        return [];
     }
 
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
             // TODO fix these weird types. Get rid of `unknown`
-            const value = entity[this.column as keyof T] as unknown as R[keyof R];
+            const value = (entity[this.column as keyof T] || entity.original[this.column]) as unknown as R[keyof R];
             entity[this.property as keyof T] = relatedEntities.findWhere(this.related.getPrimaryKey() as keyof R, value) as unknown as T[keyof T];
             return entity;
         });
@@ -93,7 +105,7 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
         const results = await this.related.newQuery()
             .addSelect([relatedForeignKey, parentForeignKey])
             .join(this.getPivotTable(), relatedForeignKey, '=', relatedKey)
-            .whereIn(parentForeignKey, parentIds)
+            .whereIn(parentForeignKey, parentIds.unique())
             .get();
 
         return results.map(entity => {
@@ -129,8 +141,26 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
         });
     }
 
-    private getPivotTable() {
+    getPivotTable() {
         return this.table || [this.parent.getTable(), this.related.getTable()].sort().join('_');
+    }
+
+    value<K extends keyof T>(entity: T, value: T[K]) {
+        if (value instanceof Array) {
+            return value.map(related => {
+                if (related instanceof Entity) {
+                    return related;
+                }
+                const instance = new this.related();
+                instance[instance.getPrimaryKey() as keyof R] = related as R[keyof R];
+                return instance;
+            }) as unknown as T[K];
+        }
+        return value;
+    }
+
+    relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]) {
+        return undefined;
     }
 }
 

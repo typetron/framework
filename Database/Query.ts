@@ -148,6 +148,10 @@ export class Query<T = {}> {
         return this;
     }
 
+    andWhereIn<K extends keyof T>(column: K | string, values: SqlValue[]): this {
+        return this.whereIn(column, values);
+    }
+
     whereLike<K extends keyof T>(column: K | string, value: SqlValue, boolean: Boolean = 'AND', not = false): this {
         this.components.wheres.push(new WhereLike(column as string, value, boolean, not));
 
@@ -155,21 +159,15 @@ export class Query<T = {}> {
     }
 
     whereNotIn<K extends keyof T>(column: K | string, values: SqlValue[], boolean: Boolean = 'AND'): this {
-        this.whereIn(column, values, boolean, true);
-
-        return this;
+        return this.whereIn(column, values, boolean, true);
     }
 
     orWhereIn<K extends keyof T>(column: K | string, values: SqlValue[]): this {
-        this.whereIn(column, values, 'OR');
-
-        return this;
+        return this.whereIn(column, values, 'OR');
     }
 
     orWhereNotIn<K extends keyof T>(column: K | string, values: SqlValue[]): this {
-        this.whereIn(column, values, 'OR', true);
-
-        return this;
+        return this.whereIn(column, values, 'OR', true);
     }
 
     whereBetween(column: string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND', not = false): this {
@@ -179,21 +177,15 @@ export class Query<T = {}> {
     }
 
     whereNotBetween(column: string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND'): this {
-        this.whereBetween(column, values, boolean, true);
-
-        return this;
+        return this.whereBetween(column, values, boolean, true);
     }
 
     orWhereBetween(column: string, values: [SqlValue, SqlValue]): this {
-        this.whereBetween(column, values, 'OR');
-
-        return this;
+        return this.whereBetween(column, values, 'OR');
     }
 
     orWhereNotBetween(column: string, values: [SqlValue, SqlValue]): this {
-        this.whereBetween(column, values, 'OR', true);
-
-        return this;
+        return this.whereBetween(column, values, 'OR', true);
     }
 
     whereNull(column: string, boolean: Boolean = 'AND', not = false): this {
@@ -203,21 +195,15 @@ export class Query<T = {}> {
     }
 
     whereNotNull(column: string, boolean: Boolean = 'AND'): this {
-        this.whereNull(column, boolean, true);
-
-        return this;
+        return this.whereNull(column, boolean, true);
     }
 
     orWhereNull(column: string): this {
-        this.whereNull(column, 'OR');
-
-        return this;
+        return this.whereNull(column, 'OR');
     }
 
     orWhereNotNull(column: string): this {
-        this.whereNull(column, 'OR', true);
-
-        return this;
+        return this.whereNull(column, 'OR', true);
     }
 
     distinct(value = true) {
@@ -261,7 +247,7 @@ export class Query<T = {}> {
         this.components.aggregate = ['MAX', column];
     }
 
-    async insert(data: SqlValueMap | [SqlValueMap, ...SqlValueMap[]]) {
+    async insert(data: SqlValueMap | SqlValueMap[]) {
         this.statementType = Insert;
 
         if (!Array.isArray(data)) {

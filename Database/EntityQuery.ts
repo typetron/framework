@@ -24,7 +24,9 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         await this.eagerLoad.forEachAsync(async (field) => {
             const relation = this.metadata.columns[field as keyof EntityMetadata] as Relation<T, Entity>;
             const results = await relation.getResults(entities);
-            entities = relation.match(entities, results);
+            if (results.length) {
+                entities = relation.match(entities, results);
+            }
         });
         return entities;
     }

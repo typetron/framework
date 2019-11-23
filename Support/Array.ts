@@ -9,6 +9,8 @@ declare global {
 
         pluck<K extends keyof T>(this: T[], key: K): T[K][];
 
+        pluck<U>(this: T[], key: (value: T, index: number, array: T[]) => U): U[];
+
         mapAsync<U>(callback: (value: T, index: number, array: T[]) => Promise<U>, thisArg?: this): Promise<U[]>;
 
         forEachAsync(callback: (value: T, index: number, array: T[]) => void, thisArg?: this): Promise<void>;
@@ -24,6 +26,8 @@ declare global {
         whereIn<K extends keyof T>(this: T[], property: K, value: T[K][]): T[];
 
         groupBy<K extends keyof T>(this: T[], key: K): { [key in K]: T[] };
+
+        unique<K extends keyof T>(this: T[], key?: K | ((item: T, index: number) => unknown)): T[];
     }
 }
 
@@ -43,8 +47,15 @@ Array.prototype.findWhere = function (property, value) {
     return this.find(item => item[property] === value);
 };
 
-Array.prototype.pluck = function (key) {
-    return this.map(item => item[key]);
+Array.prototype.pluck = function <T, K extends keyof T, U>(key: K | ((value: T, index: number, array: T[]) => U)) {
+    let callback;
+    if (key instanceof Function) {
+        callback = key;
+    } else {
+        // @ts-ignore TODO find a way to remove this @ts-ignore
+        callback = item => item[key];
+    }
+    return this.map(callback);
 };
 
 Array.prototype.remove = function (item) {
@@ -65,18 +76,14 @@ Array.prototype.whereIn = function (property, values) {
 };
 
 Array.prototype.first = function (defaultValue = undefined) {
-    for (const index in this) {
-        if (this[index] !== undefined) {
-            return this[index];
-        }
-    }
-    return defaultValue;
+    const [first] = this;
+    return first || defaultValue;
 };
 
 Array.prototype.groupBy = function (key) {
-    return this.reduce(function (rv, x) {
-        (rv[x[key]] = rv[x[key]] || []).push(x);
-        return rv;
+    return this.reduce(function (accumulator, item) {
+        (accumulator[item[key]] = accumulator[item[key]] || []).push(item);
+        return accumulator;
     }, {});
 };
 
@@ -92,4 +99,26 @@ Array.prototype.mapAsync = async function (callback, thisArg) {
         promises.push(callback.call(thisArg, this[index], index, this));
     }
     return Promise.all(promises);
+};
+
+Array.prototype.unique = function <T, K extends keyof T>(key?: K | ((item: T, index: number) => unknown)): T[] {
+    if (!key) {
+        return [...new Set(this)];
+    }
+
+    let callback: (item: T, index: number, list: T[]) => unknown;
+    if (typeof key === 'function') {
+        callback = key;
+    } else {
+        callback = (item) => item[key];
+    }
+
+    const exists = new Set;
+    return this.filter((item, index) => {
+        let id: unknown;
+        if (!exists.has(id = callback(item, index, this))) {
+            exists.add(id);
+            return true;
+        }
+    });
 };

@@ -20,9 +20,6 @@ export class Route {
         const controller = container.get(this.controller) as Controller;
         const action: Function = controller[this.action as keyof Controller];
 
-        // console.log("step3 ->", Reflect.getMetadata("design:type", controller, action.name));
-        // console.log("step4 ->", Reflect.getMetadata("design:paramtypes", controller, action.name));
-        // console.log('step5 ->', Reflect.getMetadata('design:returntype', controller, action.name));
         const metadata = Reflect.getMetadata(InjectableMetadata.KEY, controller, action.name) || InjectableMetadata.DEFAULT();
         let parameters = Reflect.getMetadata('design:paramtypes', controller, action.name);
         parameters = await this.resolveParameters(parameters, metadata, container);
