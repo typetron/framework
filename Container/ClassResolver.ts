@@ -17,13 +17,13 @@ export class ClassResolver extends BaseResolver {
                 return parametersValues[index];
             }
             if (parameterType.name === 'Object') {
-                parameterType = (parametersValues[index] as Constructor) || this.getParameterValue(abstract, index);
+                parameterType = (parametersValues[index] as Constructor); // || this.getParameterValue(abstract, index);
             }
             return this.container.get(parameterType);
         });
         const instance = new abstract(...parameters);
 
-        const metadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, abstract) || InjectableMetadata.DEFAULT();
+        const metadata = InjectableMetadata.get(abstract);
         Object.keys(metadata.dependencies).forEach(dependency => {
             instance[dependency as keyof T] = this.container.get(metadata.dependencies[dependency]) as T[keyof T];
         });
@@ -31,23 +31,24 @@ export class ClassResolver extends BaseResolver {
         return instance;
     }
 
-    private getParameterValue<T>(abstract: Constructor<T>, index: number) {
-        const injectMetadata = Reflect.getMetadata('container:inject', abstract);
-        if (!injectMetadata) {
-            throw new Error(`No binding found for parameter ${index} in '${abstract.name}'`);
-        }
-        const value = injectMetadata.find((metadata: any) => metadata.index === index);
-        return value.abstract;
-    }
+    // TODO figure out how to use this better
+    // private getParameterValue<T>(abstract: Constructor<T>, index: number) {
+    //     const injectMetadata = Reflect.getMetadata('container:inject', abstract);
+    //     if (!injectMetadata) {
+    //         throw new Error(`No binding found for parameter ${index} in '${abstract.name}'`);
+    //     }
+    //     const value = injectMetadata.find((metadata: any) => metadata.index === index);
+    //     return value.abstract;
+    // }
 
-    reload<T>(abstract: Constructor<T>, concrete: T, container: Container = this.container): Promise<T> | T {
-        const metadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, abstract) || InjectableMetadata.DEFAULT();
+    reload<T>(abstract: Constructor<T>, concrete: T, container: Container = this.container): T {
+        const metadata = InjectableMetadata.get(abstract);
         for (const dependencyName in metadata.dependencies) {
             if (!metadata.dependencies[dependencyName]) {
                 continue;
             }
             const dependency = metadata.dependencies[dependencyName];
-            const dependencyMetadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, dependency) || InjectableMetadata.DEFAULT();
+            const dependencyMetadata = InjectableMetadata.get(dependency);
             if (dependencyMetadata.scope === Scope.REQUEST) {
                 concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T];
             }

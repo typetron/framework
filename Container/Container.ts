@@ -2,7 +2,7 @@ import { Constructor, Type } from '../Support';
 import { ClassResolver } from './ClassResolver';
 import { ServiceIdentifier } from './Contracts';
 import { InjectableMetadata, Scope } from './Metadata';
-import { BaseResolver, Resolver } from './Resolver';
+import { Resolver } from './Resolver';
 
 export class Container {
     protected static instance: Container;
@@ -73,9 +73,9 @@ export class Container {
 
     private getMetadata<T>(abstract: ServiceIdentifier<T>) {
         if (abstract instanceof Object) {
-            return Reflect.getMetadata(InjectableMetadata.KEY, abstract) || InjectableMetadata.DEFAULT();
+            return InjectableMetadata.get(abstract);
         }
-        return InjectableMetadata.DEFAULT();
+        return new InjectableMetadata;
     }
 
     private getAbstractName<T>(abstract: ServiceIdentifier<T>): string {
@@ -101,9 +101,9 @@ export class Container {
         return resolver;
     }
 
-    private setResolverForAbstract<T>(abstract: ServiceIdentifier<T>, resolver: BaseResolver, metadata: InjectableMetadata) {
+    private setResolverForAbstract<T>(abstract: ServiceIdentifier<T>, resolver: Resolver, metadata: InjectableMetadata) {
         metadata.resolver = resolver;
-        Reflect.defineMetadata(InjectableMetadata.KEY, metadata, abstract);
+        InjectableMetadata.set(metadata, abstract);
     }
 
     private getInstance<T>(abstract: ServiceIdentifier<T>): T | undefined {

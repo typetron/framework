@@ -2,6 +2,7 @@ import { IncomingHttpHeaders, IncomingMessage } from 'http';
 import * as Url from 'url';
 import { Http } from '.';
 import { Parameters } from './Contracts';
+import * as querystring from 'querystring';
 import { ParsedUrlQuery } from 'querystring';
 
 export class Request {
@@ -60,14 +61,14 @@ export class Request {
     }
 
     static async capture(message: IncomingMessage): Promise<Request> {
-        const url = Url.parse(message.url || '', true);
+        const url = Url.parse(message.url || '');
 
         return new this(
             url.pathname || '',
             message.method as Http.Method || Http.Method.GET,
-            url.query,
+            url.query ? querystring.parse(url.query) : {},
             {}, // message.headers.cookie.split(';')
-            message.headers || {},
+            message.headers,
             message.method === Http.Method.GET ? undefined : await Request.loadContent(message)
         );
     }

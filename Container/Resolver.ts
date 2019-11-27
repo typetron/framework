@@ -8,7 +8,7 @@ export interface Resolver {
 
     resolve<T>(abstract: ServiceIdentifier<T>, parameters: object[]): T | Promise<T>;
 
-    reload<T>(abstract: ServiceIdentifier<T>, concrete: T, container?: Container): T | Promise<T>;
+    reload<T>(abstract: ServiceIdentifier<T>, concrete: T, container?: Container): T;
 }
 
 export abstract class BaseResolver implements Resolver {
@@ -21,7 +21,7 @@ export abstract class BaseResolver implements Resolver {
     /**
      * Used to update the dependencies that have the REQUEST scope
      */
-    reload<T>(abstract: ServiceIdentifier<T>, concrete: T, container?: Container): T | Promise<T> {
+    reload<T>(abstract: ServiceIdentifier<T>, concrete: T, container?: Container): T {
         return concrete;
     }
 }

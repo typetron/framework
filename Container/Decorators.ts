@@ -3,18 +3,18 @@ import { InjectableMetadata, Scope } from './Metadata';
 
 export function Injectable(scope: Scope = Scope.SINGLETON) {
     return function <T extends Function>(target: T) {
-        const metadata = Reflect.getMetadata(InjectableMetadata.KEY, target) || InjectableMetadata.DEFAULT();
+        const metadata = InjectableMetadata.get(target);
         metadata.scope = scope;
-        Reflect.defineMetadata(InjectableMetadata.KEY, metadata, target);
+        InjectableMetadata.set(metadata, target);
     };
 }
 
 export function Inject<T extends Object>(abstract?: ServiceIdentifier<T>) {
     return function (target: T, targetKey: string, index?: number) {
         const fieldType = Reflect.getMetadata('design:type', target, targetKey) as ServiceIdentifier<T>;
-        const metadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, target.constructor) || InjectableMetadata.DEFAULT();
+        const metadata = InjectableMetadata.get(target.constructor);
         metadata.dependencies[targetKey] = fieldType;
-        Reflect.defineMetadata(InjectableMetadata.KEY, metadata, target.constructor);
+        InjectableMetadata.set(metadata, target.constructor);
     };
 }
 

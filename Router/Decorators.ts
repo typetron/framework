@@ -5,6 +5,7 @@ import { Controller as BaseController } from './Controller';
 import { Http, Request } from '../Http';
 import { MiddlewareInterface } from './Middleware';
 import { InjectableMetadata } from '../Container';
+import { ParametersTypesMetadata } from '../Support/Metadata';
 
 class ControllerOptions {
     path?: string;
@@ -58,36 +59,40 @@ export function Controller(path = '', options = new ControllerOptions) {
 
 export function Get(path = '', name?: string) {
     return (target: Object, action: string, descriptor: PropertyDescriptor) => {
+        ParametersTypesMetadata.set(Reflect.getMetadata('design:paramtypes', target, action), target[action as keyof Object]);
         App.get(Router).add(path, Http.Method.GET, target.constructor as typeof BaseController, action, name);
     };
 }
 
 export function Post(path: string = '', name?: string) {
     return (target: Object, action: string, descriptor: PropertyDescriptor) => {
+        ParametersTypesMetadata.set(Reflect.getMetadata('design:paramtypes', target, action), target[action as keyof Object]);
         App.get(Router).add(path, Http.Method.POST, target.constructor as typeof BaseController, action, name);
     };
 }
 
 export function Put(path: string = '', name?: string) {
     return (target: Object, action: string, descriptor: PropertyDescriptor) => {
+        ParametersTypesMetadata.set(Reflect.getMetadata('design:paramtypes', target, action), target[action as keyof Object]);
         App.get(Router).add(path, Http.Method.PUT, target.constructor as typeof BaseController, action, name);
     };
 }
 
 export function Delete(path: string = '', name?: string) {
     return (target: Object, action: string, descriptor: PropertyDescriptor) => {
+        ParametersTypesMetadata.set(Reflect.getMetadata('design:paramtypes', target, action), target[action as keyof Object]);
         App.get(Router).add(path, Http.Method.DELETE, target.constructor as typeof BaseController, action, name);
     };
 }
 
 export function Query(newParameterKey: string) {
     return function (target: Object, originalParameterKey: string, parameterIndex: number) {
-        const metadata = Reflect.getMetadata(InjectableMetadata.KEY, target, originalParameterKey) || InjectableMetadata.DEFAULT();
+        const metadata = InjectableMetadata.get(target[originalParameterKey as keyof Object]);
 
-        metadata[parameterIndex] = function (request: Request) {
+        metadata.overrides[parameterIndex] = function (request: Request) {
             return request.query[newParameterKey];
         };
 
-        Reflect.defineMetadata(InjectableMetadata.KEY, metadata, target, originalParameterKey);
+        InjectableMetadata.set(metadata, target[originalParameterKey as keyof Object]);
     };
 }

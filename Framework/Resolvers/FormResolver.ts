@@ -28,8 +28,9 @@ export class FormResolver extends BaseResolver {
     }
 
     private setFormScopeToRequest() {
-        const metadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, Form) || InjectableMetadata.DEFAULT();
+        const metadata = InjectableMetadata.get(Form);
+
         metadata.scope = Scope.REQUEST;
-        Reflect.defineMetadata(InjectableMetadata.KEY, metadata, Form);
+        InjectableMetadata.set(metadata, Form);
     }
 }

@@ -44,15 +44,14 @@ export class Response {
                 });
                 response.headers['Content-Type'] = contentType;
             }
-            rawContent = String(content || '');
+            rawContent = content || '';
         } else {
             rawContent = content;
         }
 
-        Object.keys(response.headers).forEach((header) => {
-            const value = response.headers[header] as string;
-            serverResponse.setHeader(header, value);
-        });
+        for (const header in response.headers) {
+            serverResponse.setHeader(header, response.headers[header] || '');
+        }
 
         serverResponse.statusCode = response.status;
         serverResponse.end(rawContent);

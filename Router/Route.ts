@@ -1,8 +1,8 @@
-import { Container } from '../Container';
+import { Container, InjectableMetadata } from '../Container';
 import { Type } from '../Support';
 import { Controller } from './Controller';
 import { Request, Response } from '../Http';
-import { InjectableMetadata } from '../Container/Metadata';
+import { ParametersTypesMetadata } from '../Support/Metadata';
 
 export class Route {
     parameters: {[key: string]: string} = {};
@@ -20,8 +20,8 @@ export class Route {
         const controller = container.get(this.controller) as Controller;
         const action: Function = controller[this.action as keyof Controller];
 
-        const metadata = Reflect.getMetadata(InjectableMetadata.KEY, controller, action.name) || InjectableMetadata.DEFAULT();
-        let parameters = Reflect.getMetadata('design:paramtypes', controller, action.name);
+        const metadata = InjectableMetadata.get(controller[action.name as keyof Controller]);
+        let parameters = ParametersTypesMetadata.get(controller[action.name as keyof Controller]) as Type<Function>[];
         parameters = await this.resolveParameters(parameters, metadata, container);
         return action.apply(controller, parameters);
     }
@@ -66,11 +66,11 @@ export class Route {
         });
     }
 
-    private async resolveParameters(parameters: Type<Function>[], newValues: ((...args: object[]) => string | number) [], container: Container) {
+    private async resolveParameters(parameters: Type<Function>[], metadata: InjectableMetadata, container: Container) {
         let parameterIndex = 0;
         const routeParameters = Object.values(this.parameters);
         return parameters.mapAsync(async (parameter, index) => {
-            const newValueFunction = newValues[index];
+            const newValueFunction = metadata.overrides[index];
             if (newValueFunction) {
                 return newValueFunction.call(undefined, container.get(Request));
             }

@@ -31,16 +31,16 @@ export class Router {
 
         container.set(Request, request);
 
-        let stack: RequestHandler = async (request2: Request) => {
-            const route = this.getRoute(request2.uri || '', request2.method);
+        let stack: RequestHandler = async () => {
+            const route = this.getRoute(request.uri || '', request.method);
             if (!route) {
                 return new Response(Http.Status.NOT_FOUND);
             }
-            request2.parameters = route.parameters;
+            request.parameters = route.parameters;
 
             container.set(Route, route);
 
-            const content = await route.run(request2, container);
+            const content = await route.run(request, container);
 
             if (content instanceof Response) {
                 return content;

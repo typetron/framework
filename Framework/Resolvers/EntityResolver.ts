@@ -29,8 +29,8 @@ export class EntityResolver extends BaseResolver {
     }
 
     private setEntityScopeToRequest() {
-        const metadata: InjectableMetadata = Reflect.getMetadata(InjectableMetadata.KEY, Entity) || InjectableMetadata.DEFAULT();
+        const metadata = InjectableMetadata.get(Entity);
         metadata.scope = Scope.REQUEST;
-        Reflect.defineMetadata(InjectableMetadata.KEY, metadata, Entity);
+        InjectableMetadata.set(metadata, Entity);
     }
 }
