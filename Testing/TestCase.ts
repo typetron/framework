@@ -20,7 +20,7 @@ export abstract class TestCase {
     }
 
     post(routeName: string, content = {}, headers: IncomingHttpHeaders = {}) {
-        return this.request(Http.Method.GET, routeName, content, headers);
+        return this.request(Http.Method.POST, routeName, content, headers);
     }
 
     private async request(method: Http.Method, routeName: string, content = {}, headers: IncomingHttpHeaders = {}) {

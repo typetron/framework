@@ -16,7 +16,7 @@ export class ClassResolver extends BaseResolver {
             if (parametersValues[index]) {
                 return parametersValues[index];
             }
-            if (parameterType.name === 'Object') {
+            if (parameterType.name === 'Object' && parametersValues[index]) {
                 parameterType = (parametersValues[index] as Constructor); // || this.getParameterValue(abstract, index);
             }
             return this.container.get(parameterType);
