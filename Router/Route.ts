@@ -1,28 +1,31 @@
-import { Container, InjectableMetadata } from '../Container';
-import { Type } from '../Support';
+import { Container } from '../Container';
+import { Abstract, Type } from '../Support';
 import { Controller } from './Controller';
 import { Request, Response } from '../Http';
-import { ParametersTypesMetadata } from '../Support/Metadata';
+import { MiddlewareInterface } from './Middleware';
+import { ControllerMetadata } from './Metadata';
 
 export class Route {
     parameters: {[key: string]: string} = {};
+
     private readonly uriParts: {name: string, type: 'part' | 'parameter'}[] = [];
 
     constructor(public uri: string,
         public method: string,
         public controller: typeof Controller,
         public action: string,
-        public name = ''
+        public name = '',
+        public middleware: Abstract<MiddlewareInterface>[] = []
     ) {
+        this.setUriParts();
     }
 
     async run(request: Request, container: Container): Promise<Object | String | Response> {
         const controller = container.get(this.controller) as Controller;
         const action: Function = controller[this.action as keyof Controller];
 
-        const metadata = InjectableMetadata.get(controller[action.name as keyof Controller]);
-        let parameters = ParametersTypesMetadata.get(controller[action.name as keyof Controller]) as Type<Function>[];
-        parameters = await this.resolveParameters(parameters, metadata, container);
+        const metadata = ControllerMetadata.get(this.controller).routes[this.action];
+        const parameters = await this.resolveParameters(metadata.parametersTypes, metadata.parametersOverrides, container);
         return action.apply(controller, parameters);
     }
 
@@ -66,11 +69,11 @@ export class Route {
         });
     }
 
-    private async resolveParameters(parameters: Type<Function>[], metadata: InjectableMetadata, container: Container) {
+    private async resolveParameters(parameters: Type<Function>[], overrides: Function[], container: Container) {
         let parameterIndex = 0;
         const routeParameters = Object.values(this.parameters);
         return parameters.mapAsync(async (parameter, index) => {
-            const newValueFunction = metadata.overrides[index];
+            const newValueFunction = overrides[index];
             if (newValueFunction) {
                 return newValueFunction.call(undefined, container.get(Request));
             }

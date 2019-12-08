@@ -55,7 +55,7 @@ export type ID = number;
 
 export function OneToMany<T extends Entity, R extends Entity>(type: () => EntityConstructor<R>, inverseBy: KeysOfType<R, Entity>, column?: string) {
     return function (parent: T, property: string) {
-        const field = new OneToManyField(parent.constructor as EntityConstructor<Entity>, property, type, inverseBy as string, 'one_to_many_has_no_column');
+        const field = new OneToManyField(parent.constructor as EntityConstructor<Entity>, property, type, inverseBy as string);
         setEntityMetadata(parent, field);
     };
 }

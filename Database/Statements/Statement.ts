@@ -48,7 +48,11 @@ export abstract class Statement implements ToSql {
     }
 
     get orders() {
-        return '';
+        if (!this.components.orders?.length) {
+            return '';
+        }
+
+        return 'ORDER BY ' + this.components.orders.map(order => `${order[0]} ${order[1]}`).join(' ');
     }
 
     abstract toSql(): string;

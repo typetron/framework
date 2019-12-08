@@ -34,8 +34,8 @@ export abstract class Relation<T extends Entity, R extends Entity> extends Colum
 }
 
 export class OneToManyField<T extends Entity, R extends Entity> extends Relation<T, R> {
-    constructor(parent: EntityConstructor<T>, property: string, type: () => EntityConstructor<R>, public inverseBy: string, column: string) {
-        super(parent, property, type, column);
+    constructor(parent: EntityConstructor<T>, property: string, type: () => EntityConstructor<R>, public inverseBy: string) {
+        super(parent, property, type, '');
     }
 
     async getResults(relatedEntities: R[]) {
@@ -53,6 +53,7 @@ export class OneToManyField<T extends Entity, R extends Entity> extends Relation
         });
         return entities;
     }
+
 }
 
 export class ManyToOneField<T extends Entity, R extends Entity> extends Relation<T, R> {

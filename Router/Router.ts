@@ -18,43 +18,53 @@ export class Router {
     @Inject()
     errorHandler: ErrorHandlerInterface;
 
-    public routes: Route[] = [];
-    middleware: Abstract<MiddlewareInterface>[];
+    routes: Route[] = [];
 
-    add(uri: string, method: Http.Method, controller: typeof Controller, action: string, name: string = action) {
+    middleware: Abstract<MiddlewareInterface>[] = [];
+
+    add(uri: string, method: Http.Method, controller: typeof Controller, action: string, name: string = action, middleware: Abstract<MiddlewareInterface>[] = []) {
         uri = this.prepareUri(uri);
-        this.routes.push(new Route(uri, method, controller, action, name));
+        this.routes.push(new Route(uri, method, controller, action, name, middleware));
     }
 
     async handle(app: Application, request: Request): Promise<Response> {
         const container = app.createChildContainer();
 
         container.set(Request, request);
+        const route = this.getRoute(request.uri || '', request.method);
+        container.set(Route, route);
 
         let stack: RequestHandler = async () => {
-            const route = this.getRoute(request.uri || '', request.method);
             if (!route) {
                 return new Response(Http.Status.NOT_FOUND);
             }
             request.parameters = route.parameters;
 
-            container.set(Route, route);
+            let routeStack: RequestHandler = async () => {
+                const content = await route.run(request, container);
 
-            const content = await route.run(request, container);
+                if (content instanceof Response) {
+                    return content;
+                }
 
-            if (content instanceof Response) {
-                return content;
+                return Response.ok(content);
+            };
+
+            for (let index = route.middleware.length - 1; index >= 0; index--) {
+                const middleware = container.get(route.middleware[index]);
+
+                routeStack = middleware.handle.bind(middleware, request, routeStack);
             }
 
-            return Response.ok(content);
+            return routeStack(request);
         };
 
         for (let index = this.middleware.length - 1; index >= 0; index--) {
             const middleware = container.get(this.middleware[index]);
 
             stack = middleware.handle.bind(middleware, request, stack);
-
         }
+
         return stack(request);
     }
 

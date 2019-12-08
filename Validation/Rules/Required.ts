@@ -9,5 +9,4 @@ export class Required extends Rule {
     message(attribute: string): string {
         return `The field '${attribute}' is required`;
     }
-
 }

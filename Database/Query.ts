@@ -230,11 +230,11 @@ export class Query<T = {}> {
         return this.join(table, first, operator, second, JoinType.RIGHT);
     }
 
-    orderBy(column: string | [string, Direction][], direction: Direction = 'ASC') {
+    orderBy<K extends keyof T>(column: K | [string | K, Direction][], direction: Direction = 'ASC') {
         if (typeof column === 'string') {
             column = [[column, direction]];
         }
-        this.components.orders = column;
+        this.components.orders = column as [string, Direction][];
 
         return this;
     }

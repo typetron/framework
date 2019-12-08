@@ -138,8 +138,9 @@ export abstract class Entity {
             await query.insert(data);
             const id = await EntityQuery.lastInsertedId();
             this.fill({id});
-            await this.syncRelationships(manyToManyRelationships);
         }
+
+        await this.syncRelationships(manyToManyRelationships);
 
         return this;
     }

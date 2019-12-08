@@ -13,5 +13,4 @@ export class InjectableMetadata extends MetadataKey('injectable') {
 
     scope: Scope = Scope.SINGLETON;
     dependencies: {[key: string]: ServiceIdentifier<{}>} = {};
-    overrides: Function[] = [];
 }

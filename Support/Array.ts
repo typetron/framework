@@ -103,7 +103,7 @@ Array.prototype.mapAsync = async function (callback, thisArg) {
 
 Array.prototype.unique = function <T, K extends keyof T>(key?: K | ((item: T, index: number) => unknown)): T[] {
     if (!key) {
-        return [...new Set(this)];
+        return [...new Set(this)] as T[];
     }
 
     let callback: (item: T, index: number, list: T[]) => unknown;
