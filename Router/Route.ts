@@ -36,7 +36,7 @@ export class Route {
             if (!this.uriParts[i]) {
                 return false;
             }
-            if (this.uriParts[i].type === 'parameter') {
+            if (this.uriParts[i].type === 'parameter' && uriParts[i]) {
                 this.parameters[this.uriParts[i].name] = uriParts[i];
                 continue;
             }

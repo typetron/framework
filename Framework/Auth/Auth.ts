@@ -27,7 +27,6 @@ export class Auth {
     }
 
     async login(username: string, password: string): Promise<string> {
-        const encryptedPassword = await Bcrypt.hash(password, this.authConfig.saltRounds);
         const user = await this.authenticable.where('email', username).first();
         if (!user || !await Bcrypt.compare(password, user.password)) {
             throw new Error('Invalid credentials');

@@ -170,6 +170,14 @@ export class Query<T = {}> {
         return this.whereIn(column, values, 'OR', true);
     }
 
+    orWhereLike<K extends keyof T>(column: K | string, value: SqlValue, not = false): this {
+        return this.whereLike(column, value, 'OR', not);
+    }
+
+    orWhereNotLike<K extends keyof T>(column: K | string, value: SqlValue): this {
+        return this.whereLike(column, value, 'OR', true);
+    }
+
     whereBetween(column: string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND', not = false): this {
         this.components.wheres.push(new WhereBetween(column, values, boolean, not));
 

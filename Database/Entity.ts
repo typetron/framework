@@ -4,7 +4,7 @@ import { ChildObject, KeysOfType } from '../Support';
 import { EntityMetadata, EntityMetadataKey } from './Decorators';
 import { EntityNotFoundError } from './EntityNotFoundError';
 import { ColumnField, ManyToManyField } from './Fields';
-import { Boolean, Operator, SqlValue, SqlValueMap, WhereValue } from './Types';
+import { Boolean, Direction, Operator, SqlValue, SqlValueMap, WhereValue } from './Types';
 import { EntityConstructor, EntityKeys } from './index';
 import { Query } from './Query';
 
@@ -42,6 +42,10 @@ export abstract class Entity {
 
     static whereLike<T extends Entity, K extends EntityKeys<T>>(this: EntityConstructor<T>, column: EntityKeys<T>, value?: WhereValue | T[K], boolean?: Boolean): EntityQuery<T> {
         return this.newQuery().whereLike(column, value as WhereValue, boolean);
+    }
+
+    static orderBy<T extends Entity, K extends EntityKeys<T>>(this: EntityConstructor<T>, column: EntityKeys<T>, direction?: Direction): EntityQuery<T> {
+        return this.newQuery().orderBy(column, direction);
     }
 
     static getTable<T extends Entity>(this: EntityConstructor<T>): string {

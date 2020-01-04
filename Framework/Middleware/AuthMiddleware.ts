@@ -17,8 +17,8 @@ export class AuthMiddleware implements MiddlewareInterface {
             this.auth.verify(token);
             return next(request);
         } catch (error) {
-            if (error instanceof jwt.TokenExpiredError) {
-                throw new HttpError('You must be logged in to make this request', Http.Status.UNAUTHORIZED);
+            if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
+                throw new HttpError('You must be authenticated to make this request.', Http.Status.UNAUTHORIZED);
             }
             throw new HttpError(error.message, Http.Status.BAD_REQUEST);
         }
