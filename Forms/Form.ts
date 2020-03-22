@@ -1,38 +1,36 @@
-import { FormField, FormMetadataKey } from './Decorators';
-import { RuleInterface, RuleValue } from '../Validation';
-import { ChildObject, Constructor } from '../Support';
-import { Rule } from '../Validation/Rule';
+import { FormMetadataKey } from './Decorators';
+import { RuleValue } from '../Validation';
+import { ChildKeys, ChildObject, Constructor } from '../Support';
+import { FormField } from './FormFields';
 
 export type FormFields<T> = ChildObject<T, Form>;
 
 export abstract class Form {
 
-    readonly errors: {[key: string]: string[]} = {};
+    readonly errors: {[key: string]: Record<string, string>} = {};
 
-    get fields(): { [key in keyof FormFields<this>]: FormField } {
-        return Reflect.getMetadata(FormMetadataKey, this.constructor);
+    static fields<T extends Form>(this: Constructor<T>): Record<ChildKeys<T, Form>, FormField> {
+        return Reflect.getMetadata(FormMetadataKey, this);
+    }
+
+    fields() {
+        return (this.constructor as (Constructor<Form> & typeof Form)).fields();
     }
 
     valid() {
-        const fields = Object.values(this.fields) as FormField[];
+        const fields = Object.values(this.fields()) as FormField[];
         fields.forEach(field => {
-            field.rules.forEach(rule => {
-                if (!(rule instanceof Rule)) {
-                    rule = new (rule as Constructor<RuleInterface>);
-                }
-                if (!rule.passes(field.name, this[field.name as keyof FormFields<this>])) {
-                    const fieldErrors = this.errors[field.name] || [];
-                    fieldErrors.push(rule.message(field.name, this[field.name as keyof FormFields<this>]));
-                    this.errors[field.name] = fieldErrors;
-                }
-            });
+            const errors = field.validate(this[field.name as keyof FormFields<this>]);
+            if (errors) {
+                this.errors[field.name] = errors;
+            }
         });
 
         return !Object.keys(this.errors).length;
     }
 
     validated() {
-        const fields = Object.values(this.fields) as FormField[];
+        const fields = Object.values(this.fields()) as FormField[];
         return fields.filter(field => !this.errors[field.name])
             .reduce((obj, field) => {
                 const value = this[field.name as keyof this];
@@ -44,7 +42,7 @@ export abstract class Form {
     }
 
     fill(data: FormFields<this>) {
-        const fields = Object.values(this.fields) as FormField[];
+        const fields = Object.values(this.fields()) as FormField[];
         fields.forEach(field => {
             // @ts-ignore
             this[field.name as keyof FormFields<this>] = data[field.name as keyof FormFields<this>];

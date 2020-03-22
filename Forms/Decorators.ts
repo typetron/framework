@@ -1,21 +1,13 @@
 import { RuleInterface } from '../Validation';
 import { Type } from '../Support';
+import { FormField } from './FormFields';
 
 export const FormMetadataKey = 'form:fields';
-
-export interface FormField {
-    name: string;
-    rules: (Type<RuleInterface> | RuleInterface) [];
-}
 
 export function Field<T>(name?: string) {
     return function (target: Object, property: string) {
         const fields: {[key: string]: FormField} = Reflect.getMetadata(FormMetadataKey, target.constructor) || {};
-        const emptyField: FormField = {
-            name: '',
-            rules: []
-        };
-        const field = fields[property] || emptyField;
+        const field = fields[property] || new FormField(name || property);
         field.name = name || property;
         fields[property] = field;
         Reflect.defineMetadata(FormMetadataKey, fields, target.constructor);
@@ -25,11 +17,7 @@ export function Field<T>(name?: string) {
 export function Rules(...rules: (Type<RuleInterface> | RuleInterface)[]) {
     return function (target: Object, property: string) {
         const fields: {[key: string]: FormField} = Reflect.getMetadata(FormMetadataKey, target.constructor) || {};
-        const emptyField: FormField = {
-            name: '',
-            rules: []
-        };
-        const field = fields[property] || emptyField;
+        const field = fields[property] || new FormField('');
         field.rules = rules;
         fields[property] = field;
         Reflect.defineMetadata(FormMetadataKey, fields, target.constructor);
