@@ -4,6 +4,8 @@ import { Http } from '.';
 import { Parameters } from './Contracts';
 import * as querystring from 'querystring';
 import { ParsedUrlQuery } from 'querystring';
+import { File } from '../Storage';
+import { File as FormidableFile, IncomingForm } from 'formidable';
 
 export class Request {
     public parameters: {[key: string]: string} = {};
@@ -13,8 +15,9 @@ export class Request {
         public query: ParsedUrlQuery = {},
         public cookies: Parameters = {},
         public headers: IncomingHttpHeaders = {},
-        public content: string | object = {}) {
-    }
+        public content: string | object | undefined = {},
+        public files: Record<string, File | File[]> = {},
+    ) {}
 
     // get headers() {
     //     return this.request.headers;
@@ -40,7 +43,33 @@ export class Request {
     //     this.request.emit(event);
     // }
 
-    static async loadContent(incomingMessage: IncomingMessage): Promise<string | object | undefined> {
+    static async loadMultipartContent(incomingMessage: IncomingMessage): Promise<[string | object, Record<string, File | File[]>]> {
+        return new Promise((resolve, reject) => {
+            const form = new IncomingForm();
+            form.multiples = true;
+            form.keepExtensions = true;
+            form.parse(incomingMessage, (error, content, formidableFiles) => {
+                if (error) {
+                    return reject(error);
+                }
+                const files: Record<string, File | File[]> = {};
+
+                Object.keys(formidableFiles).forEach(key => {
+                    const formidableFile = formidableFiles[key] as FormidableFile | FormidableFile[];
+                    if (formidableFile instanceof Array) {
+                        files[key] = formidableFile.map(item => {
+                            return this.formidableToFile(item, form.uploadDir);
+                        });
+                    } else {
+                        files[key] = this.formidableToFile(formidableFile, form.uploadDir);
+                    }
+                });
+                resolve([content, files]);
+            });
+        });
+    }
+
+    static async loadSimpleContent(incomingMessage: IncomingMessage): Promise<string | object | undefined> {
         let rawData = '';
         incomingMessage.on('data', chunk => {
             rawData += chunk;
@@ -48,12 +77,16 @@ export class Request {
 
         return new Promise((resolve, reject) => {
             incomingMessage.on('end', async () => {
-                if (!rawData) {
-                    return resolve(undefined);
-                }
                 try {
-                    resolve(JSON.parse(rawData));
+                    if (this.isJSONRequest(incomingMessage)) {
+                        return resolve(JSON.parse(rawData));
+                    }
+
+                    resolve(rawData);
                 } catch (e) {
+                    if (e instanceof SyntaxError) {
+                        reject(e);
+                    }
                     resolve(rawData ? rawData : undefined);
                 }
             });
@@ -63,14 +96,39 @@ export class Request {
     static async capture(message: IncomingMessage): Promise<Request> {
         const url = Url.parse(message.url || '');
 
-        return new this(
+        const request = new this(
             url.pathname || '',
             message.method as Http.Method || Http.Method.GET,
             url.query ? querystring.parse(url.query) : {},
             {}, // message.headers.cookie.split(';')
             message.headers,
-            message.method === Http.Method.GET ? undefined : await Request.loadContent(message)
         );
+
+        if (request.method === Http.Method.POST) {
+            if (this.isMultipartRequest(message)) {
+                [request.content, request.files] = await Request.loadMultipartContent(message);
+            } else {
+                request.content = await Request.loadSimpleContent(message);
+            }
+        }
+
+        return request;
     }
 
+    private static formidableToFile(item: FormidableFile, directory: string) {
+        const fileInstance = new File(item.path.replace(directory, '').slice(1));
+
+        fileInstance.originalName = item.name;
+        fileInstance.directory = directory;
+        fileInstance.saved = true;
+        return fileInstance;
+    }
+
+    private static isJSONRequest(incomingMessage: IncomingMessage) {
+        return incomingMessage.headers['content-type']?.includes('application/json');
+    }
+
+    private static isMultipartRequest(message: IncomingMessage) {
+        return message.headers['content-type']?.includes('multipart/form-data');
+    }
 }

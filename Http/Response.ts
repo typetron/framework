@@ -32,19 +32,13 @@ export class Response {
 
     static send(response: Response, serverResponse: ServerResponse) {
         let content = response.content;
-        let rawContent: string | Buffer;
+        let rawContent: String | Buffer | undefined;
         if (!(content instanceof Buffer)) {
             if (content instanceof Object) {
-                const contentType = 'application/json';
-                content = JSON.stringify(content, (key, value) => {
-                    if (value && typeof value === 'object' && typeof value['toObject'] === 'function') {
-                        return value.toObject();
-                    }
-                    return value;
-                });
-                response.headers['Content-Type'] = contentType;
+                content = JSON.stringify(content);
+                response.headers['Content-Type'] = 'application/json';
             }
-            rawContent = content || '';
+            rawContent = content;
         } else {
             rawContent = content;
         }
