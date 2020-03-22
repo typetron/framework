@@ -2,7 +2,7 @@ import { Entity } from './Entity';
 import { EntityConstructor, EntityKeys, EntityMetadata } from './index';
 
 export interface ColumnInterface<T> {
-    value<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined;
+    value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined;
 
     relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined;
 }
@@ -10,8 +10,8 @@ export interface ColumnInterface<T> {
 export class ColumnField<T extends Entity> implements ColumnInterface<T> {
     constructor(public parent: EntityConstructor<T>, public property: string, public type: () => Function, public column: string) {}
 
-    value<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined {
-        return value;
+    value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined {
+        return entity[key as K];
     }
 
     relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined {
@@ -47,7 +47,9 @@ export class OneToManyField<T extends Entity, R extends Entity> extends Relation
     match(entities: T[], relatedEntities: R[]): T[] {
         entities.forEach(entity => {
             const inverseField = this.related.metadata.columns[this.inverseBy];
-            const relatedEntity = relatedEntities.filter(related => related.original[inverseField.column as keyof object] === entity[this.parent.getPrimaryKey()]);
+            const relatedEntity = relatedEntities.filter(
+                related => related.original[inverseField.column as keyof object] === entity[this.parent.getPrimaryKey()]
+            );
             // TODO fix these weird types. Get rid of `unknown`
             entity[this.property as keyof T] = relatedEntity as unknown as T[keyof T];
         });
@@ -57,11 +59,22 @@ export class OneToManyField<T extends Entity, R extends Entity> extends Relation
 }
 
 export class ManyToOneField<T extends Entity, R extends Entity> extends Relation<T, R> {
-    constructor(parent: EntityConstructor<T>, property: string, type: () => EntityConstructor<R>, public inverseBy: string, column: string) {
+    constructor(
+        parent: EntityConstructor<T>,
+        property: string,
+        type: () => EntityConstructor<R>,
+        public inverseBy: string,
+        column: string
+    ) {
         super(parent, property, type, column);
     }
 
-    value<K extends keyof T>(entity: T, value: T[K]) {
+    value<K extends keyof T>(entity: T, key: string) {
+        if (key === this.column) {
+            return new this.related({
+                [this.related.getPrimaryKey()]: entity[key as K]
+            }) as unknown as T[K]; // TODO get rid of `unknown`
+        }
         return entity[this.property as keyof T] as unknown as T[K];
     }
 
@@ -86,14 +99,27 @@ export class ManyToOneField<T extends Entity, R extends Entity> extends Relation
         return entities.map(entity => {
             // TODO fix these weird types. Get rid of `unknown`
             const value = (entity[this.column as keyof T] || entity.original[this.column]) as unknown as R[keyof R];
-            entity[this.property as keyof T] = relatedEntities.findWhere(this.related.getPrimaryKey() as keyof R, value) as unknown as T[keyof T];
+            const instance = relatedEntities.findWhere(this.related.getPrimaryKey() as keyof R, value);
+            entity[this.property as keyof T] = instance as unknown as T[keyof T];
             return entity;
         });
     }
 }
 
+// export class ManyToOneInverseField<T extends Entity, R extends Entity> extends Relation<T, R> {
+
+// }
+
 export class ManyToManyField<T extends Entity, R extends Entity> extends Relation<T, R> {
-    constructor(parent: EntityConstructor<T>, property: string, type: () => EntityConstructor<R>, public inverseBy: string, private table?: string, private parentKey?: string, private relatedKey?: string) {
+    constructor(
+        parent: EntityConstructor<T>,
+        property: string,
+        type: () => EntityConstructor<R>,
+        public inverseBy: string,
+        private table?: string,
+        private parentKey?: string,
+        private relatedKey?: string
+    ) {
         super(parent, property, type, '');
     }
 
@@ -136,8 +162,9 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
             // TODO fix these weird types. Get rid of `unknown`
+            const entityPrimaryKey = entity[this.parent.getPrimaryKey()];
             entity[this.property as keyof T] = relatedEntities
-                .filter(related => related.original.pivot[this.getParentForeignKey() as keyof object] === entity[this.parent.getPrimaryKey()]) as unknown as T[keyof T];
+                .filter(related => related.original.pivot[this.getParentForeignKey()] === entityPrimaryKey) as unknown as T[keyof T];
             return entity;
         });
     }
@@ -146,7 +173,8 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
         return this.table || [this.parent.getTable(), this.related.getTable()].sort().join('_');
     }
 
-    value<K extends keyof T>(entity: T, value: T[K]) {
+    value<K extends keyof T>(entity: T, key: string) {
+        const value = entity[key as K];
         if (value instanceof Array) {
             return value.map(related => {
                 if (related instanceof Entity) {

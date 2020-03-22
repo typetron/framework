@@ -28,9 +28,7 @@ export abstract class Statement implements ToSql {
 
     get limit() {
         const limit = this.components.limit;
-        return limit ?
-            `LIMIT ${limit.from}` + limit.count ? `, ${limit.count}` : ''
-            : '';
+        return limit ? `LIMIT ${limit.from}` + (limit.count ? `, ${limit.count}` : '') : '';
     }
 
     get joins() {

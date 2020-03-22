@@ -1,4 +1,5 @@
 import { Query } from './Query';
+import { Expression } from './Expression';
 
 export enum Operators {
     '=' = '=',
@@ -40,14 +41,14 @@ export interface BaseComponents {
 
 export interface SelectComponents extends BaseComponents {
     distinct?: boolean;
-    columns: string[];
+    columns: (string | Expression)[];
     aggregate?: [string, string | string[]];
     joins: JoinClause[];
     wheres: SqlClause[];
     groups?: string[];
     orders?: [string, Direction][];
     having?: Where[];
-    limit?: {from: number, count: number};
+    limit?: {from: number, count?: number};
 }
 
 export interface InsertComponents extends BaseComponents {

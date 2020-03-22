@@ -11,7 +11,7 @@ import { Query } from './Query';
 export abstract class Entity {
 
     protected exists = false;
-    public original: {[key: string]: object} = {};
+    public original: Record<string, Record<string, object>> = {};
 
     constructor(data?: object) {
         if (data) {
@@ -32,19 +32,39 @@ export abstract class Entity {
         return this.constructor as EntityConstructor<this>;
     }
 
-    static where<T extends Entity, K extends EntityKeys<T>>(this: EntityConstructor<T>, column: EntityKeys<T>, operator: Operator | WhereValue | T[K], value?: WhereValue | T[K], boolean?: Boolean): EntityQuery<T> {
+    static where<T extends Entity, K extends EntityKeys<T>>(
+        this: EntityConstructor<T>,
+        column: EntityKeys<T>,
+        operator: Operator | WhereValue | T[K],
+        value?: WhereValue | T[K],
+        boolean?: Boolean
+    ): EntityQuery<T> {
         return this.newQuery().where(column, operator, value, boolean);
     }
 
-    static whereIn<T extends Entity, K extends EntityKeys<T>>(this: EntityConstructor<T>, column: EntityKeys<T>, value: WhereValue[] | T[K][], boolean?: Boolean): EntityQuery<T> {
+    static whereIn<T extends Entity, K extends EntityKeys<T>>(
+        this: EntityConstructor<T>,
+        column: EntityKeys<T>,
+        value: WhereValue[] | T[K][],
+        boolean?: Boolean
+    ): EntityQuery<T> {
         return this.newQuery().whereIn(column, value, boolean);
     }
 
-    static whereLike<T extends Entity, K extends EntityKeys<T>>(this: EntityConstructor<T>, column: EntityKeys<T>, value?: WhereValue | T[K], boolean?: Boolean): EntityQuery<T> {
+    static whereLike<T extends Entity, K extends EntityKeys<T>>(
+        this: EntityConstructor<T>,
+        column: EntityKeys<T>,
+        value?: WhereValue | T[K],
+        boolean?: Boolean
+    ): EntityQuery<T> {
         return this.newQuery().whereLike(column, value as WhereValue, boolean);
     }
 
-    static orderBy<T extends Entity, K extends EntityKeys<T>>(this: EntityConstructor<T>, column: EntityKeys<T>, direction?: Direction): EntityQuery<T> {
+    static orderBy<T extends Entity, K extends EntityKeys<T>>(
+        this: EntityConstructor<T>,
+        column: EntityKeys<T>,
+        direction?: Direction
+    ): EntityQuery<T> {
         return this.newQuery().orderBy(column, direction);
     }
 
@@ -113,8 +133,15 @@ export abstract class Entity {
     async save(): Promise<this> {
         const columns = this.metadata.columns;
 
-        if (this.metadata.timestamps) {
-            this.updateTimestamps();
+        if (this.metadata.createdAtColumn && !this[this.metadata.createdAtColumn as keyof this]) {
+            this.fill({
+                [this.metadata.createdAtColumn]: new Date(),
+            });
+        }
+        if (this.metadata.updatedAtColumn) {
+            this.fill({
+                [this.metadata.updatedAtColumn]: new Date(),
+            });
         }
 
         // tslint:disable-next-line:no-any
@@ -151,11 +178,11 @@ export abstract class Entity {
 
     fill(data: ChildObject<this, Entity> | {}) {
         Object.keys(data).forEach(key => {
-            const property = this.metadata.columns[key];
-            if (property) {
+            const field = this.metadata.columns[key];
+            if (field) {
                 // @ts-ignore
-                const value = property.value(data as this, data[key]) as object;
-                this[key as keyof this] = this.convertValueToType(value, property);
+                const value = field.value(data as this, key) as object;
+                this[field.property as keyof this] = this.convertValueByType(value, field);
             }
         });
 
@@ -210,11 +237,7 @@ export abstract class Entity {
         return this.static.getPrimaryKey();
     }
 
-    toString() {
-        return JSON.stringify(this.toObject());
-    }
-
-    toObject() {
+    toJSON() {
         return Object.keys(this.metadata.columns)
             .reduce((obj, key) => {
                 obj[key as keyof this] = this[key as keyof this];
@@ -222,22 +245,7 @@ export abstract class Entity {
             }, <{ [K in keyof this]: this[K] }>{});
     }
 
-    protected getCreatedAtColumnName(): string {
-        return 'createdAt';
-    }
-
-    protected getUpdatedAtColumnName(): string {
-        return 'updatedAt';
-    }
-
-    private updateTimestamps() {
-        this.fill({
-            [this.getCreatedAtColumnName()]: this[this.getCreatedAtColumnName() as keyof this] || new Date(),
-            [this.getUpdatedAtColumnName()]: new Date(),
-        });
-    }
-
-    private convertValueToType(value: unknown, property: ColumnField<Entity>) {
+    private convertValueByType(value: unknown, property: ColumnField<Entity>) {
         const converter = types.get(property.type) || (() => value);
         return converter(value);
     }
@@ -245,6 +253,7 @@ export abstract class Entity {
 
 const types: Map<Function, Function> = new Map();
 types.set(Date, (value: number) => new Date(value));
+types.set(String, (value: object) => String(value));
 
 // let handler = {
 // 	set: (target, prop, value) => {

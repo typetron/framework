@@ -27,8 +27,8 @@ export class Connection {
 
     async run(query: Query): Promise<void> {
         return new Promise((resolve, reject) => {
-            const stack = Error('SQL Error').stack;
-            this.db.run(query.toSql(), query.getBindings(), (error, ...args) => {
+            const stack = Error('SQLite').stack;
+            this.db.run(query.toSql(), query.getBindings(), error => {
                 if (error) {
                     const e = new Error(`${error} in '${query.toSql()}' `);
                     e.stack = stack;
@@ -42,7 +42,7 @@ export class Connection {
 
     async lastInsertedId(): Promise<number | string> {
         return new Promise<number | string>(((resolve, reject) => {
-            const stack = Error('SQL Error').stack;
+            const stack = Error('SQLite').stack;
             this.db.get('SELECT last_insert_rowid() as id;', [], (error, lastInsert) => {
                 if (error) {
                     const e = new Error(`${error} when trying to get the last inserted id`);
@@ -56,7 +56,7 @@ export class Connection {
 
     async get<T>(query: Query<T>): Promise<T[]> {
         return new Promise<T[]>((resolve, reject) => {
-            const stack = Error('SQL Error').stack;
+            const stack = Error('SQLite').stack;
             this.db.all(query.toSql(), query.getBindings(), (error, rows) => {
                 if (error) {
                     const e = new Error(`${error} in '${query.toSql()}' `);
@@ -70,7 +70,7 @@ export class Connection {
 
     async first<T>(query: Query<T>): Promise<T> {
         return new Promise<T>((resolve, reject) => {
-            const stack = Error('SQL Error').stack;
+            const stack = Error('SQLite').stack;
             this.db.get(query.toSql(), query.getBindings(), (error, rows) => {
                 if (error) {
                     const e = new Error(`${error} in '${query.toSql()}' `);

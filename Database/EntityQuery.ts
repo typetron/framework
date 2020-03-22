@@ -1,6 +1,6 @@
 import { Query } from './Query';
 import { Entity } from './Entity';
-import { EntityConstructor, EntityMetadata } from './index';
+import { EntityConstructor, EntityMetadata, Expression } from './index';
 import { KeysOfType } from '../Support';
 import { Relation } from './Fields';
 
@@ -12,7 +12,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         super();
     }
 
-    async get<K extends keyof T>(columns?: (K | string)[]): Promise<T[]> {
+    async get<K extends keyof T>(columns?: (K | string | Expression)[]): Promise<T[]> {
         let entities = await super.get(columns);
 
         entities = await this.eagerLoadRelationships(entities);
@@ -31,7 +31,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         return entities;
     }
 
-    async first<K extends keyof T>(columns?: (K | string)[]): Promise<T | undefined> {
+    async first<K extends keyof T>(columns?: (K | string | Expression)[]): Promise<T | undefined> {
         return (await this.get(columns)).first();
     }
 

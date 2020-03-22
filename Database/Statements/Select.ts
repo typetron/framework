@@ -1,5 +1,6 @@
 import { Statement } from './Statement';
 import { wrap } from '../Helpers';
+import { Expression } from '../Expression';
 
 export class Select extends Statement {
     get distinct() {
@@ -11,7 +12,9 @@ export class Select extends Statement {
         if (columns[0] === '*') {
             return columns;
         }
-        return wrap(columns);
+        return columns.map(column => {
+            return column instanceof Expression ? column.value : wrap(column);
+        }).join(', ');
     }
 
     get wheres() {

@@ -19,6 +19,7 @@ import { Statement } from './Statements/Statement';
 import { Delete } from './Statements/Delete';
 import { Update } from './Statements/Update';
 import { Connection } from './Connection';
+import { Expression } from './Expression';
 
 export class Query<T = {}> {
     static connection: Connection;
@@ -55,8 +56,8 @@ export class Query<T = {}> {
         return statement.bindings;
     }
 
-    async get<K extends keyof T>(columns?: (K | string)[]): Promise<T[]> {
-        return Query.connection.get(this.select(columns || this.components.columns));
+    static raw(value: string) {
+        return new Expression(value);
     }
 
     toSql() {
@@ -65,8 +66,8 @@ export class Query<T = {}> {
         return sql.replace(/\s{2,}/g, ' ').trim();
     }
 
-    async first<K extends keyof T>(columns?: (K | string)[]): Promise<T | undefined> {
-        return Query.connection.first(this.select(columns || this.components.columns));
+    async get<K extends keyof T>(columns?: (K | string | Expression)[]): Promise<T[]> {
+        return Query.connection.get(this.select(columns || this.components.columns));
     }
 
     async run<K extends keyof T>(): Promise<void> {
@@ -87,19 +88,22 @@ export class Query<T = {}> {
         return this;
     }
 
-    select<K extends keyof T>(columns: (K | string)[]) {
+    async first<K extends keyof T>(columns?: (K | string | Expression)[]): Promise<T | undefined> {
+        return Query.connection.first(this.select(columns || this.components.columns));
+    }
+
+    select<K extends keyof T>(columns: (K | string | Expression)[]) {
         this.components.columns = columns as string[];
 
         return this;
     }
 
-    addSelect<K extends keyof T>(columns: (K | string)[]) {
-        this.components.columns.push(...columns as string[]);
-
-        return this;
-    }
-
-    where<K extends keyof T>(column: K | string, operator: Operator | WhereValue | T[K], value?: WhereValue | T[K], boolean: Boolean = 'AND'): this {
+    where<K extends keyof T>(
+        column: K | string,
+        operator: Operator | WhereValue | T[K],
+        value?: WhereValue | T[K],
+        boolean: Boolean = 'AND'
+    ): this {
         // if (column instanceof Function) {
         //     const query = new WhereNested();
         //     this.components.wheres = query;
@@ -247,6 +251,12 @@ export class Query<T = {}> {
         return this;
     }
 
+    addSelect<K extends keyof T>(columns: (K | string | Expression)[]) {
+        this.components.columns.push(...columns as string[]);
+
+        return this;
+    }
+
     count(column = '*') {
         this.components.aggregate = ['COUNT', column];
     }
@@ -286,5 +296,11 @@ export class Query<T = {}> {
         this.components.update = data;
 
         await this.run();
+    }
+
+    limit<K extends keyof T>(from: number, count?: number) {
+        this.components.limit = {from, count};
+
+        return this;
     }
 }
