@@ -35,17 +35,25 @@ export class Auth {
         return jwt.sign({id: this.id = user.id}, this.authConfig.signature, {expiresIn: this.authConfig.duration});
     }
 
-    verify(token: string): {id: number} {
-        const data = jwt.verify(token, this.authConfig.signature) as {id: number};
-
-        this.id = data['id'];
-        return data;
-    }
-
     async register(username: string, password: string): Promise<User> {
         return await this.authenticable.create({
             email: username,
             password: await Bcrypt.hash(password, this.authConfig.saltRounds),
         });
     }
+
+    async verify(token: string): Promise<{id: number}> {
+        return new Promise((resolve, reject) => {
+            jwt.verify(token, this.authConfig.signature, (error, data) => {
+                if (error) {
+                    reject(error);
+                }
+                const payload = data as {id: number};
+                this.id = payload['id'];
+                resolve(payload);
+            });
+
+        });
+    }
+
 }

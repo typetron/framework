@@ -8,6 +8,8 @@ import { Configurator } from './Config/Configurator';
 import { FormResolver } from './Resolvers/FormResolver';
 import { EntityResolver } from './Resolvers/EntityResolver';
 import { RootDir } from './RootDir';
+import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware';
+import { ErrorHandler, ErrorHandlerInterface } from '../Http';
 
 export class Application extends Container {
     static defaultConfigDirectory = 'config';
@@ -20,12 +22,12 @@ export class Application extends Container {
         this.set(Container, App.instance = this);
         this.set(Application, App.instance);
         this.set(RootDir, directory);
+        this.set(ErrorHandlerInterface, this.get(ErrorHandler));
 
         this.loadConfig(configDirectory);
         const appConfig = this.get(AppConfig);
 
-        this.registerResolvers();
-        this.registerProviders(appConfig.providers || []);
+        this.bootstrap(appConfig);
     }
 
     private registerProviders(providers: Type<Provider>[]) {
@@ -50,5 +52,14 @@ export class Application extends Container {
     private registerResolvers() {
         this.resolvers.unshift(new FormResolver(this));
         this.resolvers.unshift(new EntityResolver(this));
+    }
+
+    private bootstrap(appConfig: AppConfig) {
+        if (appConfig.staticAssets) {
+            appConfig.middleware.push(StaticAssetsMiddleware);
+        }
+
+        this.registerResolvers();
+        this.registerProviders(appConfig.providers || []);
     }
 }

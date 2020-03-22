@@ -14,7 +14,7 @@ export class FormResolver extends BaseResolver {
         const request = this.container.get(Request);
         const classResolver = new ClassResolver(this.container);
         const form = classResolver.resolve(abstract, parameters);
-        form.fill(request.content as FormFields<Form>);
+        form.fill({...request.content as object, ...request.files} as FormFields<Form>);
 
         if (!form.valid()) {
             throw new HttpError(form.errors, Http.Status.UNPROCESSABLE_ENTITY);

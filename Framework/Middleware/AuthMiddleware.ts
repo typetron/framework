@@ -14,11 +14,11 @@ export class AuthMiddleware implements MiddlewareInterface {
         const authHeader = request.headers.authorization || '';
         const token = authHeader.replace('Bearer ', '');
         try {
-            this.auth.verify(token);
+            await this.auth.verify(token);
             return next(request);
         } catch (error) {
             if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
-                throw new HttpError('You must be authenticated to make this request.', Http.Status.UNAUTHORIZED);
+                throw new HttpError('Unauthenticated', Http.Status.UNAUTHORIZED);
             }
             throw new HttpError(error.message, Http.Status.BAD_REQUEST);
         }
