@@ -14,7 +14,6 @@
 		"eofline": true,
 		"forin": false,
 		"ban-types": true,
-		"only-arrow-functions": true,
 		"import-blacklist": [
 			true,
 			"rxjs/Rx"
@@ -28,7 +27,7 @@
 		],
 		"label-position": true,
 		"max-line-length": [
-			false,
+			true,
 			140
 		],
 		"member-access": false,

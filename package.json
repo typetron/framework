@@ -10,21 +10,24 @@
 	"scripts": {
 		"build": "tsc --watch",
 		"test": "mocha",
+		"lint": "eslint",
 		"test:watch": "mocha --watch"
 	},
 	"dependencies": {
 		"bcrypt": "3.0.6",
+		"formidable": "^1.2.2",
 		"jsonwebtoken": "^8.5.1",
 		"reflect-metadata": "^0.1.13",
 		"source-map-support": "^0.5.12",
 		"sqlite3": "^4.1.0",
 		"ts-node": "^8.2.0",
-		"typescript": "^3.6.4"
+		"typescript": "^3.8.3"
 	},
 	"devDependencies": {
 		"@testdeck/mocha": "0.0.6",
 		"@types/bcrypt": "^3.0.0",
 		"@types/chai": "^4.1.7",
+		"@types/formidable": "^1.0.31",
 		"@types/jsonwebtoken": "^8.3.5",
 		"@types/mocha": "^5.2.7",
 		"@types/node": "^12.0.5",

@@ -1,26 +1,25 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "es2017",
+		"target": "es2018",
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
 		"sourceMap": true,
 		"declaration": true,
 		"strict": true,
 		"strictPropertyInitialization": false,
-		//		"forceConsistentCasingInFileNames": true,
+		"forceConsistentCasingInFileNames": true,
 		"declarationMap": true,
 		//		"noUnusedLocals": true,
 		//		"noUnusedParameters": true,
-
 		"outDir": "./dist",
-		"baseUrl": "./",
 		"moduleResolution": "node",
 		"lib": [
 			"esnext"
 		],
 		"types": [
-			"reflect-metadata"
+			"reflect-metadata",
+			"@types/node"
 		]
 	},
 	"include": [

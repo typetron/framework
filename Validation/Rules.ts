@@ -1,3 +1,3 @@
-export { Min } from './Rules/Min';
-export { Max } from './Rules/Max';
+export { MinLength } from './Rules/MinLength';
+export { MaxLength } from './Rules/MaxLength';
 export { Required } from './Rules/Required';
