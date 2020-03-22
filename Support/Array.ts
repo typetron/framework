@@ -81,7 +81,7 @@ Array.prototype.first = function (defaultValue = undefined) {
 };
 
 Array.prototype.groupBy = function (key) {
-    return this.reduce(function (accumulator, item) {
+    return this.reduce((accumulator, item) => {
         (accumulator[item[key]] = accumulator[item[key]] || []).push(item);
         return accumulator;
     }, {});

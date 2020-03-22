@@ -1,11 +1,13 @@
 export {};
 declare global {
     interface StringConstructor {
-        random(length?: number): string;
+        random(length?: number, stringDomain?: string): string;
     }
 
     interface String {
-        capitalize(): string;
+        capitalize(): this;
+
+        limit(length: number, end?: string): this;
     }
 }
 
@@ -21,4 +23,11 @@ String.random = function (length = Math.randomInt(1, 15), stringDomain = string)
 
 String.prototype.capitalize = function () {
     return this.charAt(0).toUpperCase() + this.slice(1);
+};
+
+String.prototype.limit = function (limit, end = '...') {
+    if (limit < this.length) {
+        return this.substring(0, limit - end.length) + end;
+    }
+    return this;
 };
