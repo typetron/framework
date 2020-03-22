@@ -1,42 +1,45 @@
 import { Container, Inject } from '../Container';
-import { Filesystem } from '../Filesystem';
-import { ErrorHandlerInterface, Http, Request, Response } from '../Http';
-import { Abstract } from '../Support';
-import { Controller } from './Controller';
+import { Storage } from '../Storage';
+import { Http, Request, Response } from '../Http';
+import { Abstract, Constructor } from '../Support';
 import { MiddlewareInterface, RequestHandler } from './Middleware';
 import { Route } from './Route';
 import { Application } from '../Framework';
+import { RouteNotFoundError } from './RouteNotFoundError';
 
 export class Router {
 
     @Inject()
     app: Container;
 
-    @Inject()
-    filesystem: Filesystem;
-
-    @Inject()
-    errorHandler: ErrorHandlerInterface;
-
     routes: Route[] = [];
 
     middleware: Abstract<MiddlewareInterface>[] = [];
 
-    add(uri: string, method: Http.Method, controller: typeof Controller, action: string, name: string = action, middleware: Abstract<MiddlewareInterface>[] = []) {
+    add(
+        uri: string,
+        method: Http.Method,
+        controller: Constructor,
+        action: string,
+        name: string = action,
+        middleware: Abstract<MiddlewareInterface>[] = []
+    ): Route {
         uri = this.prepareUri(uri);
-        this.routes.push(new Route(uri, method, controller, action, name, middleware));
+        const route = new Route(uri, method, controller, action, name, middleware);
+        this.routes.push(route);
+        return route;
     }
 
     async handle(app: Application, request: Request): Promise<Response> {
         const container = app.createChildContainer();
 
-        container.set(Request, request);
+        container.forceSet('Request', request);
         const route = this.getRoute(request.uri || '', request.method);
-        container.set(Route, route);
+        container.forceSet('Route', route);
 
         let stack: RequestHandler = async () => {
             if (!route) {
-                return new Response(Http.Status.NOT_FOUND);
+                throw new RouteNotFoundError(request.uri);
             }
             request.parameters = route.parameters;
 
@@ -50,29 +53,27 @@ export class Router {
                 return Response.ok(content);
             };
 
-            for (let index = route.middleware.length - 1; index >= 0; index--) {
-                const middleware = container.get(route.middleware[index]);
-
+            route.middleware.forEach(middlewareClass => {
+                const middleware = container.get(middlewareClass);
                 routeStack = middleware.handle.bind(middleware, request, routeStack);
-            }
+            });
 
             return routeStack(request);
         };
 
-        for (let index = this.middleware.length - 1; index >= 0; index--) {
-            const middleware = container.get(this.middleware[index]);
-
+        this.middleware.forEach(middlewareClass => {
+            const middleware = container.get(middlewareClass);
             stack = middleware.handle.bind(middleware, request, stack);
-        }
+        });
 
         return stack(request);
     }
 
     public loadControllers(directory: string) {
-        this.filesystem
+        this.app.get(Storage)
             .files(directory, true)
             .whereIn('extension', ['ts'])
-            .forEach(file => require(file.fullPath));
+            .forEach(file => require(file.path));
     }
 
     private getRoute(uri: string, method: string): Route | undefined {

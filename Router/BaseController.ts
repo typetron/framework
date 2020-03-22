@@ -1,6 +1,6 @@
 import { Container, Inject } from '../Container';
 
-export class Controller {
+export class BaseController {
 
     @Inject()
     protected app: Container;

@@ -1,18 +1,19 @@
 import { Container } from '../Container';
-import { Abstract, Type } from '../Support';
-import { Controller } from './Controller';
+import { Abstract, Constructor, Type } from '../Support';
 import { Request, Response } from '../Http';
 import { MiddlewareInterface } from './Middleware';
 import { ControllerMetadata } from './Metadata';
+import { Guard } from './Guard';
 
 export class Route {
     parameters: {[key: string]: string} = {};
+    guards: Type<Guard>[] = [];
 
     private readonly uriParts: {name: string, type: 'part' | 'parameter'}[] = [];
 
     constructor(public uri: string,
         public method: string,
-        public controller: typeof Controller,
+        public controller: Constructor,
         public action: string,
         public name = '',
         public middleware: Abstract<MiddlewareInterface>[] = []
@@ -21,32 +22,39 @@ export class Route {
     }
 
     async run(request: Request, container: Container): Promise<Object | String | Response> {
-        const controller = container.get(this.controller) as Controller;
-        const action: Function = controller[this.action as keyof Controller];
+        const controller = container.get(this.controller);
 
         const metadata = ControllerMetadata.get(this.controller).routes[this.action];
         const parameters = await this.resolveParameters(metadata.parametersTypes, metadata.parametersOverrides, container);
-        return action.apply(controller, parameters);
+
+        for await (const guardClass of this.guards) {
+            const guard = container.get(guardClass);
+            if (!await guard.condition(...parameters)) {
+                guard.onFail();
+            }
+        }
+
+        return (controller[this.action as keyof Constructor] as Function).apply(controller, parameters);
     }
 
     matches(uri: string) {
         const uriParts = uri.split('/'); // ex: ['users', '1', 'posts'];
-        let i;
-        for (i = 0; i < uriParts.length; i++) {
-            if (!this.uriParts[i]) {
+        let part;
+        for (part = 0; part < uriParts.length; part++) {
+            if (!this.uriParts[part]) {
                 return false;
             }
-            if (this.uriParts[i].type === 'parameter' && uriParts[i]) {
-                this.parameters[this.uriParts[i].name] = uriParts[i];
+            if (this.uriParts[part].type === 'parameter' && uriParts[part]) {
+                this.parameters[this.uriParts[part].name] = uriParts[part];
                 continue;
             }
 
-            if (this.uriParts[i].name !== uriParts[i]) {
+            if (this.uriParts[part].name !== uriParts[part]) {
                 return false;
             }
         }
 
-        if (i !== this.uriParts.length) {
+        if (part !== this.uriParts.length) {
             return false;
         }
         return true;
