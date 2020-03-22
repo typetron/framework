@@ -41,6 +41,10 @@ export class Container {
         }
     }
 
+    forceSet<T>(key: string, concrete: T | Type<T> | Function) {
+        this.instances[key] = concrete;
+    }
+
     get<T>(abstract: ServiceIdentifier<T>, parameters: object[] = []): T {
         const abstractName = this.getAbstractName(abstract);
         const metadata = this.getMetadata(abstract);
