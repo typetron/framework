@@ -39,7 +39,7 @@ export class Router {
 
         let stack: RequestHandler = async () => {
             if (!route) {
-                throw new RouteNotFoundError(request.uri);
+                throw new RouteNotFoundError([request.method, request.uri].join(' '));
             }
             request.parameters = route.parameters;
 

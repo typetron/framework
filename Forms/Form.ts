@@ -41,11 +41,26 @@ export abstract class Form {
             }, <{[key: string]: RuleValue}>{});
     }
 
+    value() {
+        const fields = Object.values(this.fields()) as FormField[];
+        // tslint:disable-next-line:no-any
+        const value: Record<string, any> = {};
+        fields.forEach(field => {
+            value[field.name] = this[field.name as keyof FormFields<this>];
+        });
+
+        return value;
+    }
+
     fill(data: FormFields<this>) {
         const fields = Object.values(this.fields()) as FormField[];
         fields.forEach(field => {
             // @ts-ignore
             this[field.name as keyof FormFields<this>] = data[field.name as keyof FormFields<this>];
         });
+    }
+
+    toJSON() {
+        return this.value();
     }
 }

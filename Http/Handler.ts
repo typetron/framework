@@ -15,7 +15,7 @@ export class Handler {
         try {
             return await this.router.handle(app, request);
         } catch (error) {
-            return this.errorHandler.handle(error);
+            return this.errorHandler.handle(error, request);
         }
     }
 }
