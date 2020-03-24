@@ -93,7 +93,7 @@ export abstract class Entity {
         return this.newQuery().with(...relations);
     }
 
-    static async find<T extends Entity>(this: EntityConstructor<T>, id: number): Promise<T> {
+    static async find<T extends Entity>(this: EntityConstructor<T>, id: string | number): Promise<T> {
         const query = this.newQuery().where('id' as keyof T, id);
         const instance = await query.first();
         if (!instance || !Object.entries(instance).length) {
@@ -253,7 +253,7 @@ export abstract class Entity {
 
 const types: Map<Function, Function> = new Map();
 types.set(Date, (value: number) => new Date(value));
-types.set(String, (value: object) => String(value));
+types.set(String, (value: object) => value ? String(value) : value);
 
 // let handler = {
 // 	set: (target, prop, value) => {

@@ -9,7 +9,7 @@ import { FormResolver } from './Resolvers/FormResolver';
 import { EntityResolver } from './Resolvers/EntityResolver';
 import { RootDir } from './RootDir';
 import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware';
-import { ErrorHandler, ErrorHandlerInterface } from '../Http';
+import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Http';
 
 export class Application extends Container {
     static defaultConfigDirectory = 'config';
@@ -61,5 +61,10 @@ export class Application extends Container {
 
         this.registerResolvers();
         this.registerProviders(appConfig.providers || []);
+    }
+
+    startServer() {
+        const httpHandler = this.get(HttpHandler);
+        return httpHandler.startServer(this);
     }
 }

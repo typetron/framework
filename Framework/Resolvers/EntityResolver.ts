@@ -16,7 +16,7 @@ export class EntityResolver extends BaseResolver {
         const requestParameterName = abstract.name.toLowerCase();
         const parameter = request.parameters[requestParameterName];
         if (parameter) {
-            entity = await abstract.find(Number(parameter));
+            entity = await abstract.find(parameter);
         }
 
         // @ts-ignore

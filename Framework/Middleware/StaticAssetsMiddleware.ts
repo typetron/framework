@@ -30,6 +30,7 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
         try {
             return await next(request);
         } catch (error) {
+
             if (error instanceof RouteNotFoundError) {
                 return this.loadStaticAsset(request);
             }
@@ -54,6 +55,9 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
                     extension = 'html';
                 }
 
+                if (!await this.storage.exists(realPath)) {
+                    continue;
+                }
                 const file = await this.storage.read(realPath);
                 const contentType = this.mimeTypes[extension || 'application/octet-stream'] || this.mimeTypes.txt;
                 return new Response(Http.Status.OK, file, {'Content-type': contentType});

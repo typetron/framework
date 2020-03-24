@@ -83,9 +83,10 @@ export class Request {
                     }
 
                     resolve(rawData);
-                } catch (e) {
-                    if (e instanceof SyntaxError) {
-                        reject(e);
+                } catch (error) {
+                    if (error instanceof SyntaxError) {
+                        error.stack = `Value used: '${rawData}'\n at ` + error.stack;
+                        reject(error);
                     }
                     resolve(rawData ? rawData : undefined);
                 }
@@ -104,7 +105,7 @@ export class Request {
             message.headers,
         );
 
-        if (request.method === Http.Method.POST) {
+        if (request.method !== Http.Method.GET) {
             if (this.isMultipartRequest(message)) {
                 [request.content, request.files] = await Request.loadMultipartContent(message);
             } else {

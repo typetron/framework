@@ -21,20 +21,25 @@ export class Route {
         this.setUriParts();
     }
 
-    async run(request: Request, container: Container): Promise<Object | String | Response> {
+    async run(request: Request, container: Container): Promise<object | string | Response> {
         const controller = container.get(this.controller);
 
-        const metadata = ControllerMetadata.get(this.controller).routes[this.action];
-        const parameters = await this.resolveParameters(metadata.parametersTypes, metadata.parametersOverrides, container);
+        try {
+            const metadata = ControllerMetadata.get(this.controller).routes[this.action];
+            const parameters = await this.resolveParameters(metadata.parametersTypes, metadata.parametersOverrides, container);
 
-        for await (const guardClass of this.guards) {
-            const guard = container.get(guardClass);
-            if (!await guard.condition(...parameters)) {
-                guard.onFail();
+            for await (const guardClass of this.guards) {
+                const guard = container.get(guardClass);
+                if (!await guard.condition(...parameters)) {
+                    guard.onFail();
+                }
             }
-        }
 
-        return (controller[this.action as keyof Constructor] as Function).apply(controller, parameters);
+            return (controller[this.action as keyof Constructor] as Function).apply(controller, parameters);
+        } catch (error) {
+            error.stack = `Controller: ${controller.constructor.name}.${this.action} \n at ` + error.stack;
+            throw error;
+        }
     }
 
     matches(uri: string) {

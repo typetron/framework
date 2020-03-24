@@ -34,13 +34,13 @@ export class Router {
         const container = app.createChildContainer();
 
         container.forceSet('Request', request);
-        const route = this.getRoute(request.uri || '', request.method);
-        container.forceSet('Route', route);
 
         let stack: RequestHandler = async () => {
+            const route = this.getRoute(request.uri || '', request.method);
             if (!route) {
                 throw new RouteNotFoundError([request.method, request.uri].join(' '));
             }
+            container.forceSet('Route', route);
             request.parameters = route.parameters;
 
             let routeStack: RequestHandler = async () => {
