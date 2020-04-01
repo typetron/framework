@@ -9,10 +9,10 @@ import { Application } from '../Framework';
 export abstract class TestCase {
     app: Container;
 
-    abstract bootstrapApp(): void;
+    abstract async bootstrapApp(): Promise<void>;
 
-    before() {
-        this.bootstrapApp();
+    async before() {
+        await this.bootstrapApp();
     }
 
     get(routeName: string, content = {}, headers: IncomingHttpHeaders = {}) {
