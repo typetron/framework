@@ -3,7 +3,8 @@ import { RuleInterface } from '../Validation';
 import { Rule } from '../Validation/Rule';
 
 export class FormField {
-    constructor(public name: string, public rules: (Type<RuleInterface> | RuleInterface) [] = []) {}
+    // tslint:disable-next-line:no-any
+    constructor(public name: string, public type: any, public rules: (Type<RuleInterface> | RuleInterface) [] = []) {}
 
     // tslint:disable-next-line:no-any
     validate(value: any): Record<string, string> | undefined {

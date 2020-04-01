@@ -13,10 +13,15 @@ export class EntityResolver extends BaseResolver {
     async resolve<T>(abstract: EntityConstructor<Entity> & typeof Entity, parametersValues: object[]): Promise<T> {
         let entity: Entity;
         const request = this.container.get(Request);
-        const requestParameterName = abstract.name.toLowerCase();
+        const requestParameterName = abstract.name;
         const parameter = request.parameters[requestParameterName];
         if (parameter) {
             entity = await abstract.find(parameter);
+            if (!entity) {
+                throw new Error(`Entity '${requestParameterName}' with identifier '${parameter}' not found`);
+            }
+        } else {
+            throw new Error(`No parameter found that can be used as an entity identifier for the '${requestParameterName}' entity. Did you forget to add the '{${requestParameterName}}' parameter on the route?`);
         }
 
         // @ts-ignore

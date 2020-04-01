@@ -8,10 +8,10 @@ export class Configurator {
     @Inject()
     filesystem: Storage;
 
-    load(path: string): Config {
+    async load(path: string): Promise<Config> {
         const configList = new Config();
 
-        if (!this.filesystem.exists(path)) {
+        if (!await this.filesystem.exists(path)) {
             console.warn(`Config path '${path}' does not exist. Running with default config.`);
             return configList;
         }

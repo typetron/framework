@@ -97,7 +97,7 @@ export abstract class Entity {
         const query = this.newQuery().where('id' as keyof T, id);
         const instance = await query.first();
         if (!instance || !Object.entries(instance).length) {
-            throw new EntityNotFoundError(`No records found for entity '${this.name}' using query '${query.toSql()}' with parameters [${query.getBindings().join(', ')}]`);
+            throw new EntityNotFoundError(`No records found for entity '${this.name}' when querying with parameters [${query.getBindings().join(', ')}]`);
         }
         return instance;
     }

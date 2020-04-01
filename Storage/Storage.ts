@@ -33,8 +33,15 @@ export class Storage {
         });
     }
 
-    exists(file: string): boolean {
-        return fileSystem.existsSync(file);
+    exists(file: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            fileSystem.access(file, error => {
+                if (error) {
+                    return resolve(false);
+                }
+                resolve(true);
+            });
+        });
     }
 
     async put(file: File, directory: string = '', name?: string | number): Promise<File> {
@@ -42,7 +49,7 @@ export class Storage {
         if (!file.name) {
             file.name = String(name || this.generateFileName() + '.' + file.extension);
         }
-        if (!this.exists(directory)) {
+        if (!await this.exists(directory)) {
             await this.makeDirectory(directory);
         }
         return new Promise((resolve, reject) => {
@@ -81,5 +88,19 @@ export class Storage {
     private generateFileName() {
         const stringDomain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
         return String.random(13, stringDomain) + '-' + new Date().getTime().toString();
+    }
+
+    async delete(filePath: string) {
+        return new Promise(async (resolve, reject) => {
+            if (!await this.exists(filePath)) {
+                resolve();
+            }
+            fileSystem.unlink(filePath, error => {
+                if (error) {
+                    return reject(error);
+                }
+                resolve();
+            });
+        });
     }
 }

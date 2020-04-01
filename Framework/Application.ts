@@ -16,18 +16,19 @@ export class Application extends Container {
 
     public config = new Config;
 
-    constructor(public directory: string, public configDirectory = Application.defaultConfigDirectory) {
+    private constructor(public directory: string, public configDirectory = Application.defaultConfigDirectory) {
         super();
         Application.setInstance(this);
         this.set(Container, App.instance = this);
         this.set(Application, App.instance);
         this.set(RootDir, directory);
         this.set(ErrorHandlerInterface, this.get(ErrorHandler));
+    }
 
-        this.loadConfig(configDirectory);
-        const appConfig = this.get(AppConfig);
-
-        this.bootstrap(appConfig);
+    static async create(directory: string, configDirectory = Application.defaultConfigDirectory) {
+        const app = new this(directory, configDirectory);
+        await app.bootstrap();
+        return app;
     }
 
     private registerProviders(providers: Type<Provider>[]) {
@@ -38,11 +39,11 @@ export class Application extends Container {
         });
     }
 
-    private loadConfig(configDirectory: string) {
+    private async loadConfig(configDirectory: string) {
         const configurator = this.get(Configurator);
 
         const path = this.directory + '/' + configDirectory;
-        this.config = configurator.load(path);
+        this.config = await configurator.load(path);
         this.set(Config, this.config);
         this.config.configList.forEach(config => {
             this.set(config.constructor, config);
@@ -54,7 +55,11 @@ export class Application extends Container {
         this.resolvers.unshift(new EntityResolver(this));
     }
 
-    private bootstrap(appConfig: AppConfig) {
+    private async bootstrap() {
+        await this.loadConfig(this.configDirectory);
+
+        const appConfig = this.get(AppConfig);
+
         if (appConfig.staticAssets) {
             appConfig.middleware.push(StaticAssetsMiddleware);
         }
