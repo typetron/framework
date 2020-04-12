@@ -27,6 +27,7 @@ export function Controller(path = '', options = new ControllerOptions) {
                 target as Constructor,
                 action,
                 prefix + (routeMetadata.name || action),
+                routeMetadata.parametersTypes,
                 metadata.middleware.concat(routeMetadata.middleware)
             );
             route.guards = routeMetadata.guards;

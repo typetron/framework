@@ -1,7 +1,7 @@
 import { Container, Inject } from '../Container';
 import { Storage } from '../Storage';
 import { Http, Request, Response } from '../Http';
-import { Abstract, Constructor } from '../Support';
+import { Abstract, Constructor, Type } from '../Support';
 import { MiddlewareInterface, RequestHandler } from './Middleware';
 import { Route } from './Route';
 import { Application } from '../Framework';
@@ -21,11 +21,12 @@ export class Router {
         method: Http.Method,
         controller: Constructor,
         action: string,
-        name: string = action,
+        name: string,
+        parametersTypes: (Type<Function> | FunctionConstructor)[] = [],
         middleware: Abstract<MiddlewareInterface>[] = []
     ): Route {
         uri = this.prepareUri(uri);
-        const route = new Route(uri, method, controller, action, name, middleware);
+        const route = new Route(uri, method, controller, action, name, parametersTypes, middleware);
         this.routes.push(route);
         return route;
     }

@@ -38,7 +38,7 @@ export class Response {
                 content = JSON.stringify(content);
                 response.headers['Content-Type'] = 'application/json';
             }
-            rawContent = content;
+            rawContent = String(content);
         } else {
             rawContent = content;
         }

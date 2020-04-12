@@ -20,25 +20,25 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
         'css': 'text/css',
         'jpg': 'image/jpeg',
         'png': 'image/png',
+        'webp': 'image/webp',
         'gif': 'image/gif',
     };
 
     async handle(request: Request, next: RequestHandler) {
-        if (request.headers.accept?.includes('application/json')) {
-            return next(request);
-        }
+        // if (request.headers.accept?.includes('application/json')) {
+        //     return next(request);
+        // }
         try {
             return await next(request);
         } catch (error) {
-
-            if (error instanceof RouteNotFoundError) {
-                return this.loadStaticAsset(request);
+            if (request.method === Http.Method.GET && error instanceof RouteNotFoundError) {
+                return this.loadStaticAsset(error, request);
             }
             throw error;
         }
     }
 
-    async loadStaticAsset(request: Request): Promise<Response> {
+    async loadStaticAsset(error: RouteNotFoundError, request: Request): Promise<Response> {
         const assetsDirectories = this.appConfig.staticAssets;
         for (const path in assetsDirectories) {
             let directories = assetsDirectories[path];
@@ -46,7 +46,7 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
                 directories = [directories];
             }
             for (const directory of directories) {
-                let realPath = directory;
+                let realPath = directory + request.uri;
                 let extension = this.getExtension(request.uri);
                 if (extension) {
                     realPath += request.uri;
@@ -64,7 +64,7 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
             }
         }
 
-        throw new RouteNotFoundError(request.uri);
+        throw error;
     }
 
     getExtension(string: string): string | undefined {

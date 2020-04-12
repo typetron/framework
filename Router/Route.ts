@@ -16,6 +16,7 @@ export class Route {
         public controller: Constructor,
         public action: string,
         public name = '',
+        public parametersTypes: (Type<Function> | FunctionConstructor)[] = [],
         public middleware: Abstract<MiddlewareInterface>[] = []
     ) {
         this.setUriParts();
@@ -45,11 +46,13 @@ export class Route {
     matches(uri: string) {
         const uriParts = uri.split('/'); // ex: ['users', '1', 'posts'];
         let part;
+        let parameterTypeIndex = 0;
         for (part = 0; part < uriParts.length; part++) {
             if (!this.uriParts[part]) {
                 return false;
             }
-            if (this.uriParts[part].type === 'parameter' && uriParts[part]) {
+            if (this.uriParts[part].type === 'parameter' && this.hasCorrectPrimitiveType(parameterTypeIndex, uriParts[part])) {
+                parameterTypeIndex++;
                 this.parameters[this.uriParts[part].name] = uriParts[part];
                 continue;
             }
@@ -100,4 +103,12 @@ export class Route {
         });
     }
 
+    private hasCorrectPrimitiveType(parameterTypeIndex: number, uriPart: string) {
+        const parameterType = this.parametersTypes[parameterTypeIndex];
+        return (primitiveTypes[parameterType.name] || (value => value))(uriPart);
+    }
 }
+
+const primitiveTypes: Record<string, (value: string) => boolean> = {
+    Number: (value: string) => !isNaN(Number(value)),
+};

@@ -1,21 +1,20 @@
 # Typetron
 > **Note:** This project is a prototype in heavy development and not ready for production. 
-> Feel free to play with it 😄
 
-**[Typetron](https://github.com/typetron/typetron)** is a **modern web framework** built for Node.js, written in **Typescript**, that
+**[Typetron](https://typetron.org)** is a **modern web framework** built for Node.js, written in **Typescript**, that
 allows you to build fully featured web applications. 
 Typetron is best suited for small sized to enterprise level apps.
 Most of the core packages it uses were built from scratch in order to preserve the performance of the framework. 
 
-_(check [this repo](https://github.com/typetron/typetron) on how to create an app with Typetron)_
+_(check [this tutorial](https://typetron.org/tutorials/blog) on how to get started with Typetron)_
 
 ### Prerequisites
-- [NodeJs 10](https://nodejs.org)
+- [NodeJs >=10 LTS](https://nodejs.org)
 
 #### Features
 Typetron aims to have all the features necessary for building any web app without the need for you
-to search the internet for a package to use. Almost all the packages it were built from scratch and are 
-available in the repository. 
+to search the internet for a package to use. Almost all the packages it has were built from scratch and are 
+available in the framework. 
 This was done to ensure that all the features you are using benefit from the latest language features. 
 Also, every package can be tuned for performance or updated in no time if needed.
 
@@ -62,18 +61,18 @@ really good performance out of the box compared to other available frameworks.
 
 ##### Developer experience
 Typetron's source code is built around developer's expectations: it is modern, clean and beautiful.
-Also, the tools Typetron is providing are everything a developer need to build his next awesome project.
+Also, the tools Typetron is providing are everything a developer needs to build his next awesome project.
 
 ##### Code sharing
-A few years ago we wrote websites. Nowadays we write web applications. The web evolved along with the tools we are
+A few years ago we wrote websites. Nowadays we write web applications. The web evolved along side the tools we are
 using. A typical web application is composed from at least two parts: a backend app and a frontend app.
-This separation led to two different camps that have a very distinct line between them   
+This separation led to two different camps that have a very distinct line between them. Typetron provides tools to make
+these two camps work together. 
 
 #### Source code examples
 
 ##### Entities 
 ```ts
-@Meta()
 export class User extends Entity {
 
     @Column()
@@ -85,10 +84,10 @@ export class User extends Entity {
     @Column()
     name: string;
 
-    @OneToMany(Post, 'author')
+    @OneToMany(() => Post, 'author')
     posts: Post[] = [];
 
-    @ManyToOne(Group, 'users')
+    @ManyToOne(() => Group, 'users')
     group: Group;
 }
 ```
@@ -104,7 +103,7 @@ export class UserForm extends Form {
     @Field()
     @Rules(
         Required,
-        Min(5),
+        MinLength(5),
     )
     name: string;
 
@@ -144,7 +143,7 @@ export class UserController {
 
     @Post()
     create(userForm: UserForm) {
-        return User.create(userForm.validated());
+        return User.create(userForm);
     }
 }
 

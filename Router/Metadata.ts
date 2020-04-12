@@ -6,7 +6,7 @@ import { Guard } from './Guard';
 
 export class RouteMetadata {
     middleware: Abstract<MiddlewareInterface>[] = [];
-    parametersTypes: Type<Function>[];
+    parametersTypes: (Type<Function> | FunctionConstructor)[];
     path: string;
     name: string;
     method: Http.Method;
