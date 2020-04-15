@@ -31,14 +31,14 @@ export class Response {
     }
 
     static send(response: Response, serverResponse: ServerResponse) {
-        let content = response.content;
+        let content = response.content || '';
         let rawContent: String | Buffer | undefined;
         if (!(content instanceof Buffer)) {
             if (content instanceof Object) {
                 content = JSON.stringify(content);
                 response.headers['Content-Type'] = 'application/json';
             }
-            rawContent = String(content);
+            rawContent = content.toString();
         } else {
             rawContent = content;
         }

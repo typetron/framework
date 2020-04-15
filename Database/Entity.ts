@@ -194,7 +194,7 @@ export abstract class Entity {
             return;
         }
 
-        this.newQuery().where(this.getPrimaryKey(), this[this.getPrimaryKey()]).delete();
+        await this.newQuery().where(this.getPrimaryKey(), this[this.getPrimaryKey()]).delete();
     }
 
     async sync(property: KeysOfType<this, Entity[]>, ids: number[], detach = true) {

@@ -1,7 +1,9 @@
 node_modules
 .idea
-#*.js
-#*.js.map
+*.js
+*.js.map
+*.ts.map
+*.d.ts
 tsconfig.tsbuildinfo
 .nyc_output
 dist

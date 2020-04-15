@@ -32,7 +32,7 @@ export class Auth {
             throw new Error('Invalid credentials');
         }
 
-        return jwt.sign({id: this.id = user.id}, this.authConfig.signature, {expiresIn: this.authConfig.duration});
+        return jwt.sign({sub: this.id = user.id}, this.authConfig.signature, {expiresIn: this.authConfig.duration});
     }
 
     async register(username: string, password: string): Promise<User> {
@@ -42,14 +42,14 @@ export class Auth {
         });
     }
 
-    async verify(token: string): Promise<{id: number}> {
+    async verify(token: string): Promise<{sub: number}> {
         return new Promise((resolve, reject) => {
             jwt.verify(token, this.authConfig.signature, (error, data) => {
                 if (error) {
                     reject(error);
                 }
-                const payload = data as {id: number};
-                this.id = payload['id'];
+                const payload = data as {sub: number};
+                this.id = payload['sub'];
                 resolve(payload);
             });
 
