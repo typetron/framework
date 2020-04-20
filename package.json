@@ -41,5 +41,11 @@
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/typetron/framework.git"
-	}
+	},
+	"files": [
+		"**/*.ts",
+		"**/*.js",
+		"**/*.ts.map",
+		"**/*.js.map"
+	]
 }
