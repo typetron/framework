@@ -1,5 +1,5 @@
-import { BaseConfig } from './Config/BaseConfig';
-import { User } from './Auth';
+import { User } from '../Auth';
+import { BaseConfig } from './BaseConfig';
 
 export class AuthConfig extends BaseConfig<AuthConfig>('auth') {
     entity: typeof User;

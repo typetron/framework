@@ -86,6 +86,12 @@ export class Container {
         if (typeof abstract === 'string') {
             return abstract;
         }
+        if (abstract === undefined) {
+            throw new Error(`
+                Cannot resolve a parameter having the value undefined.
+                This might be due to circular dependencies in your app
+            `);
+        }
         if ('name' in abstract) {
             return abstract.name;
         }

@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '../../Container';
 import { MiddlewareInterface, RequestHandler, RouteNotFoundError } from '../../Router';
-import { AppConfig } from '../AppConfig';
 import { Storage } from '../../Storage';
 import { Http, Request, Response } from '../../Http';
+import { AppConfig } from '../Config';
 
 @Injectable()
 export class StaticAssetsMiddleware implements MiddlewareInterface {

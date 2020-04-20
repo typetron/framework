@@ -7,9 +7,7 @@ import { ControllerMetadata, RouteMetadata } from './Metadata';
 import { Guard } from './Guard';
 
 class ControllerOptions {
-    path?: string;
     prefix?: string;
-    middleware?: MiddlewareInterface[] = [];
 }
 
 export function Controller(path = '', options = new ControllerOptions) {

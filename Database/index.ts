@@ -6,7 +6,6 @@ export type EntityObject<T extends Entity> = ChildObject<T, Entity>;
 
 export * from './Query';
 export * from './Entity';
-export * from './DatabaseConfig';
 export * from './Decorators';
 export * from './Expression';
 

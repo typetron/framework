@@ -6,7 +6,9 @@ export class Response {
     constructor(
         public status: Http.Status = Http.Status.OK,
         public content?: string | object,
-        public headers: OutgoingHttpHeaders = {}
+        public headers: OutgoingHttpHeaders = {
+            'Content-Type': 'text/plain'
+        }
     ) {
     }
 

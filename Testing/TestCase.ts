@@ -1,10 +1,10 @@
 // noinspection TypeScriptPreferShortImport
-import { Router } from '../Router/Router';
 import '../Support/Math';
 import { Handler, Http, Request } from '../Http';
 import { IncomingHttpHeaders } from 'http';
 import { Container } from '../Container';
 import { Application } from '../Framework';
+import { Router } from '../Router';
 
 export abstract class TestCase {
     app: Container;

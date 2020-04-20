@@ -1,4 +1,4 @@
-import { BaseConfig } from '../Framework/Config/BaseConfig';
+import { BaseConfig } from './BaseConfig';
 
 export class DatabaseConfig extends BaseConfig<DatabaseConfig>('database') {
     database?: string;

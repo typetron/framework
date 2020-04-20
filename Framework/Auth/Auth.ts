@@ -1,8 +1,8 @@
 import * as jwt from 'jsonwebtoken';
-import { AuthConfig } from '../AuthConfig';
 import { Inject, Injectable, Scope } from '../../Container';
 import { User } from './User';
 import * as Bcrypt from 'bcrypt';
+import { AuthConfig } from '../Config';
 
 @Injectable(Scope.REQUEST)
 export class Auth {

@@ -2,8 +2,9 @@ import { Inject } from '../Container';
 import { Router } from '../Router';
 import { ErrorHandlerInterface, Response } from './index';
 import { Request } from './Request';
-import { AppConfig, Application } from '../Framework';
+
 import { createServer, IncomingMessage, ServerResponse } from 'http';
+import { AppConfig, Application } from '../Framework';
 
 export class Handler {
     @Inject()
