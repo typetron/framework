@@ -8,6 +8,8 @@ import { File } from '../Storage';
 import { File as FormidableFile, IncomingForm } from 'formidable';
 
 export class Request {
+    static methodField = '_method';
+
     public parameters: {[key: string]: string} = {};
 
     constructor(public uri: string,
@@ -111,6 +113,9 @@ export class Request {
             } else {
                 request.content = await Request.loadSimpleContent(message);
             }
+
+            const overwrittenMethod = (request.content as Record<string, string | undefined>)[Request.methodField] || '';
+            request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method;
         }
 
         return request;

@@ -130,7 +130,8 @@ export abstract class Entity {
         return this.static.newQuery();
     }
 
-    async save(): Promise<this> {
+    async save(data: ChildObject<this, Entity> | {} = {}): Promise<this> {
+        this.fill(data);
         const columns = this.metadata.columns;
 
         if (this.metadata.createdAtColumn && !this[this.metadata.createdAtColumn as keyof this]) {
@@ -145,7 +146,7 @@ export abstract class Entity {
         }
 
         // tslint:disable-next-line:no-any
-        const data: {[key: string]: any} = {};
+        const databaseData: {[key: string]: any} = {};
 
         const manyToManyRelationships: ManyToManyField<this, Entity>[] = [];
 
@@ -153,7 +154,7 @@ export abstract class Entity {
         Object.keys(columns).forEach((column) => {
             const type = columns[column];
             if (type instanceof ColumnField && type.column) { // TODO add tests to verify this
-                data[type.column] = type.relationshipColumnValue(this, this[column as keyof Entity]);
+                databaseData[type.column] = type.relationshipColumnValue(this, this[column as keyof Entity]);
             }
             if (type instanceof ManyToManyField) {
                 manyToManyRelationships.push(type);
@@ -163,10 +164,10 @@ export abstract class Entity {
         const query = this.newQuery();
 
         if (this.exists) {
-            delete data[this.getPrimaryKey() as string];
-            await query.where(this.getPrimaryKey(), this[this.getPrimaryKey()]).update(data);
+            delete databaseData[this.getPrimaryKey() as string];
+            await query.where(this.getPrimaryKey(), this[this.getPrimaryKey()]).update(databaseData);
         } else {
-            await query.insert(data);
+            await query.insert(databaseData);
             const id = await EntityQuery.lastInsertedId();
             this.fill({id});
         }
