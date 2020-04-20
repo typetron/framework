@@ -7,7 +7,7 @@ export class Response {
         public status: Http.Status = Http.Status.OK,
         public content?: string | object,
         public headers: OutgoingHttpHeaders = {
-            'Content-Type': 'text/plain'
+            'Content-Type': 'text/html'
         }
     ) {
     }
