@@ -3,6 +3,7 @@ import { Inject, Injectable, Scope } from '../../Container';
 import { User } from './User';
 import * as Bcrypt from 'bcrypt';
 import { AuthConfig } from '../Config';
+import { ID } from '../../Database';
 
 @Injectable(Scope.REQUEST)
 export class Auth {
@@ -10,7 +11,7 @@ export class Auth {
     @Inject()
     authConfig: AuthConfig;
 
-    id: number;
+    id?: ID;
 
     private savedUser: User;
 
@@ -21,6 +22,10 @@ export class Auth {
     async user<T extends User>(): Promise<T> {
         if (this.savedUser) {
             return this.savedUser as T;
+        }
+
+        if (!this.id) {
+            throw new Error('There is no id saved in the Auth service. Please use the AuthMiddleware on this route');
         }
 
         return this.savedUser = await this.authenticable.find(this.id) as T;

@@ -1,7 +1,7 @@
 import { EntityProxyHandler } from './EntityProxyHandler';
 import { EntityQuery } from './EntityQuery';
 import { ChildObject, KeysOfType } from '../Support';
-import { EntityMetadata, EntityMetadataKey } from './Decorators';
+import { EntityMetadata, EntityMetadataKey, ID } from './Decorators';
 import { EntityNotFoundError } from './EntityNotFoundError';
 import { ColumnField, ManyToManyField } from './Fields';
 import { Boolean, Direction, Operator, SqlValue, SqlValueMap, WhereValue } from './Types';
@@ -25,7 +25,7 @@ export abstract class Entity {
     }
 
     get metadata(): EntityMetadata<Entity> {
-        return Reflect.getMetadata(EntityMetadataKey, this);
+        return this.static.metadata;
     }
 
     protected get static(): EntityConstructor<this> {
@@ -69,7 +69,7 @@ export abstract class Entity {
     }
 
     static getTable<T extends Entity>(this: EntityConstructor<T>): string {
-        return this.metadata.table || this.name.toLowerCase();
+        return this.metadata.table || this.name.toLowerCase(); // TODO make metadata.table un-optional
     }
 
     static newInstance<T extends Entity>(this: EntityConstructor<T>, data = {}, exists = false): T {
@@ -93,8 +93,8 @@ export abstract class Entity {
         return this.newQuery().with(...relations);
     }
 
-    static async find<T extends Entity>(this: EntityConstructor<T>, id: string | number): Promise<T> {
-        const query = this.newQuery().where('id' as keyof T, id);
+    static async find<T extends Entity>(this: EntityConstructor<T>, id: string | number | ID): Promise<T> {
+        const query = this.newQuery().where('id' as keyof T, id as number);
         const instance = await query.first();
         if (!instance || !Object.entries(instance).length) {
             throw new EntityNotFoundError(`No records found for entity '${this.name}' when querying with parameters [${query.getBindings().join(', ')}]`);
@@ -230,7 +230,7 @@ export abstract class Entity {
     private async syncRelationships(manyToManyRelationships: ManyToManyField<this, Entity>[]) {
         await manyToManyRelationships.forEachAsync(async (field) => {
             // @ts-ignore
-            await this.sync(field.property, (this[field.property] as Entity[]).pluck(field.type().getPrimaryKey()));
+            await this.sync(field.property, ((this[field.property] || []) as Entity[]).pluck(field.type().getPrimaryKey()));
         });
     }
 

@@ -1,7 +1,7 @@
 import { User } from '../Auth';
 import { BaseConfig } from './BaseConfig';
 
-export class AuthConfig extends BaseConfig<AuthConfig>('auth') {
+export class AuthConfig extends BaseConfig<AuthConfig> {
     entity: typeof User;
     signature: string;
     duration: number;

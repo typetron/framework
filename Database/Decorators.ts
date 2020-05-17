@@ -11,7 +11,7 @@ export class EntityOptions<T> {
 }
 
 export class EntityMetadata<T = {}> extends EntityOptions<T> {
-    columns: {[key: string]: ColumnField<Entity>} = {};
+    columns: Record<string, ColumnField<Entity>> = {};
     createdAtColumn?: string;
     updatedAtColumn?: string;
 
@@ -23,10 +23,11 @@ export class EntityMetadata<T = {}> extends EntityOptions<T> {
 }
 
 export function Meta<T extends Entity>(options: EntityOptions<T> = {}) {
-    return (parent: typeof Entity) => {
-        let metadata = EntityMetadata.get(parent.prototype);
-        metadata = Object.assign(metadata, options);
-        Reflect.defineMetadata(EntityMetadataKey, metadata, parent.prototype);
+    return (entity: typeof Entity) => {
+        const metadata = EntityMetadata.get(entity.prototype);
+        options.table = options.table || entity.name.toLowerCase();
+        Object.assign(metadata, options);
+        Reflect.defineMetadata(EntityMetadataKey, metadata, entity.prototype);
     };
 }
 
@@ -39,7 +40,7 @@ function setEntityMetadata(parent: Entity, field: ColumnField<Entity>) {
 export function Column<T extends Entity>(column?: string) {
     return function (parent: T, name: string) {
         const type = Reflect.getMetadata('design:type', parent, name);
-        const field = new ColumnField(parent.constructor as EntityConstructor<T>, name, type, column || name);
+        const field = new ColumnField(parent.constructor as EntityConstructor<T>, name, () => type, column || name);
         setEntityMetadata(parent, field);
     };
 }
@@ -62,7 +63,7 @@ export function UpdatedAt<T extends Entity>(column?: string) {
     };
 }
 
-export type ID = number;
+export class ID extends Number {}
 
 export function OneToMany<T extends Entity, R extends Entity>(
     type: () => EntityConstructor<R>,
@@ -87,9 +88,9 @@ export function ManyToOne<T extends Entity, R extends Entity>(
         setEntityMetadata(parent, field);
         // TODO refactor needed. This is used when setting the value of the relation to an entity instance. It will get
         // only the foreign key value instead of passing the entire object, which cannot be save in the database.
-        const entityMetadata = EntityMetadata.get(parent);
-        entityMetadata.columns[column] = field;
-        Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
+        // const entityMetadata = EntityMetadata.get(parent);
+        // entityMetadata.columns[column] = field;
+        // Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
     };
 }
 

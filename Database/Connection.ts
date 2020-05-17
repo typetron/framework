@@ -81,4 +81,37 @@ export class Connection {
             });
         });
     }
+
+    async getRaw(rawQuery: string) {
+        return new Promise((resolve, reject) => {
+            this.db.all(rawQuery, (error, rows) => {
+                if (error) {
+                    return reject(error);
+                }
+                resolve(rows);
+            });
+        });
+    }
+
+    async firstRaw(rawQuery: string) {
+        return new Promise((resolve, reject) => {
+            this.db.get(rawQuery, (error, rows) => {
+                if (error) {
+                    return reject(error);
+                }
+                resolve(rows);
+            });
+        });
+    }
+
+    async runRaw(rawQuery: string) {
+        return new Promise((resolve, reject) => {
+            this.db.run(rawQuery, error => {
+                if (error) {
+                    return reject(error);
+                }
+                resolve();
+            });
+        });
+    }
 }

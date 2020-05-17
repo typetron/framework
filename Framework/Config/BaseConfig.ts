@@ -1,12 +1,11 @@
+import { ChildObject } from '../../Support';
+
 export const CONFIG_FILE = 'CONFIG_FILE';
 
-export function BaseConfig<T>(file: string) {
-    const baseConfigClass = class {
-        constructor(values: T) {
-            Object.assign(this, values);
-        }
-    };
+export class BaseConfig<T> {
+    constructor(private newValues: ChildObject<T, BaseConfig<T>>) {}
 
-    Reflect.defineMetadata(CONFIG_FILE, file, baseConfigClass);
-    return baseConfigClass;
+    applyNewValues() {
+        Object.assign(this, this.newValues);
+    }
 }

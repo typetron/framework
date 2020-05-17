@@ -74,14 +74,6 @@ export class Query<T = {}> {
         await Query.connection.run(this);
     }
 
-    compileAggregate(aggregate: [string, string]) {
-        const [aggregateFunction, column] = aggregate;
-
-        const distinct = this.useDistinct ? 'DISTINCT ' : '';
-
-        return `SELECT ${aggregateFunction}(${distinct}${column}) as aggregate`;
-    }
-
     table(table: string) {
         this.components.table = table;
 

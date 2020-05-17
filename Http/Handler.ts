@@ -23,7 +23,7 @@ export class Handler {
 
     startServer(app: Application): void {
 
-        const config = app.config.get(AppConfig);
+        const config = app.get(AppConfig);
 
         const server = createServer(async (incomingMessage: IncomingMessage, serverResponse: ServerResponse) => {
             try {

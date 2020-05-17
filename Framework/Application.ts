@@ -2,17 +2,18 @@ import { Container } from '../Container';
 import { Type } from '../Support';
 import { App } from './App';
 import { Provider } from './Provider';
-import { AppConfig, Config, Configurator } from './Config';
+import { AppConfig, BaseConfig } from './Config';
 import { FormResolver } from './Resolvers/FormResolver';
 import { EntityResolver } from './Resolvers/EntityResolver';
 import { RootDir } from './RootDir';
 import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware';
 import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Http';
+import { Storage } from '../Storage';
 
 export class Application extends Container {
     static defaultConfigDirectory = 'config';
 
-    public config = new Config;
+    public config = new Map<Function, object>();
 
     private constructor(public directory: string, public configDirectory = Application.defaultConfigDirectory) {
         super();
@@ -20,32 +21,49 @@ export class Application extends Container {
         this.set(Container, App.instance = this);
         this.set(Application, App.instance);
         this.set(RootDir, directory);
-        this.set(ErrorHandlerInterface, this.get(ErrorHandler));
     }
 
     static async create(directory: string, configDirectory = Application.defaultConfigDirectory) {
-        const app = new this(directory, configDirectory);
-        await app.bootstrap();
-        return app;
+        try {
+            const app = new this(directory, configDirectory);
+            await app.bootstrap();
+            return app;
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
     }
 
-    private registerProviders(providers: Type<Provider>[]) {
-        providers.forEach((provider) => {
-            const instance = this.get(provider);
-            instance.setApplication(this);
-            instance.register();
-        });
+    private async registerProviders(providers: Type<Provider>[]) {
+        await Promise.all(
+            providers.map(provider => {
+                const instance = this.get(provider);
+                instance.setApplication(this);
+                return instance.register();
+            })
+        );
     }
 
     private async loadConfig(configDirectory: string) {
-        const configurator = this.get(Configurator);
-
         const path = this.directory + '/' + configDirectory;
-        this.config = await configurator.load(path);
-        this.set(Config, this.config);
-        this.config.configList.forEach(config => {
-            this.set(config.constructor, config);
-        });
+
+        const storage = this.get(Storage);
+
+        if (!await storage.exists(path)) {
+            console.warn(`Config path '${path}' does not exist. Running with default config.`);
+        }
+
+        storage
+            .files(path)
+            .whereIn('extension', ['ts'])
+            .forEach(file => {
+                const configItem = require(file.path).default as BaseConfig<{}>;
+                if (configItem && configItem.constructor) {
+                    configItem.applyNewValues();
+                    this.config.set(configItem.constructor, configItem);
+                    this.set(configItem.constructor, configItem);
+                }
+            });
     }
 
     private registerResolvers() {
@@ -56,6 +74,8 @@ export class Application extends Container {
     private async bootstrap() {
         await this.loadConfig(this.configDirectory);
 
+        this.set(ErrorHandlerInterface, this.get(ErrorHandler));
+
         const appConfig = this.get(AppConfig);
 
         if (appConfig.staticAssets) {
@@ -63,7 +83,7 @@ export class Application extends Container {
         }
 
         this.registerResolvers();
-        this.registerProviders(appConfig.providers || []);
+        await this.registerProviders(appConfig.providers || []);
     }
 
     startServer() {

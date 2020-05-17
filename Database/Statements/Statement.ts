@@ -1,13 +1,7 @@
 import { Components, SqlValue } from '../Types';
 import { wrap } from '../Helpers';
 
-export const ToSqlInterface = Symbol();
-
-interface ToSql {
-    toSql(): string;
-}
-
-export abstract class Statement implements ToSql {
+export abstract class Statement {
     bindings: SqlValue[] = [];
 
     constructor(public components: Components) {

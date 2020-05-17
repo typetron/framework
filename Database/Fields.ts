@@ -82,7 +82,7 @@ export class ManyToOneField<T extends Entity, R extends Entity> extends Relation
         if (value instanceof Entity) {
             return value[value.getPrimaryKey()] as unknown as T[K];
         }
-        return entity.original[this.column] as unknown as T[K];
+        return entity.original[this.column] as unknown as T[K] || value;
     }
 
     async getResults(parents: R[]) {
@@ -98,7 +98,7 @@ export class ManyToOneField<T extends Entity, R extends Entity> extends Relation
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
             // TODO fix these weird types. Get rid of `unknown`
-            const value = (entity[this.column as keyof T] || entity.original[this.column]) as unknown as R[keyof R];
+            const value = (entity[this.column as keyof T] || (entity.original || {})[this.column]) as unknown as R[keyof R];
             const instance = relatedEntities.findWhere(this.related.getPrimaryKey() as keyof R, value);
             entity[this.property as keyof T] = instance as unknown as T[keyof T];
             return entity;
