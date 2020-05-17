@@ -173,7 +173,7 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
         return this.table || [this.parent.getTable(), this.related.getTable()].sort().join('_');
     }
 
-    value<K extends keyof T>(entity: T, key: string) {
+    value<K extends keyof T>(entity: T, key: string): T[K] {
         const value = entity[key as K];
         if (value instanceof Array) {
             return value.map(related => {

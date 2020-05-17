@@ -20,23 +20,23 @@
 		"sqlite3": "^4.1.0"
 	},
 	"devDependencies": {
-		"@testdeck/mocha": "0.0.6",
+		"@testdeck/mocha": "^0.1.0",
 		"@types/bcrypt": "^3.0.0",
 		"@types/chai": "^4.2.11",
 		"@types/formidable": "^1.0.31",
-		"@types/jsonwebtoken": "^8.3.9",
+		"@types/jsonwebtoken": "^8.5.0",
 		"@types/mocha": "^7.0.2",
-		"@types/node": "^13.11.1",
+		"@types/node": "^14.0.1",
 		"@types/sqlite3": "^3.1.6",
 		"chai": "^4.2.0",
-		"mocha": "^6.1.4",
+		"mocha": "^7.1.2",
 		"nyc": "^15.0.1",
 		"reflect-metadata": "^0.1.13",
-		"source-map-support": "^0.5.12",
-		"ts-mockito": "^2.3.1",
-		"ts-node": "^8.8.1",
-		"tslint": "^5.17.0",
-		"typescript": "^3.8.3"
+		"source-map-support": "^0.5.19",
+		"ts-mockito": "^2.5.0",
+		"ts-node": "^8.10.1",
+		"tslint": "^6.1.2",
+		"typescript": "^3.9.2"
 	},
 	"repository": {
 		"type": "git",

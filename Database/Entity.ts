@@ -17,7 +17,7 @@ export abstract class Entity {
         if (data) {
             this.fill(data as ChildObject<this, Entity>);
         }
-        return new Proxy(this, new EntityProxyHandler(this));
+        return new Proxy(this, new EntityProxyHandler<this>(this));
     }
 
     static get metadata(): EntityMetadata<Entity> {

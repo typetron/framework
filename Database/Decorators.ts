@@ -1,4 +1,4 @@
-import { KeysOfType } from '../Support';
+import { KeysOfType, Constructor } from '../Support';
 import { Entity } from './Entity';
 import { ColumnField, ManyToManyField, ManyToOneField, OneToManyField } from './Fields';
 import { EntityConstructor } from './index';
