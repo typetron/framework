@@ -16,7 +16,7 @@ class QueryTest {
         this.query = new Query;
     }
 
-    async expectSql() {
+    async expect() {
         return expect(await this.query.toSql());
     }
 
@@ -26,49 +26,81 @@ class QueryTest {
 
     @test
     async createsInstanceUsingStaticMethod() {
-        expect(await Query.table('users').get()).to.equal('SELECT * FROM `users`');
+        expect(Query.table('users').toSql()).to.equal('SELECT * FROM `users`');
     }
 
     @test
     async selectsEverything() {
-        this.query.table('users');
-
-        (await this.expectSql()).to.equal('SELECT * FROM `users`');
+        expect(
+            Query.table('users').toSql()
+        ).to.equal(
+            'SELECT * FROM `users`'
+        );
     }
 
     @test
     async selectSpecificColumns() {
-        this.query.table('users').select('name', 'email');
+        expect(
+            Query.table('users').select('name', 'email').toSql()
+        ).to.equal(
+            'SELECT `name`, `email` FROM `users`'
+        );
+    }
 
-        (await this.expectSql()).to.equal('SELECT `name`, `email` FROM `users`');
+    @test
+    async addColumns() {
+        expect(
+            Query.table('users').select('name', 'email').toSql()
+        ).to.equal(
+            'SELECT `name`, `email` FROM `users`'
+        );
     }
 
     @test
     async selectDistinct() {
-        this.query.table('users').distinct().select('name', 'email');
-
-        (await this.expectSql()).to.equal('SELECT DISTINCT `name`, `email` FROM `users`');
+        expect(
+            Query.table('users').distinct().select('name', 'email').toSql()
+        ).to.equal(
+            'SELECT DISTINCT `name`, `email` FROM `users`'
+        );
     }
 
     @test
     async where() {
-        this.query.table('users').where('name', '=', 'John');
+        let query = Query.table('users').where('name', '=', 'John');
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ?');
-        this.expectBindings().to.deep.equal(['John']);
+        expect(
+            query.toSql()
+        ).to.equal(
+            'SELECT * FROM `users` WHERE name = ?'
+        );
+
+        expect(
+            query.getBindings()
+        ).to.deep.equal(
+            ['John']
+        );
     }
 
     @test
     async whereWithDefaultOperator() {
-        this.query.table('users').where('name', 'John');
+        const query = Query.table('users').where('name', 'John');
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ?');
-        this.expectBindings().to.deep.equal(['John']);
+        expect(
+            query.toSql()
+        ).to.equal(
+            'SELECT * FROM `users` WHERE name = ?'
+        );
+        expect(
+            query.getBindings()
+        ).to.deep.equal(
+            ['John']
+        );
     }
 
     // @test
     // async whereWithObject() {
-    //     this.query.table('users').where({name: 'John', age: 21});
+    //     Query.table('users').where({name: 'John', age: 21});
     //
     //     (await this.expectSql()).to.equal('SELECT * FROM users WHERE name = ? AND age = ?');
     //     this.expectBindings().to.deep.equal(['John', 21]);
@@ -76,7 +108,7 @@ class QueryTest {
 
     // @test
     // async whereWithArray() {
-    //     this.query.table('users').where([
+    //     Query.table('users').where([
     //         ['name', '=', 'John'],
     //         ['age', '=', 21]
     //     ]);
@@ -89,7 +121,9 @@ class QueryTest {
     async whereOrOperator() {
         this.query.table('users').where('name', 'John').orWhere('age', 21);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ? OR age = ?');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name = ? OR age = ?'
+        );
         this.expectBindings().to.deep.equal(['John', 21]);
     }
 
@@ -97,7 +131,9 @@ class QueryTest {
     async whereBetween() {
         this.query.table('users').whereBetween('age', [18, 25]);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE age BETWEEN ? AND ?');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age BETWEEN ? AND ?'
+        );
         this.expectBindings().to.deep.equal([18, 25]);
     }
 
@@ -105,7 +141,9 @@ class QueryTest {
     async whereNotBetween() {
         this.query.table('users').whereNotBetween('age', [18, 25]);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE age NOT BETWEEN ? AND ?');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age NOT BETWEEN ? AND ?'
+        );
         this.expectBindings().to.deep.equal([18, 25]);
     }
 
@@ -113,7 +151,9 @@ class QueryTest {
     async orWhereBetween() {
         this.query.table('users').where('name', 'John').orWhereBetween('age', [18, 25]);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ? OR age BETWEEN ? AND ?');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name = ? OR age BETWEEN ? AND ?'
+        );
         this.expectBindings().to.deep.equal(['John', 18, 25]);
     }
 
@@ -121,7 +161,9 @@ class QueryTest {
     async orWhereNotBetween() {
         this.query.table('users').where('name', 'John').orWhereNotBetween('age', [18, 25]);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ? OR age NOT BETWEEN ? AND ?');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name = ? OR age NOT BETWEEN ? AND ?'
+        );
         this.expectBindings().to.deep.equal(['John', 18, 25]);
     }
 
@@ -129,7 +171,9 @@ class QueryTest {
     async whereIn() {
         this.query.table('users').whereIn('age', [18, 25]);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE age IN (?, ?)');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age IN (?, ?)'
+        );
         this.expectBindings().to.deep.equal([18, 25]);
     }
 
@@ -137,7 +181,9 @@ class QueryTest {
     async whereNotIn() {
         this.query.table('users').whereNotIn('age', [18, 25]);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE age NOT IN (?, ?)');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age NOT IN (?, ?)'
+        );
         this.expectBindings().to.deep.equal([18, 25]);
     }
 
@@ -145,7 +191,9 @@ class QueryTest {
     async orWhereIn() {
         this.query.table('users').where('name', 'John').orWhereIn('age', [18, 25]);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ? OR age IN (?, ?)');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name = ? OR age IN (?, ?)'
+        );
         this.expectBindings().to.deep.equal(['John', 18, 25]);
     }
 
@@ -153,7 +201,9 @@ class QueryTest {
     async orWhereNotIn() {
         this.query.table('users').where('name', 'John').orWhereNotIn('age', [18, 25]);
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ? OR age NOT IN (?, ?)');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name = ? OR age NOT IN (?, ?)'
+        );
         this.expectBindings().to.deep.equal(['John', 18, 25]);
     }
 
@@ -161,7 +211,9 @@ class QueryTest {
     async whereNull() {
         this.query.table('users').whereNull('age');
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE age IS NULL');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age IS NULL'
+        );
         this.expectBindings().to.deep.equal([]);
     }
 
@@ -169,7 +221,9 @@ class QueryTest {
     async whereNotNull() {
         this.query.table('users').whereNotNull('age');
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE age IS NOT NULL');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age IS NOT NULL'
+        );
         this.expectBindings().to.deep.equal([]);
     }
 
@@ -177,7 +231,9 @@ class QueryTest {
     async orWhereNull() {
         this.query.table('users').where('name', 'John').orWhereNull('age');
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ? OR age IS NULL');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name = ? OR age IS NULL'
+        );
         this.expectBindings().to.deep.equal(['John']);
     }
 
@@ -185,7 +241,9 @@ class QueryTest {
     async orWhereNotNull() {
         this.query.table('users').where('name', 'John').orWhereNotNull('age');
 
-        (await this.expectSql()).to.equal('SELECT * FROM `users` WHERE name = ? OR age IS NOT NULL');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name = ? OR age IS NOT NULL'
+        );
         this.expectBindings().to.deep.equal(['John']);
     }
 
@@ -202,22 +260,32 @@ class QueryTest {
     @test
     async orderBys() {
         this.query.table('users').orderBy('age');
-        (await this.expectSql()).to.equal('SELECT * FROM `users` ORDER BY `age` ASC');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` ORDER BY `age` ASC'
+        );
 
         this.query.table('users').orderBy('age', 'DESC');
-        (await this.expectSql()).to.equal('SELECT * FROM `users` ORDER BY `age` DESC');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` ORDER BY `age` DESC'
+        );
 
         this.query.table('users').orderBy([['age', 'DESC'], ['email', 'ASC']]);
-        (await this.expectSql()).to.equal('SELECT * FROM `users` ORDER BY `age` DESC, `email` ASC');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` ORDER BY `age` DESC, `email` ASC'
+        );
     }
 
     @test
     async groupBy() {
         this.query.table('users').groupBy('name');
-        (await this.expectSql()).to.equal('SELECT * FROM `users` GROUP BY `name`');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` GROUP BY `name`'
+        );
 
         this.query.table('users').groupBy('city', 'country');
-        (await this.expectSql()).to.equal('SELECT * FROM `users` GROUP BY `city`, `country`');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` GROUP BY `city`, `country`'
+        );
     }
 
     @test
@@ -227,7 +295,16 @@ class QueryTest {
 
     @test
     async aggregateMax() {
-        expect(await this.query.table('users').max('age')).to.equal('SELECT MAX(age) as aggregate FROM `users`');
+        expect(await this.query.table('users').max('age')).to.equal('SELECT MAX(`age`) as aggregate FROM `users`');
+    }
+
+    @test
+    async limit() {
+        expect(
+            await this.query.table('users').limit(10, 20).get()
+        ).to.equal(
+            'SELECT * FROM `users` LIMIT 10, 20'
+        );
     }
     //
     // @test
@@ -239,7 +316,9 @@ class QueryTest {
     @test
     async defaultJoin() {
         this.query.table('users').join('pets', 'pets.user_id', '=', 'users.id');
-        (await this.expectSql()).to.equal('SELECT * FROM `users` INNER JOIN `pets` ON pets.user_id = users.id');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` INNER JOIN `pets` ON pets.user_id = users.id'
+        );
 
         // this.new.query.table('users').join('pets', 'pets.user_id', '=', 'users.id').leftJoin('pet_types', 'pet_types.id', '=', 'pets.type_id');
         // (await this.expectSql()).to.equal('SELECT * FROM users INNER JOIN pets ON pets.user_id = users.id LEFT JOIN pet_types ON pet_types.id = pets.type_id');
@@ -248,19 +327,25 @@ class QueryTest {
     @test
     async innerJoin() {
         this.query.table('users').innerJoin('pets', 'pets.user_id', '=', 'users.id');
-        (await this.expectSql()).to.equal('SELECT * FROM `users` INNER JOIN `pets` ON pets.user_id = users.id');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` INNER JOIN `pets` ON pets.user_id = users.id'
+        );
     }
 
     @test
     async leftJoin() {
         this.query.table('users').leftJoin('pets', 'pets.user_id', '=', 'users.id');
-        (await this.expectSql()).to.equal('SELECT * FROM `users` LEFT JOIN `pets` ON pets.user_id = users.id');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` LEFT JOIN `pets` ON pets.user_id = users.id'
+        );
     }
 
     @test
     async rightJoin() {
         this.query.table('users').rightJoin('pets', 'pets.user_id', '=', 'users.id');
-        (await this.expectSql()).to.equal('SELECT * FROM `users` RIGHT JOIN `pets` ON pets.user_id = users.id');
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` RIGHT JOIN `pets` ON pets.user_id = users.id'
+        );
     }
 
     @test
@@ -269,7 +354,9 @@ class QueryTest {
             name: 'John',
             email: 'john@example.com'
         });
-        (await this.expectSql()).to.equal('INSERT INTO `users` (`name`, `email`) VALUES (?, ?)');
+        (await this.expect()).to.equal(
+            'INSERT INTO `users` (`name`, `email`) VALUES (?, ?)'
+        );
         this.expectBindings().to.deep.equal(['John', 'john@example.com']);
     }
 
@@ -285,7 +372,9 @@ class QueryTest {
                 email: 'chris@example.com'
             }
         ]);
-        (await this.expectSql()).to.equal('INSERT INTO `users` (`name`, `email`) VALUES (?, ?), (?, ?)');
+        (await this.expect()).to.equal(
+            'INSERT INTO `users` (`name`, `email`) VALUES (?, ?), (?, ?)'
+        );
         this.expectBindings().to.deep.equal(['John', 'john@example.com', 'Chris', 'chris@example.com']);
     }
 
@@ -293,14 +382,18 @@ class QueryTest {
     async delete() {
         this.query.table('users').delete();
 
-        (await this.expectSql()).to.equal('DELETE FROM `users`');
+        (await this.expect()).to.equal(
+            'DELETE FROM `users`'
+        );
     }
 
     @test
     async deletesWithCondition() {
         this.query.table('users').where('name', 'John').delete();
 
-        (await this.expectSql()).to.equal('DELETE FROM `users` WHERE name = ?');
+        (await this.expect()).to.equal(
+            'DELETE FROM `users` WHERE name = ?'
+        );
         this.expectBindings().to.deep.equal(['John']);
     }
 
@@ -308,7 +401,9 @@ class QueryTest {
     async update() {
         this.query.table('users').update('name', 'John');
 
-        (await this.expectSql()).to.equal('UPDATE `users` SET name = ?');
+        (await this.expect()).to.equal(
+            'UPDATE `users` SET name = ?'
+        );
         this.expectBindings().to.deep.equal(['John']);
     }
 
@@ -319,20 +414,24 @@ class QueryTest {
             age: 21,
         });
 
-        (await this.expectSql()).to.equal('UPDATE `users` SET name = ?, age = ?');
+        (await this.expect()).to.equal(
+            'UPDATE `users` SET name = ?, age = ?'
+        );
         this.expectBindings().to.deep.equal(['John', 21]);
     }
 
     @test
     async updateWithCondition() {
         this.query.table('users').where('name', 'John').update('name', 'Doe');
-        (await this.expectSql()).to.equal('UPDATE `users` SET name = ? WHERE name = ?');
+        (await this.expect()).to.equal(
+            'UPDATE `users` SET name = ? WHERE name = ?'
+        );
         this.expectBindings().to.deep.equal(['Doe', 'John']);
     }
 
     // @test
     // async subSelects() {
-    //     this.query.table('users').where('age', query => {
+    //     Query.table('users').where('age', query => {
     //         query.max('age').table('users');
     //     });
     //     (await this.expectSql()).to.equal('SELECT * FROM users where age = (SELECT MAX(age) FROM users)');
