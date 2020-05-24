@@ -18,7 +18,7 @@ export class EntityResolver extends BaseResolver {
         if (parameter) {
             entity = await abstract.find(parameter);
             if (!entity) {
-                throw new Error(`Entity '${requestParameterName}' with identifier '${parameter}' not found`);
+                throw new Error(`Entity '${requestParameterName}' with ${abstract.getPrimaryKey()} '${parameter}' not found`);
             }
         } else {
             throw new Error(`No parameter found that can be used as an entity identifier for the '${requestParameterName}' entity. Did you forget to add the '{${requestParameterName}}' parameter on the route?`);

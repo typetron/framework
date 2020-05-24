@@ -1,6 +1,6 @@
 import { Entity } from './Entity';
 import { Connection } from './Connection';
-import { ColumnField } from './Fields';
+import { ColumnField, PrimaryField } from './Fields';
 import { ID } from './Decorators';
 
 export class Schema {
@@ -8,7 +8,7 @@ export class Schema {
     // tslint:disable-next-line:no-any
     static typesMatches = new Map<any, string>([
         [Entity, 'integer'],
-        [ID, `integer constraint ${String.random(9, 'abcdefghijklmnopqrstuvwxyz')} primary key autoincrement`],
+        [PrimaryField, `integer constraint ${String.random(9, 'abcdefghijklmnopqrstuvwxyz')} primary key autoincrement`],
         [Number, 'integer'],
         [String, 'varchar'],
         [Date, 'datetime'],
@@ -38,8 +38,8 @@ export class Schema {
 
     private static getColumnSql(columnMetadata: ColumnField<Entity>): string {
         const columnType = columnMetadata.type();
-        const type = Array.from(this.typesMatches.keys()).find((key: object) =>
-            key === columnMetadata.type() || columnType.prototype instanceof (key as unknown as Function)
+        const type = Array.from(this.typesMatches.keys()).find(key =>
+            key === columnMetadata.type() || columnType.prototype instanceof key || columnMetadata instanceof key
         ) || String;
         return `${columnMetadata.column} ${this.typesMatches.get(type)}`;
     }

@@ -10,8 +10,8 @@ import { Query } from './Query';
 
 export abstract class Entity {
 
-    protected exists = false;
-    public original: Record<string, Record<string, object>> = {};
+    exists = false;
+    original: Record<string, Record<string, object>> = {};
 
     constructor(data?: object) {
         if (data) {
@@ -60,6 +60,31 @@ export abstract class Entity {
         return this.newQuery().whereLike(column, value as WhereValue, boolean);
     }
 
+    static async first<T extends Entity, K extends EntityKeys<T>>(
+        this: EntityConstructor<T>,
+        ...columns: EntityKeys<T>[]
+    ): Promise<T | undefined> {
+        return this.newQuery().first(...columns);
+    }
+
+    // tslint:disable-next-line:no-any
+    static async firstOrNew<T extends Entity, K extends keyof Entity>(
+        this: EntityConstructor<T>,
+        properties: ChildObject<T, Entity>,
+        values?: ChildObject<T, Entity>
+    ): Promise<T> {
+        return this.newQuery().firstOrNew(properties, values);
+    }
+
+    // tslint:disable-next-line:no-any
+    static async firstOrCreate<T extends Entity, K extends keyof Entity>(
+        this: EntityConstructor<T>,
+        properties: ChildObject<T, Entity>,
+        values?: ChildObject<T, Entity>
+    ): Promise<T> {
+        return (await this.firstOrNew(properties, values)).save();
+    }
+
     static orderBy<T extends Entity, K extends EntityKeys<T>>(
         this: EntityConstructor<T>,
         column: EntityKeys<T>,
@@ -85,21 +110,25 @@ export abstract class Entity {
         return (new this).fill(data).save();
     }
 
-    static async get<T extends Entity>(this: EntityConstructor<T>, columns: (EntityKeys<T> | '*')[] = ['*']): Promise<T[]> {
-        return this.newQuery().get(columns);
+    static async get<T extends Entity>(this: EntityConstructor<T>, ...columns: EntityKeys<T> []): Promise<T[]> {
+        return this.newQuery().get(...columns);
     }
 
     static with<T extends Entity, K extends KeysOfType<T, Entity | Entity[]>>(this: EntityConstructor<T>, ...relations: K[]) {
         return this.newQuery().with(...relations);
     }
 
+    static withCount<T extends Entity, K extends KeysOfType<T, Entity | Entity[]>>(this: EntityConstructor<T>, ...relations: K[]) {
+        return this.newQuery().withCount(...relations);
+    }
+
     static async find<T extends Entity>(this: EntityConstructor<T>, id: string | number | ID): Promise<T> {
         const query = this.newQuery().where('id' as keyof T, id as number);
-        const instance = await query.first();
-        if (!instance || !Object.entries(instance).length) {
+        const data = await query.first();
+        if (!data || !Object.entries(data).length) {
             throw new EntityNotFoundError(`No records found for entity '${this.name}' when querying with parameters [${query.getBindings().join(', ')}]`);
         }
-        return instance;
+        return this.newInstance(data, true);
     }
 
     static getPrimaryKey<T extends Entity>(): EntityKeys<T> {
@@ -153,7 +182,7 @@ export abstract class Entity {
         // TODO diff the values so we don't update every value from the entity
         Object.keys(columns).forEach((column) => {
             const type = columns[column];
-            if (type instanceof ColumnField && type.column) { // TODO add tests to verify this
+            if (type.column) {
                 databaseData[type.column] = type.relationshipColumnValue(this, this[column as keyof Entity]);
             }
             if (type instanceof ManyToManyField) {
@@ -247,7 +276,7 @@ export abstract class Entity {
     }
 
     private convertValueByType(value: unknown, property: ColumnField<Entity>) {
-        const converter = types.get(property.type) || (() => value);
+        const converter = types.get(property.type()) || (() => value);
         return converter(value);
     }
 }

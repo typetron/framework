@@ -19,6 +19,9 @@ export class ColumnField<T extends Entity> implements ColumnInterface<T> {
     }
 }
 
+export class PrimaryField<T extends Entity> extends ColumnField<T> {
+}
+
 export abstract class Relation<T extends Entity, R extends Entity> extends ColumnField<T> {
     protected constructor(parent: EntityConstructor<T>, property: string, public type: () => EntityConstructor<R>, column: string) {
         super(parent, property, type, column);
@@ -30,7 +33,11 @@ export abstract class Relation<T extends Entity, R extends Entity> extends Colum
 
     abstract match(entities: T[], relatedEntities: R[]): T[];
 
+    abstract matchCounts(entities: T[], counts: Record<string, number>[]): T[];
+
     abstract async getResults(relatedEntities: R[]): Promise<R[]>;
+
+    abstract async getResultsCount(relatedEntities: R[]): Promise<Record<string, number>[]>;
 }
 
 export class OneToManyField<T extends Entity, R extends Entity> extends Relation<T, R> {
@@ -42,6 +49,16 @@ export class OneToManyField<T extends Entity, R extends Entity> extends Relation
         const parentIds = relatedEntities.pluck(this.parent.getPrimaryKey()) as number[];
         const inverseByField = this.related.metadata.columns[this.inverseBy as keyof EntityMetadata<R>];
         return await this.related.whereIn(inverseByField.column as EntityKeys<R>, parentIds).get();
+    }
+
+    async getResultsCount(relatedEntities: R[]) {
+        const relatedField = this.related.metadata.columns[this.inverseBy];
+
+        return await this.related.newQuery()
+            .whereIn(relatedField.column, relatedEntities.pluck(this.parent.getPrimaryKey()))
+            .select(relatedField.column)
+            .groupBy(relatedField.column)
+            .count() as unknown as Record<string, number>[];
     }
 
     match(entities: T[], relatedEntities: R[]): T[] {
@@ -56,6 +73,15 @@ export class OneToManyField<T extends Entity, R extends Entity> extends Relation
         return entities;
     }
 
+    matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
+        const relatedField = this.related.metadata.columns[this.inverseBy];
+        entities.forEach(entity => {
+            const count = counts.findWhere(relatedField.column, entity[this.parent.getPrimaryKey()]);
+            entity[this.property + 'Count' as keyof T] = (count?.aggregate ?? 0)  as unknown as T[keyof T];
+        });
+
+        return entities;
+    }
 }
 
 export class ManyToOneField<T extends Entity, R extends Entity> extends Relation<T, R> {
@@ -95,6 +121,10 @@ export class ManyToOneField<T extends Entity, R extends Entity> extends Relation
         return [];
     }
 
+    async getResultsCount(relatedEntities: R[]) {
+        return [];
+    }
+
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
             // TODO fix these weird types. Get rid of `unknown`
@@ -103,6 +133,9 @@ export class ManyToOneField<T extends Entity, R extends Entity> extends Relation
             entity[this.property as keyof T] = instance as unknown as T[keyof T];
             return entity;
         });
+    }
+    matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
+        return entities;
     }
 }
 
@@ -159,6 +192,10 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
         return this.relatedKey || `${this.related.name.toLocaleLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`;
     }
 
+    async getResultsCount(relatedEntities: R[]) {
+        return [];
+    }
+
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
             // TODO fix these weird types. Get rid of `unknown`
@@ -167,6 +204,10 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
                 .filter(related => related.original.pivot[this.getParentForeignKey()] === entityPrimaryKey) as unknown as T[keyof T];
             return entity;
         });
+    }
+
+    matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
+        return entities;
     }
 
     getPivotTable() {

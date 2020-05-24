@@ -5,48 +5,67 @@ import { IncomingHttpHeaders } from 'http';
 import { Container } from '../Container';
 import { Application } from '../Framework';
 import { Router } from '../Router';
+import { Auth } from '../Framework/Auth';
 
 export abstract class TestCase {
     app: Container;
+    userId: number;
 
     abstract async bootstrapApp(): Promise<void>;
 
     async before() {
         await this.bootstrapApp();
+        delete this.userId;
+    }
+
+    loginById(id: number) {
+        this.userId = id;
     }
 
     get(routeName: string, content = {}, headers: IncomingHttpHeaders = {}) {
         return this.request(Http.Method.GET, routeName, content, headers);
     }
 
-    post(routeName: string, content = {}, headers: IncomingHttpHeaders = {}) {
-        return this.request(Http.Method.POST, routeName, content, headers);
+    post(route: string | [string, Record<string, string | number>], content = {}, headers: IncomingHttpHeaders = {}) {
+        return this.request(Http.Method.POST, route, content, headers);
     }
 
-    private async request(method: Http.Method, routeName: string, content = {}, headers: IncomingHttpHeaders = {}) {
+    patch(route: string | [string, Record<string, string | number>], content = {}, headers: IncomingHttpHeaders = {}) {
+        return this.request(Http.Method.PATCH, route, content, headers);
+    }
+
+    put(route: string | [string, Record<string, string | number>], content = {}, headers: IncomingHttpHeaders = {}) {
+        return this.request(Http.Method.PUT, route, content, headers);
+    }
+
+    delete(route: string | [string, Record<string, string | number>], content = {}, headers: IncomingHttpHeaders = {}) {
+        return this.request(Http.Method.DELETE, route, content, headers);
+    }
+
+    private async request(
+        method: Http.Method,
+        routeName: string | [string, Record<string, string | number>],
+        content = {},
+        headers: IncomingHttpHeaders = {}
+    ) {
+        let routeParameters = {};
+        if (typeof routeName !== 'string') {
+            [routeName, routeParameters] = routeName;
+        }
+
         const router = this.app.get(Router);
         const route = router.routes.findWhere('name', routeName);
         if (!route) {
             throw new Error(`Route '${routeName}' not found`);
         }
+        route.parameters = this.convertRouteParametersToString(routeParameters) || {};
 
-        const request = new Request(route.uri, method, {}, {}, headers, content);
-        // const response = new Response();
-        // request.method = method;
-        // request.url = route.uri;
-        // request.headers = headers;
+        if (this.userId) {
+            const token = this.app.get(Auth).loginById(this.userId);
+            headers.authorization = `Bearer ${token}`;
+        }
 
-        // const socket = new Socket();
-        // const incomingMessage = new IncomingMessage(socket);
-        // const request = new Request(incomingMessage);
-        // const serverResponse = new ServerResponse(request.incomingMessage);
-        // const response = new Response(serverResponse);
-
-        // const oldWrite = response.response.write.bind(response);
-        // response.response.write = function (content: string | number) {
-        //     response.content = String(content);
-        //     return oldWrite(response.content);
-        // };
+        const request = new Request(route.getUrl(), method, {}, {}, headers, content);
 
         const response = await this.app.get(Handler).handle(this.app as Application, request);
 
@@ -55,14 +74,12 @@ export abstract class TestCase {
         }
 
         return response;
+    }
 
-        // return new Promise<Response>(resolve => {
-        //     response.response.end = function () {
-        //         resolve(response);
-        //     };
-        //     request.emit('end');
-        // }).catch(reject => {
-        //     throw new Error(reject);
-        // });
+    private convertRouteParametersToString(routeParameters: Record<string, string | number>) {
+        Object.keys(routeParameters).forEach(key => {
+            routeParameters[key] = String(routeParameters[key]);
+        });
+        return routeParameters as Record<string, string>;
     }
 }

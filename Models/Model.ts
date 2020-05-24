@@ -1,25 +1,25 @@
 import { Constructor } from '../Support';
-import { ModelField, ModelMetadataKey } from './index';
+import { ModelField, ModelMetadataKey, ModelTypeInterface } from './index';
 
 export class Model {
-    static from<T extends (Model | Model[]), Q extends Model>(this: Constructor<Q>, entities: T | T[]): Q | Q[] {
+    static from<T extends Model, Q extends T>(this: Constructor<T> & typeof Model, entities: Q): T {
         const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, this) || {};
 
-        if (entities instanceof Array) {
-            return entities.map(entity => Model.transform<T, Q>(fields, entity));
-        }
         return Model.transform<T, Q>(fields, entities);
+    }
+
+    static fromMany<T extends Model, Q extends T>(this: Constructor<T> & typeof Model, entities: Q[]): T[] {
+        return entities.map(entity => this.from<T, Q>(entity));
     }
 
     private static transform<T, Q extends Model>(fields: Record<string, ModelField>, entity: T): Q {
         const data: Partial<Record<keyof Q, T[keyof T]>> = {};
         Object.values(fields).forEach(field => {
-            if (field.type.prototype instanceof Model && entity[field.name as keyof T]) {
-                const model = field.type as typeof Model;
-                // @ts-ignore
-                data[field.name as keyof Q] = model.from<T, Q>(entity[field.name as keyof T]);
+            const value = entity[field.name as keyof T];
+            if (field.type instanceof ModelTypeInterface && value) {
+                data[field.name as keyof Q] = field.type.transform(value) as T[keyof T];
             } else {
-                data[field.name as keyof Q] = entity[field.name as keyof T];
+                data[field.name as keyof Q] = value;
             }
         });
         return data as Q;

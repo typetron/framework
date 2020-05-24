@@ -32,7 +32,11 @@ export abstract class Statement {
     }
 
     get groups() {
-        return '';
+        if (!this.components.groups.length) {
+            return '';
+        }
+
+        return `GROUP BY ` + this.components.groups.map(column => wrap(column)).join(', ');
     }
 
     get havings() {
@@ -44,7 +48,7 @@ export abstract class Statement {
             return '';
         }
 
-        return 'ORDER BY ' + this.components.orders.map(order => `${order[0]} ${order[1]}`).join(' ');
+        return 'ORDER BY ' + this.components.orders.map(order => `${wrap(order[0])} ${order[1]}`).join(', ');
     }
 
     abstract toSql(): string;

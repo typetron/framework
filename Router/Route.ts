@@ -19,7 +19,7 @@ export class Route {
         public parametersTypes: (Type<Function> | FunctionConstructor)[] = [],
         public middleware: Abstract<MiddlewareInterface>[] = []
     ) {
-        this.buildRouteUri();
+        this.splitUriParts();
     }
 
     async run(request: Request, container: Container): Promise<object | string | Response> {
@@ -68,7 +68,7 @@ export class Route {
         return true;
     }
 
-    buildRouteUri() {
+    splitUriParts() {
         this.uri.split('/').forEach(uriPart => {
             const matches = uriPart.match(/:(\w+)/);
             if (matches) {
@@ -83,6 +83,15 @@ export class Route {
                 });
             }
         });
+    }
+
+    getUrl(): string {
+        return this.uriParts.map(part => {
+            if (part.type === 'parameter') {
+                return this.parameters[part.name];
+            }
+            return part.name;
+        }).join('/');
     }
 
     private async resolveParameters(parameters: Type<Function>[], overrides: Function[], container: Container) {

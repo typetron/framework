@@ -1,6 +1,6 @@
 import { KeysOfType, Constructor } from '../Support';
 import { Entity } from './Entity';
-import { ColumnField, ManyToManyField, ManyToOneField, OneToManyField } from './Fields';
+import { ColumnField, ManyToManyField, ManyToOneField, OneToManyField, PrimaryField } from './Fields';
 import { EntityConstructor } from './index';
 
 export const EntityMetadataKey = 'framework:entity';
@@ -45,6 +45,14 @@ export function Column<T extends Entity>(column?: string) {
     };
 }
 
+export function PrimaryColumn<T extends Entity>(column?: string) {
+    return function (parent: T, name: string) {
+        const type = Reflect.getMetadata('design:type', parent, name);
+        const field = new PrimaryField(parent.constructor as EntityConstructor<T>, name, () => type, column || name);
+        setEntityMetadata(parent, field);
+    };
+}
+
 export function CreatedAt<T extends Entity>(column?: string) {
     return function (parent: T, name: string) {
         Column(column)(parent, name);
@@ -63,7 +71,7 @@ export function UpdatedAt<T extends Entity>(column?: string) {
     };
 }
 
-export class ID extends Number {}
+export type ID = number;
 
 export function OneToMany<T extends Entity, R extends Entity>(
     type: () => EntityConstructor<R>,

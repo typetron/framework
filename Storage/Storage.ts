@@ -49,10 +49,10 @@ export class Storage {
         if (!file.name) {
             file.name = String(name || this.generateFileName() + '.' + file.extension);
         }
-        if (!await this.exists(directory)) {
+        if (directory && !await this.exists(directory)) {
             await this.makeDirectory(directory);
         }
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             if (file.content) {
                 fileSystem.writeFile(newPath, file.content, error => {
                     if (error) {

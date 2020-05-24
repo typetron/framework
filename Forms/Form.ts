@@ -55,8 +55,10 @@ export abstract class Form {
     fill(data: FormFields<this>) {
         const fields = Object.values(this.fields()) as FormField[];
         fields.forEach(field => {
-            // @ts-ignore
-            this[field.name as keyof FormFields<this>] = data[field.name as keyof FormFields<this>];
+            if (field.name in data) {
+                // @ts-ignore
+                this[field.name] = data[field.name];
+            }
         });
     }
 

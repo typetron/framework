@@ -1,10 +1,10 @@
-import { Column, Entity, ID } from '../../Database';
+import { Column, Entity, ID, PrimaryColumn } from '../../Database';
 import { Authenticable } from './Authenticable';
 
 export class User extends Entity implements Authenticable {
 
-    @Column()
-    id: ID;
+    @PrimaryColumn()
+    id: number;
 
     @Column()
     email: string;

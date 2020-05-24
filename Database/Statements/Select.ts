@@ -8,13 +8,21 @@ export class Select extends Statement {
     }
 
     get columns() {
-        const columns = this.components.columns || [];
-        if (columns[0] === '*') {
-            return columns;
-        }
-        return columns.map(column => {
+        let columns = this.components.columns || [];
+        columns = columns.map(column => {
             return column instanceof Expression ? column.value : wrap(column);
-        }).join(', ');
+        });
+
+        const aggregate = this.components.aggregate;
+        if (aggregate) {
+            columns.push(`${aggregate.function}(${wrap(aggregate.columns) || '*'}) as aggregate`);
+        }
+
+        if (!columns.length) {
+            return '*';
+        }
+
+        return columns.join(', ');
     }
 
     get wheres() {
@@ -22,7 +30,7 @@ export class Select extends Statement {
             return '';
         }
 
-        return 'WHERE ' + super.wheres;
+        return `WHERE ${super.wheres}`;
     }
 
     toSql() {

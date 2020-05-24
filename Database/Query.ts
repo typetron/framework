@@ -30,7 +30,7 @@ export class Query<T = {}> {
     private components: Components = {
         table: '',
         distinct: false,
-        columns: ['*'],
+        columns: [],
         joins: [],
         wheres: [],
         groups: [],
@@ -66,8 +66,8 @@ export class Query<T = {}> {
         return sql.replace(/\s{2,}/g, ' ').trim();
     }
 
-    async get<K extends keyof T>(columns?: (K | string | Expression)[]): Promise<T[]> {
-        return Query.connection.get(this.select(columns || this.components.columns));
+    async get<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T[]> {
+        return Query.connection.get(this.select(...columns || this.components.columns));
     }
 
     async run<K extends keyof T>(): Promise<void> {
@@ -80,11 +80,11 @@ export class Query<T = {}> {
         return this;
     }
 
-    async first<K extends keyof T>(columns?: (K | string | Expression)[]): Promise<T | undefined> {
-        return Query.connection.first(this.select(columns || this.components.columns));
+    async first<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T | undefined> {
+        return Query.connection.first(this.select(...columns || this.components.columns));
     }
 
-    select<K extends keyof T>(columns: (K | string | Expression)[]) {
+    select<K extends keyof T>(...columns: (K | string | Expression)[]) {
         this.components.columns = columns as string[];
 
         return this;
@@ -174,39 +174,39 @@ export class Query<T = {}> {
         return this.whereLike(column, value, 'OR', true);
     }
 
-    whereBetween(column: string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND', not = false): this {
-        this.components.wheres.push(new WhereBetween(column, values, boolean, not));
+    whereBetween<K extends keyof T>(column: K | string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND', not = false): this {
+        this.components.wheres.push(new WhereBetween(column as string, values, boolean, not));
 
         return this;
     }
 
-    whereNotBetween(column: string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND'): this {
+    whereNotBetween<K extends keyof T>(column: K | string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND'): this {
         return this.whereBetween(column, values, boolean, true);
     }
 
-    orWhereBetween(column: string, values: [SqlValue, SqlValue]): this {
+    orWhereBetween<K extends keyof T>(column: K | string, values: [SqlValue, SqlValue]): this {
         return this.whereBetween(column, values, 'OR');
     }
 
-    orWhereNotBetween(column: string, values: [SqlValue, SqlValue]): this {
+    orWhereNotBetween<K extends keyof T>(column: K | string, values: [SqlValue, SqlValue]): this {
         return this.whereBetween(column, values, 'OR', true);
     }
 
-    whereNull(column: string, boolean: Boolean = 'AND', not = false): this {
-        this.components.wheres.push(new WhereNull(column, boolean, not));
+    whereNull<K extends keyof T>(column: K | string, boolean: Boolean = 'AND', not = false): this {
+        this.components.wheres.push(new WhereNull(column as string, boolean, not));
 
         return this;
     }
 
-    whereNotNull(column: string, boolean: Boolean = 'AND'): this {
+    whereNotNull<K extends keyof T>(column: K | string, boolean: Boolean = 'AND'): this {
         return this.whereNull(column, boolean, true);
     }
 
-    orWhereNull(column: string): this {
+    orWhereNull<K extends keyof T>(column: K | string): this {
         return this.whereNull(column, 'OR');
     }
 
-    orWhereNotNull(column: string): this {
+    orWhereNotNull<K extends keyof T>(column: K | string): this {
         return this.whereNull(column, 'OR', true);
     }
 
@@ -243,18 +243,32 @@ export class Query<T = {}> {
         return this;
     }
 
+    groupBy<K extends keyof T>(...columns: (K | string) []) {
+        this.components.groups = columns as string[];
+
+        return this;
+    }
+
     addSelect<K extends keyof T>(columns: (K | string | Expression)[]) {
         this.components.columns.push(...columns as string[]);
 
         return this;
     }
 
-    count(column = '*') {
-        this.components.aggregate = ['COUNT', column];
+    async count<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T[]> {
+        this.components.aggregate = {
+            function: 'COUNT',
+            columns: columns as string[],
+        };
+        return Query.connection.get(this);
     }
 
-    max(column = '*') {
-        this.components.aggregate = ['MAX', column];
+    async max<K extends keyof T>(column: (K | string | Expression), ...columns: (K | string | Expression)[]): Promise<T[]> {
+        this.components.aggregate = {
+            function: 'MAX',
+            columns: [column].concat(columns) as string[],
+        };
+        return Query.connection.get(this);
     }
 
     async insert(data: SqlValueMap | SqlValueMap[]) {

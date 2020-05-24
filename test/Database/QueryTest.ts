@@ -1,8 +1,7 @@
 import { expect } from 'chai';
 import { suite, test } from '@testdeck/mocha';
-import { Query } from '../../Database';
+import { Connection, Query } from '../../Database';
 import { anyOfClass, instance, mock, when } from 'ts-mockito';
-import { Connection } from '../../Database/Connection';
 
 @suite
 class QueryTest {
@@ -18,7 +17,7 @@ class QueryTest {
     }
 
     async expectSql() {
-        return expect(await this.query.get());
+        return expect(await this.query.toSql());
     }
 
     expectBindings() {
@@ -39,14 +38,14 @@ class QueryTest {
 
     @test
     async selectSpecificColumns() {
-        this.query.table('users').select(['name', 'email']);
+        this.query.table('users').select('name', 'email');
 
         (await this.expectSql()).to.equal('SELECT `name`, `email` FROM `users`');
     }
 
     @test
     async selectDistinct() {
-        this.query.table('users').distinct().select(['name', 'email']);
+        this.query.table('users').distinct().select('name', 'email');
 
         (await this.expectSql()).to.equal('SELECT DISTINCT `name`, `email` FROM `users`');
     }
@@ -199,27 +198,37 @@ class QueryTest {
     //     (await this.expectSql()).to.equal('SELECT * FROM users WHERE name = ? and (age = ? or role = ?)');
     //     this.expectBindings().to.deep.equal(['john', 21, 'Admin']);
     // }
-    //
-    // @test
-    // async orderBys() {
-    //     this.query.table('users').orderBy('age');
-    //     (await this.expectSql()).to.equal('SELECT * FROM users ORDER BY age ASC');
-    //
-    //     this.query.table('users').orderBy('age', 'DESC');
-    //     (await this.expectSql()).to.equal('SELECT * FROM users ORDER BY age DESC');
-    //
-    //     this.query.table('users').orderBy([['age', 'DESC'], ['email', 'ASC']]);
-    //     (await this.expectSql()).to.equal('SELECT * FROM users ORDER BY age DESC, email ASC');
-    // }
-    //
-    // @test
-    // async aggregateCount() {
-    //     this.query.table('users').count();
-    //     (await this.expectSql()).to.equal('SELECT COUNT(*) as aggregate FROM users');
-    //
-    //     this.new.query.table('users').count('age');
-    //     (await this.expectSql()).to.equal('SELECT COUNT(age) as aggregate FROM users');
-    // }
+
+    @test
+    async orderBys() {
+        this.query.table('users').orderBy('age');
+        (await this.expectSql()).to.equal('SELECT * FROM `users` ORDER BY `age` ASC');
+
+        this.query.table('users').orderBy('age', 'DESC');
+        (await this.expectSql()).to.equal('SELECT * FROM `users` ORDER BY `age` DESC');
+
+        this.query.table('users').orderBy([['age', 'DESC'], ['email', 'ASC']]);
+        (await this.expectSql()).to.equal('SELECT * FROM `users` ORDER BY `age` DESC, `email` ASC');
+    }
+
+    @test
+    async groupBy() {
+        this.query.table('users').groupBy('name');
+        (await this.expectSql()).to.equal('SELECT * FROM `users` GROUP BY `name`');
+
+        this.query.table('users').groupBy('city', 'country');
+        (await this.expectSql()).to.equal('SELECT * FROM `users` GROUP BY `city`, `country`');
+    }
+
+    @test
+    async aggregateCount() {
+        expect(await this.query.table('users').count()).to.equal('SELECT COUNT(*) as aggregate FROM `users`');
+    }
+
+    @test
+    async aggregateMax() {
+        expect(await this.query.table('users').max('age')).to.equal('SELECT MAX(age) as aggregate FROM `users`');
+    }
     //
     // @test
     // async aggregateMax() {

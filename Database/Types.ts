@@ -42,12 +42,15 @@ export interface BaseComponents {
 export interface SelectComponents extends BaseComponents {
     distinct?: boolean;
     columns: (string | Expression)[];
-    aggregate?: [string, string | string[]];
+    aggregate?: {
+        function: string,
+        columns: string[];
+    };
     joins: JoinClause[];
     wheres: SqlClause[];
-    groups?: string[];
-    orders?: [string, Direction][];
-    having?: Where[];
+    groups: string[];
+    orders: [string, Direction][];
+    having: Where[];
     limit?: {from: number, count?: number};
 }
 

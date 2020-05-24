@@ -40,6 +40,10 @@ export class Auth {
         return jwt.sign({sub: this.id = user.id}, this.authConfig.signature, {expiresIn: this.authConfig.duration});
     }
 
+    loginById(id: number): string {
+        return jwt.sign({sub: this.id = id}, this.authConfig.signature, {expiresIn: this.authConfig.duration});
+    }
+
     async register(username: string, password: string): Promise<User> {
         return await this.authenticable.create({
             email: username,
