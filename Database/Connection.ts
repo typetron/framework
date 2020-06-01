@@ -1,5 +1,5 @@
-import { Database } from 'sqlite3';
-import { Query } from './Query';
+import {Database} from 'sqlite3';
+import {Query} from './Query';
 
 export class Connection {
     db: Database;
@@ -71,13 +71,13 @@ export class Connection {
     async first<T>(query: Query<T>): Promise<T> {
         return new Promise<T>((resolve, reject) => {
             const stack = Error('SQLite').stack;
-            this.db.get(query.toSql(), query.getBindings(), (error, rows) => {
+            this.db.get(query.toSql(), query.getBindings(), (error, row) => {
                 if (error) {
                     const e = new Error(`${error} in '${query.toSql()}' `);
                     e.stack = stack;
                     return reject(e);
                 }
-                resolve(rows);
+                resolve(row);
             });
         });
     }

@@ -1,16 +1,17 @@
-import { expect } from 'chai';
-import { suite, test } from '@testdeck/mocha';
-import { Connection, Query } from '../../Database';
-import { anyOfClass, instance, mock, when } from 'ts-mockito';
+import {expect} from 'chai';
+import {suite, test} from '@testdeck/mocha';
+import {Connection, Query} from '../../Database';
+import {anyOfClass, instance, mock, when} from 'ts-mockito';
 
 @suite
 class QueryTest {
     private query: Query<User>;
+    connection: Connection;
 
     before() {
-        const connection = mock(Connection);
-        Query.connection = instance(connection);
-        when(connection.get(anyOfClass(Query))).thenCall((query: Query) => {
+        this.connection = mock(Connection);
+        Query.connection = instance(this.connection);
+        when(this.connection.get(anyOfClass(Query))).thenCall((query: Query) => {
             return query.toSql();
         });
         this.query = new Query;
@@ -22,11 +23,6 @@ class QueryTest {
 
     expectBindings() {
         return expect(this.query.getBindings());
-    }
-
-    @test
-    async createsInstanceUsingStaticMethod() {
-        expect(Query.table('users').toSql()).to.equal('SELECT * FROM `users`');
     }
 
     @test
@@ -50,7 +46,7 @@ class QueryTest {
     @test
     async addColumns() {
         expect(
-            Query.table('users').select('name', 'email').toSql()
+            Query.table('users').addSelect('name', 'email').toSql()
         ).to.equal(
             'SELECT `name`, `email` FROM `users`'
         );
@@ -63,6 +59,17 @@ class QueryTest {
         ).to.equal(
             'SELECT DISTINCT `name`, `email` FROM `users`'
         );
+    }
+
+    @test
+    async first() {
+        when(this.connection.first(anyOfClass(Query))).thenResolve({name: 'John'});
+        const user = await this.query.table('users').first('name');
+
+        (await this.expect()).to.equal(
+            'SELECT `name` FROM `users`'
+        );
+        expect(user).to.deep.equal({name: 'John'});
     }
 
     @test
@@ -247,6 +254,56 @@ class QueryTest {
         this.expectBindings().to.deep.equal(['John']);
     }
 
+    @test
+    async orWhereLike() {
+        this.query.table('users').where('age', 18).orWhereLike('name', '%John');
+
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age = ? OR name LIKE ?'
+        );
+        this.expectBindings().to.deep.equal([18, '%John']);
+    }
+
+    @test
+    async orWhereNotLike() {
+        this.query.table('users').where('age', 18).orWhereNotLike('name', '%John');
+
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age = ? OR name NOT LIKE ?'
+        );
+        this.expectBindings().to.deep.equal([18, '%John']);
+    }
+
+    @test
+    async andWhereIn() {
+        this.query.table('users').where('age', 18).andWhereIn('name', ['John', 'Doe']);
+
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age = ? AND name IN (?, ?)'
+        );
+        this.expectBindings().to.deep.equal([18, 'John', 'Doe']);
+    }
+
+    @test
+    async whereLike() {
+        this.query.table('users').whereLike('name', '%John');
+
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name LIKE ?'
+        );
+        this.expectBindings().to.deep.equal(['%John']);
+    }
+
+    @test
+    async andWhere() {
+        this.query.table('users').where('name', 'John').andWhere('age', 18);
+
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE name = ? AND age = ?'
+        );
+        this.expectBindings().to.deep.equal(['John', 18]);
+    }
+
     // @test
     // async whereParameterGrouping() {
     //     this.query.table('users')
@@ -306,6 +363,7 @@ class QueryTest {
             'SELECT * FROM `users` LIMIT 10, 20'
         );
     }
+
     //
     // @test
     // async aggregateMax() {

@@ -13,13 +13,13 @@ import {
     WhereNull,
     WhereValue
 } from './Types';
-import { Select } from './Statements/Select';
-import { Insert } from './Statements/Insert';
-import { Statement } from './Statements/Statement';
-import { Delete } from './Statements/Delete';
-import { Update } from './Statements/Update';
-import { Connection } from './Connection';
-import { Expression } from './Expression';
+import {Select} from './Statements/Select';
+import {Insert} from './Statements/Insert';
+import {Statement} from './Statements/Statement';
+import {Delete} from './Statements/Delete';
+import {Update} from './Statements/Update';
+import {Connection} from './Connection';
+import {Expression} from './Expression';
 
 export class Query<T = {}> {
     static connection: Connection;
@@ -249,7 +249,7 @@ export class Query<T = {}> {
         return this;
     }
 
-    addSelect<K extends keyof T>(columns: (K | string | Expression)[]) {
+    addSelect<K extends keyof T>(...columns: (K | string | Expression)[]) {
         this.components.columns.push(...columns as string[]);
 
         return this;

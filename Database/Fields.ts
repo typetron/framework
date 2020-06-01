@@ -1,5 +1,5 @@
-import { Entity } from './Entity';
-import { EntityConstructor, EntityKeys, EntityMetadata } from './index';
+import {Entity} from './Entity';
+import {EntityConstructor, EntityKeys, EntityMetadata} from './index';
 
 export interface ColumnInterface<T> {
     value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined;
@@ -8,7 +8,8 @@ export interface ColumnInterface<T> {
 }
 
 export class ColumnField<T extends Entity> implements ColumnInterface<T> {
-    constructor(public parent: EntityConstructor<T>, public property: string, public type: () => Function, public column: string) {}
+    constructor(public parent: EntityConstructor<T>, public property: string, public type: () => Function, public column: string) {
+    }
 
     value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined {
         return entity[key as K];
@@ -163,7 +164,7 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
         const relatedKey = `${this.related.getTable()}.${this.getRelatedKey()}`;
 
         const results = await this.related.newQuery()
-            .addSelect([relatedForeignKey, parentForeignKey])
+            .addSelect(relatedForeignKey, parentForeignKey)
             .join(this.getPivotTable(), relatedForeignKey, '=', relatedKey)
             .whereIn(parentForeignKey, parentIds.unique())
             .get();
