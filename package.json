@@ -17,13 +17,15 @@
 		"bcrypt": "3.0.6",
 		"formidable": "^1.2.2",
 		"jsonwebtoken": "^8.5.1",
-		"sqlite3": "^4.1.0"
+		"sqlite3": "^4.1.0",
+		"glob": "^7.1.6"
 	},
 	"devDependencies": {
 		"@testdeck/mocha": "^0.1.0",
 		"@types/bcrypt": "^3.0.0",
 		"@types/chai": "^4.2.11",
 		"@types/formidable": "^1.0.31",
+		"@types/glob": "^7.1.2",
 		"@types/jsonwebtoken": "^8.5.0",
 		"@types/mocha": "^7.0.2",
 		"@types/node": "^14.0.1",

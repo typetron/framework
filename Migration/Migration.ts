@@ -1,13 +1,5 @@
-import { Column, Entity, ID } from "../Database";
+export interface Migration {
+    up ():Promise<any>;
 
-export class Migration extends Entity {
-
-    @Column()
-    id: ID;
-
-    @Column()
-    name: string;
-
-    @Column()
-    batch: number;
+    down ():Promise<any>;
 }
