@@ -2,7 +2,7 @@ import { Entity } from './Entity';
 import { EntityConstructor, EntityKeys, EntityObject } from './index';
 import { EntityQuery } from './EntityQuery';
 import { Boolean, Operator, WhereValue } from './Types';
-import { InverseRelationship, Relationship } from './Fields';
+import { Relationship } from './Fields';
 
 export class List<E extends Entity> implements Iterable<E>, ArrayLike<E> {
 
@@ -31,13 +31,7 @@ export class List<E extends Entity> implements Iterable<E>, ArrayLike<E> {
             await this.parent.save();
         }
         for await (const item of items) {
-            let instance: E;
-            if (item instanceof Entity) {
-                instance = item as E;
-            } else {
-                instance = this.entityClass.new(item);
-            }
-
+            const instance = item instanceof Entity ? item as E : this.entityClass.new(item);
             instance.fill({
                 [this.property]: this.parent
             });

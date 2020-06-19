@@ -168,7 +168,6 @@ export abstract class Entity {
 
     async save(data: ChildObject<this, Entity> | {} = {}): Promise<this> {
         this.fill(data);
-        const columns = this.metadata.columns;
 
         this.updateTimestamps();
 
@@ -178,7 +177,6 @@ export abstract class Entity {
         // const manyToManyRelationships: BelongsToManyField<this, Entity>[] = [];
 
         // TODO diff the values so we don't update every value from the entity
-
         Object.values({...this.metadata.columns, ...this.metadata.relationships}).forEach(field => {
             dataToSave[field.column] = field.value(this, field.property);
         });
