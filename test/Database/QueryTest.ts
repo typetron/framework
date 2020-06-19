@@ -74,7 +74,7 @@ class QueryTest {
 
     @test
     async where() {
-        let query = Query.table('users').where('name', '=', 'John');
+        const query = Query.table('users').where('name', '=', 'John');
 
         expect(
             query.toSql()

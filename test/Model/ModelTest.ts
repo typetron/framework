@@ -23,8 +23,7 @@ class ModelTest {
             id: 1,
             name: 'John'
         };
-        let sad = UserModel.from(user);
-        expect(sad).to.deep.equal(expectedUser);
+        expect(UserModel.from(user)).to.deep.equal(expectedUser);
     }
 
     // @test
