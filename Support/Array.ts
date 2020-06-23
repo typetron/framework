@@ -1,4 +1,7 @@
 export {};
+
+type ArrayItemCallback<T, R = T> = (item: T, index: number, array: T[]) => R;
+
 declare global {
     interface Array<T> {
         empty(): boolean;
@@ -7,27 +10,34 @@ declare global {
 
         randomIndex(): number;
 
-        pluck<K extends keyof T>(this: T[], key: K): T[K][];
+        pluck<K extends keyof T>(this: T[], property: K): T[K][];
 
-        pluck<U>(this: T[], key: (value: T, index: number, array: T[]) => U): U[];
+        pluck<U>(this: T[], property: ArrayItemCallback<T, U>): U[];
 
-        mapAsync<U>(callback: (value: T, index: number, array: T[]) => Promise<U>, thisArg?: this): Promise<U[]>;
+        mapAsync<U>(callback: ArrayItemCallback<T, Promise<U>>, thisArg?: this): Promise<U[]>;
 
-        forEachAsync(callback: (value: T, index: number, array: T[]) => void, thisArg?: this): Promise<void>;
+        forEachAsync(callback: ArrayItemCallback<T, void>, thisArg?: this): Promise<void>;
 
-        findWhere<K extends keyof T>(this: T[], property: K, value: T[K]): T | undefined;
+        // tslint:disable-next-line:no-any
+        findWhere<K extends keyof T>(this: T[], property: K, value: T[K] | ArrayItemCallback<T, any>): T | undefined;
 
         first(this: T[], defaultValue?: Object): T;
 
-        remove<T>(this: T[], item: T): boolean;
+        remove<T>(this: T[], ...items: T[]): void;
 
         where<K extends keyof T>(this: T[], property: K, value: T[K]): T[];
 
         whereIn<K extends keyof T>(this: T[], property: K, value: T[K][]): T[];
 
-        groupBy<K extends keyof T>(this: T[], key: K): { [key in K]: T[] };
+        groupBy<K extends keyof T>(this: T[], property: K): Record<K, T[]>;
+
+        groupBy<U extends string | number | symbol>(this: T[], callback: ArrayItemCallback<T, U>): Record<U, T[]>;
 
         unique<K extends keyof T>(this: T[], key?: K | ((item: T, index: number) => unknown)): T[];
+
+        sum<T extends number>(this: T[]): number;
+
+        sum<K extends keyof T, U extends number>(key: K | ArrayItemCallback<T, U>): U;
     }
 }
 
@@ -47,24 +57,19 @@ Array.prototype.findWhere = function (property, value) {
     return this.find(item => item[property] === value);
 };
 
-Array.prototype.pluck = function <T, K extends keyof T, U>(key: K | ((value: T, index: number, array: T[]) => U)) {
-    let callback;
-    if (key instanceof Function) {
-        callback = key;
-    } else {
-        // @ts-ignore TODO find a way to remove this @ts-ignore
-        callback = item => item[key];
-    }
+Array.prototype.pluck = function <T, K extends keyof T, U>(property: K | ((value: T, index: number, array: T[]) => U)) {
+    const callback = property instanceof Function ? property : (item: T) => item[property] as unknown as U;
     return this.map(callback);
 };
 
-Array.prototype.remove = function (item) {
-    const index = this.indexOf(item);
-    if (index === -1) {
-        return false;
-    }
-    this.splice(this.indexOf(item), 1);
-    return true;
+Array.prototype.remove = function (...items) {
+    return items.map(item => {
+        const index = this.indexOf(item);
+        if (index === -1) {
+            return;
+        }
+        this.splice(this.indexOf(item), 1);
+    });
 };
 
 Array.prototype.where = function (property, value) {
@@ -80,9 +85,11 @@ Array.prototype.first = function (defaultValue = undefined) {
     return first || defaultValue;
 };
 
-Array.prototype.groupBy = function (key) {
-    return this.reduce((accumulator, item) => {
-        (accumulator[item[key]] = accumulator[item[key]] || []).push(item);
+Array.prototype.groupBy = function <T, K extends keyof T, U>(property: K | ArrayItemCallback<T, U>) {
+    const callback = property instanceof Function ? property : (item: T) => item[property];
+    return this.reduce((accumulator, item, index, array) => {
+        const key = callback(item, index, array);
+        (accumulator[key] = accumulator[key] || []).push(item);
         return accumulator;
     }, {});
 };
@@ -101,16 +108,16 @@ Array.prototype.mapAsync = async function (callback, thisArg) {
     return Promise.all(promises);
 };
 
-Array.prototype.unique = function <T, K extends keyof T>(key?: K | ((item: T, index: number) => unknown)): T[] {
-    if (!key) {
+Array.prototype.unique = function <T, K extends keyof T>(property?: K | ((item: T, index: number) => unknown)): T[] {
+    if (!property) {
         return [...new Set(this)] as T[];
     }
 
     let callback: (item: T, index: number, list: T[]) => unknown;
-    if (typeof key === 'function') {
-        callback = key;
+    if (typeof property === 'function') {
+        callback = property;
     } else {
-        callback = (item) => item[key];
+        callback = (item) => item[property];
     }
 
     const exists = new Set;
@@ -121,4 +128,11 @@ Array.prototype.unique = function <T, K extends keyof T>(key?: K | ((item: T, in
             return true;
         }
     });
+};
+
+Array.prototype.sum = function <T, K extends keyof T, U extends number>(property?: K | ArrayItemCallback<T, U>) {
+    const callback = property instanceof Function ? property : (item: T) => property ? item[property] : item;
+    return this.reduce((accumulator, item, index, array) => {
+        return accumulator += callback(item, index, array);
+    }, 0);
 };

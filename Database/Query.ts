@@ -250,7 +250,7 @@ export class Query<T = {}> {
     }
 
     addSelect<K extends keyof T>(...columns: (K | string | Expression)[]) {
-        this.components.columns.push(...columns as string[]);
+        this.components.columns = this.components.columns.concat(columns as string[]);
 
         return this;
     }

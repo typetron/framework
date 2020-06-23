@@ -75,8 +75,8 @@ these two camps work together.
 ```ts
 export class User extends Entity {
 
-    @Column()
-    id: ID;
+    @PrimaryColumn()
+    id: number;
 
     @Column()
     email: string;
@@ -84,10 +84,10 @@ export class User extends Entity {
     @Column()
     name: string;
 
-    @OneToMany(() => Post, 'author')
+    @HasMany(() => Post, 'author')
     posts: Post[] = [];
 
-    @ManyToOne(() => Group, 'users')
+    @BelongsTo(() => Group, 'users')
     group: Group;
 }
 ```

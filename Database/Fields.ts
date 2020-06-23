@@ -1,30 +1,51 @@
-import {Entity} from './Entity';
-import {EntityConstructor, EntityKeys, EntityMetadata} from './index';
+import { Entity } from './Entity';
+import { EntityConstructor, EntityKeys } from './index';
 
-export interface ColumnInterface<T> {
+export interface EntityField<T extends Entity> {
+
     value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined;
-
-    relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined;
 }
 
-export class ColumnField<T extends Entity> implements ColumnInterface<T> {
-    constructor(public parent: EntityConstructor<T>, public property: string, public type: () => Function, public column: string) {
+export class ColumnField<T extends Entity> implements EntityField<T> {
+    constructor(
+        public entity: EntityConstructor<T>,
+        public property: string,
+        public type: () => Function,
+        public column: string
+    ) {}
+
+    value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined {
+        return entity[key as K];
     }
+}
+
+export class InverseField<T extends Entity> implements EntityField<T> {
+    constructor(
+        public entity: EntityConstructor<T>,
+        public property: string,
+        public type: () => Function
+    ) {}
 
     value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined {
         return entity[key as K];
     }
 
-    relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined {
-        return value;
-    }
+    // relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined {
+    //     return value;
+    // }
 }
 
 export class PrimaryField<T extends Entity> extends ColumnField<T> {
 }
 
-export abstract class Relation<T extends Entity, R extends Entity> extends ColumnField<T> {
-    protected constructor(parent: EntityConstructor<T>, property: string, public type: () => EntityConstructor<R>, column: string) {
+export abstract class Relationship<T extends Entity, R extends Entity> extends ColumnField<T> {
+    protected constructor(
+        parent: EntityConstructor<T>,
+        property: string,
+        public type: () => EntityConstructor<R>,
+        public inverseBy: string,
+        column: string
+    ) {
         super(parent, property, type, column);
     }
 
@@ -36,27 +57,55 @@ export abstract class Relation<T extends Entity, R extends Entity> extends Colum
 
     abstract matchCounts(entities: T[], counts: Record<string, number>[]): T[];
 
-    abstract async getResults(relatedEntities: R[]): Promise<R[]>;
+    abstract async getRelatedValue(relatedEntities: R[]): Promise<R[]>;
 
-    abstract async getResultsCount(relatedEntities: R[]): Promise<Record<string, number>[]>;
+    abstract async getRelatedCount(relatedEntities: R[]): Promise<Record<string, number>[]>;
 }
 
-export class OneToManyField<T extends Entity, R extends Entity> extends Relation<T, R> {
-    constructor(parent: EntityConstructor<T>, property: string, type: () => EntityConstructor<R>, public inverseBy: string) {
-        super(parent, property, type, '');
+export abstract class InverseRelationship<T extends Entity, R extends Entity> extends InverseField<T> {
+    protected constructor(
+        parent: EntityConstructor<T>,
+        property: string,
+        public type: () => EntityConstructor<R>,
+        public inverseBy: string
+    ) {
+        super(parent, property, type);
     }
 
-    async getResults(relatedEntities: R[]) {
-        const parentIds = relatedEntities.pluck(this.parent.getPrimaryKey()) as number[];
-        const inverseByField = this.related.metadata.columns[this.inverseBy as keyof EntityMetadata<R>];
+    get related() {
+        return this.type();
+    }
+
+    abstract match(entities: T[], relatedEntities: R[]): T[];
+
+    abstract matchCounts(entities: T[], counts: Record<string, number>[]): T[];
+
+    abstract async getRelatedValue(relatedEntities: R[]): Promise<R[]>;
+
+    abstract async getRelatedCount(relatedEntities: R[]): Promise<Record<string, number>[]>;
+}
+
+export class HasOneField<T extends Entity, R extends Entity> extends InverseRelationship<T, R> {
+    constructor(
+        parent: EntityConstructor<T>,
+        property: string,
+        type: () => EntityConstructor<R>,
+        inverseBy: string // TODO make it key of R
+    ) {
+        super(parent, property, type, inverseBy);
+    }
+
+    async getRelatedValue(relatedEntities: R[]) {
+        const parentIds = relatedEntities.pluck(this.entity.getPrimaryKey()) as number[];
+        const inverseByField = this.related.metadata.relationships[this.inverseBy];
         return await this.related.whereIn(inverseByField.column as EntityKeys<R>, parentIds).get();
     }
 
-    async getResultsCount(relatedEntities: R[]) {
-        const relatedField = this.related.metadata.columns[this.inverseBy];
+    async getRelatedCount(relatedEntities: R[]) {
+        const relatedField = this.related.metadata.relationships[this.inverseBy];
 
         return await this.related.newQuery()
-            .whereIn(relatedField.column, relatedEntities.pluck(this.parent.getPrimaryKey()))
+            .whereIn(relatedField.column, relatedEntities.pluck(this.entity.getPrimaryKey()))
             .select(relatedField.column)
             .groupBy(relatedField.column)
             .count() as unknown as Record<string, number>[];
@@ -64,9 +113,9 @@ export class OneToManyField<T extends Entity, R extends Entity> extends Relation
 
     match(entities: T[], relatedEntities: R[]): T[] {
         entities.forEach(entity => {
-            const inverseField = this.related.metadata.columns[this.inverseBy];
-            const relatedEntity = relatedEntities.filter(
-                related => related.original[inverseField.column as keyof object] === entity[this.parent.getPrimaryKey()]
+            const inverseField = this.related.metadata.relationships[this.inverseBy];
+            const relatedEntity = relatedEntities.find(
+                related => related.original[inverseField.column as keyof object] === entity[this.entity.getPrimaryKey()]
             );
             // TODO fix these weird types. Get rid of `unknown`
             entity[this.property as keyof T] = relatedEntity as unknown as T[keyof T];
@@ -75,44 +124,85 @@ export class OneToManyField<T extends Entity, R extends Entity> extends Relation
     }
 
     matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
-        const relatedField = this.related.metadata.columns[this.inverseBy];
+        const relatedField = this.related.metadata.relationships[this.inverseBy];
         entities.forEach(entity => {
-            const count = counts.findWhere(relatedField.column, entity[this.parent.getPrimaryKey()]);
-            entity[this.property + 'Count' as keyof T] = (count?.aggregate ?? 0)  as unknown as T[keyof T];
+            const count = counts.findWhere(relatedField.column, entity[this.entity.getPrimaryKey()]);
+            entity[this.property + 'Count' as keyof T] = (count?.aggregate ?? 0) as unknown as T[keyof T];
         });
 
         return entities;
     }
 }
 
-export class ManyToOneField<T extends Entity, R extends Entity> extends Relation<T, R> {
+export class HasManyField<T extends Entity, R extends Entity> extends InverseRelationship<T, R> {
+    constructor(parent: EntityConstructor<T>, property: string, type: () => EntityConstructor<R>, public inverseBy: string) {
+        super(parent, property, type, inverseBy);
+    }
+
+    async getRelatedValue(relatedEntities: R[]) {
+        const parentIds = relatedEntities.pluck(this.entity.getPrimaryKey()) as number[];
+        const inverseByField = this.related.metadata.relationships[this.inverseBy];
+        return await this.related.whereIn(inverseByField.column as EntityKeys<R>, parentIds).get();
+    }
+
+    async getRelatedCount(relatedEntities: R[]) {
+        const relatedField = this.related.metadata.relationships[this.inverseBy];
+
+        return await this.related.newQuery()
+            .whereIn(relatedField.column, relatedEntities.pluck(this.entity.getPrimaryKey()))
+            .select(relatedField.column)
+            .groupBy(relatedField.column)
+            .count() as unknown as Record<string, number>[];
+    }
+
+    match(entities: T[], relatedEntities: R[]): T[] {
+        entities.forEach(entity => {
+            const inverseField = this.related.metadata.relationships[this.inverseBy];
+            const relatedEntity = relatedEntities.filter(
+                related => related.original[inverseField.column as keyof object] === entity[this.entity.getPrimaryKey()]
+            );
+            // TODO fix these weird types. Get rid of `unknown`
+            entity[this.property as keyof T] = relatedEntity as unknown as T[keyof T];
+        });
+        return entities;
+    }
+
+    matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
+        const relatedField = this.related.metadata.relationships[this.inverseBy];
+        entities.forEach(entity => {
+            const count = counts.findWhere(relatedField.column, entity[this.entity.getPrimaryKey()]);
+            entity[this.property + 'Count' as keyof T] = (count?.aggregate ?? 0) as unknown as T[keyof T];
+        });
+
+        return entities;
+    }
+}
+
+export class BelongsToField<T extends Entity, R extends Entity> extends Relationship<T, R> {
     constructor(
         parent: EntityConstructor<T>,
         property: string,
         type: () => EntityConstructor<R>,
-        public inverseBy: string,
+        inverseBy: string,
         column: string
     ) {
-        super(parent, property, type, column);
+        super(parent, property, type, inverseBy, column);
     }
 
     value<K extends keyof T>(entity: T, key: string) {
-        if (key === this.column) {
-            return new this.related({
-                [this.related.getPrimaryKey()]: entity[key as K]
-            }) as unknown as T[K]; // TODO get rid of `unknown`
-        }
-        return entity[this.property as keyof T] as unknown as T[K];
+        return entity[key as keyof T][this.related.getPrimaryKey()];
+        // return new this.related({
+        //     [this.related.getPrimaryKey()]: entity[key as K]
+        // }) as unknown as T[K]; // TODO get rid of `unknown`
+        // if (key === this.column) {
+        //     return new this.related({
+        //         [this.related.getPrimaryKey()]: entity[key as K]
+        //     }) as unknown as T[K]; // TODO get rid of `unknown`
+        // }
+        // return entity[this.property as keyof T] as unknown as T[K];
     }
 
-    relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]) {
-        if (value instanceof Entity) {
-            return value[value.getPrimaryKey()] as unknown as T[K];
-        }
-        return entity.original[this.column] as unknown as T[K] || value;
-    }
-
-    async getResults(parents: R[]) {
+    async getRelatedValue(parents: R[]) {
         const relationIds = parents
             .pluck(parent => parent[this.column as keyof R] as unknown)
             .filter(item => item !== undefined) as number[];
@@ -122,7 +212,7 @@ export class ManyToOneField<T extends Entity, R extends Entity> extends Relation
         return [];
     }
 
-    async getResultsCount(relatedEntities: R[]) {
+    async getRelatedCount(relatedEntities: R[]) {
         return [];
     }
 
@@ -135,30 +225,27 @@ export class ManyToOneField<T extends Entity, R extends Entity> extends Relation
             return entity;
         });
     }
+
     matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
         return entities;
     }
 }
 
-// export class ManyToOneInverseField<T extends Entity, R extends Entity> extends Relation<T, R> {
-
-// }
-
-export class ManyToManyField<T extends Entity, R extends Entity> extends Relation<T, R> {
+export class BelongsToManyField<T extends Entity, R extends Entity> extends InverseRelationship<T, R> {
     constructor(
         parent: EntityConstructor<T>,
         property: string,
         type: () => EntityConstructor<R>,
-        public inverseBy: string,
+        inverseBy: string,
         private table?: string,
         private parentKey?: string,
         private relatedKey?: string
     ) {
-        super(parent, property, type, '');
+        super(parent, property, type, inverseBy);
     }
 
-    async getResults(parents: R[]) {
-        const parentIds = parents.pluck(this.parent.getPrimaryKey()) as number[];
+    async getRelatedValue(parents: R[]) {
+        const parentIds = parents.pluck(this.entity.getPrimaryKey()) as number[];
         const relatedForeignKey = `${this.getPivotTable()}.${this.getRelatedForeignKey()}`;
         const parentForeignKey = `${this.getPivotTable()}.${this.getParentForeignKey()}`;
         const relatedKey = `${this.related.getTable()}.${this.getRelatedKey()}`;
@@ -182,7 +269,7 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
     }
 
     getParentForeignKey() {
-        return this.parentKey || `${this.parent.name.toLocaleLowerCase()}${(this.parent.getPrimaryKey() as string).capitalize()}`;
+        return this.parentKey || `${this.entity.name.toLocaleLowerCase()}${(this.entity.getPrimaryKey() as string).capitalize()}`;
     }
 
     getRelatedKey() {
@@ -193,14 +280,14 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
         return this.relatedKey || `${this.related.name.toLocaleLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`;
     }
 
-    async getResultsCount(relatedEntities: R[]) {
+    async getRelatedCount(relatedEntities: R[]) {
         return [];
     }
 
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
             // TODO fix these weird types. Get rid of `unknown`
-            const entityPrimaryKey = entity[this.parent.getPrimaryKey()];
+            const entityPrimaryKey = entity[this.entity.getPrimaryKey()];
             entity[this.property as keyof T] = relatedEntities
                 .filter(related => related.original.pivot[this.getParentForeignKey()] === entityPrimaryKey) as unknown as T[keyof T];
             return entity;
@@ -212,7 +299,7 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
     }
 
     getPivotTable() {
-        return this.table || [this.parent.getTable(), this.related.getTable()].sort().join('_');
+        return this.table || [this.entity.getTable(), this.related.getTable()].sort().join('_');
     }
 
     value<K extends keyof T>(entity: T, key: string): T[K] {
@@ -228,10 +315,6 @@ export class ManyToManyField<T extends Entity, R extends Entity> extends Relatio
             }) as unknown as T[K];
         }
         return value;
-    }
-
-    relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]) {
-        return undefined;
     }
 }
 

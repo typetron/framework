@@ -3,19 +3,22 @@ import { EntityQuery } from './EntityQuery';
 import { ChildObject, KeysOfType } from '../Support';
 import { EntityMetadata, EntityMetadataKey, ID } from './Decorators';
 import { EntityNotFoundError } from './EntityNotFoundError';
-import { ColumnField, ManyToManyField } from './Fields';
+import { BelongsToManyField, ColumnField, InverseField } from './Fields';
 import { Boolean, Direction, Operator, SqlValue, SqlValueMap, WhereValue } from './Types';
 import { EntityConstructor, EntityKeys } from './index';
 import { Query } from './Query';
+import { List } from './List';
 
 export abstract class Entity {
 
     exists = false;
-    original: Record<string, Record<string, object>> = {};
+    // tslint:disable-next-line:no-any
+    original: Record<string, any> = {};
 
     constructor(data?: object) {
         if (data) {
-            this.fill(data as ChildObject<this, Entity>);
+            this.original = data;
+            this.fill(data);
         }
         return new Proxy(this, new EntityProxyHandler<this>(this));
     }
@@ -28,7 +31,7 @@ export abstract class Entity {
         return this.static.metadata;
     }
 
-    protected get static(): EntityConstructor<this> {
+    get static(): EntityConstructor<this> {
         return this.constructor as EntityConstructor<this>;
     }
 
@@ -67,6 +70,8 @@ export abstract class Entity {
         return this.newQuery().first(...columns);
     }
 
+    // static first2: <T extends Entity>(this: EntityConstructor<T>, ...params: Parameters<Query<T>['first']>) =>  Query<T>['first'];
+
     // tslint:disable-next-line:no-any
     static async firstOrNew<T extends Entity, K extends keyof Entity>(
         this: EntityConstructor<T>,
@@ -97,7 +102,7 @@ export abstract class Entity {
         return this.metadata.table || this.name.toLowerCase(); // TODO make metadata.table un-optional
     }
 
-    static newInstance<T extends Entity>(this: EntityConstructor<T>, data = {}, exists = false): T {
+    static new<T extends Entity>(this: EntityConstructor<T>, data = {}, exists = false): T {
         const instance = new this;
         instance.exists = exists;
         instance.original = data;
@@ -114,7 +119,8 @@ export abstract class Entity {
         return this.newQuery().get(...columns);
     }
 
-    static with<T extends Entity, K extends KeysOfType<T, Entity | Entity[]>>(this: EntityConstructor<T>, ...relations: K[]) {
+    // tslint:disable-next-line:no-any
+    static with<T extends Entity, K extends KeysOfType<T, Entity | List<any>>>(this: EntityConstructor<T>, ...relations: K[]) {
         return this.newQuery().with(...relations);
     }
 
@@ -128,7 +134,7 @@ export abstract class Entity {
         if (!data || !Object.entries(data).length) {
             throw new EntityNotFoundError(`No records found for entity '${this.name}' when querying with parameters [${query.getBindings().join(', ')}]`);
         }
-        return this.newInstance(data, true);
+        return this.new(data, true);
     }
 
     static getPrimaryKey<T extends Entity>(): EntityKeys<T> {
@@ -137,19 +143,20 @@ export abstract class Entity {
 
     static hydrate<T extends Entity>(modelType: EntityConstructor<T>, models: {}[], exist = false) {
         return models.map(data => {
-            return modelType.newInstance(data, exist);
+            return modelType.new(data, exist);
         });
     }
 
     static newQuery<T extends Entity>(this: EntityConstructor<T>): EntityQuery<T> {
-        return (new EntityQuery(this, this.metadata)).table(this.getTable());
+        return (new EntityQuery(this)).table(this.getTable());
     }
 
     getTable(): string {
         return this.static.getTable();
     }
 
-    async load<K extends KeysOfType<this, Entity | Entity[]>>(...relations: K[]) {
+    // tslint:disable-next-line:no-any
+    async load<K extends KeysOfType<this, Entity | List<any>>>(...relations: K[]) {
         await this.newQuery().with(...relations).eagerLoadRelationships([this]);
 
         return this;
@@ -161,8 +168,49 @@ export abstract class Entity {
 
     async save(data: ChildObject<this, Entity> | {} = {}): Promise<this> {
         this.fill(data);
-        const columns = this.metadata.columns;
 
+        this.updateTimestamps();
+
+        // tslint:disable-next-line:no-any
+        const dataToSave: Record<string, any> = {};
+
+        // const manyToManyRelationships: BelongsToManyField<this, Entity>[] = [];
+
+        // TODO diff the values so we don't update every value from the entity
+        Object.values({...this.metadata.columns, ...this.metadata.relationships}).forEach(field => {
+            dataToSave[field.column] = field.value(this, field.property);
+        });
+
+        const query = this.newQuery();
+
+        if (this.exists) {
+            delete dataToSave[this.getPrimaryKey() as string];
+            await query.where(this.getPrimaryKey(), this[this.getPrimaryKey()]).update(dataToSave);
+        } else {
+            await query.insert(dataToSave);
+            const id = await EntityQuery.lastInsertedId();
+            this.exists = true;
+            this.fill({id});
+        }
+
+        for await(const field of Object.values(this.metadata.inverseRelationships)) {
+            const entity = field.value(this, field.property) as unknown as Entity;
+            if (entity) {
+                if (entity instanceof Entity) {
+                    entity.fill({
+                        [field.inverseBy]: this
+                    });
+                    await entity.save();
+                }
+            }
+        }
+
+        // await this.syncRelationships(manyToManyRelationships);
+
+        return this;
+    }
+
+    private updateTimestamps() {
         if (this.metadata.createdAtColumn && !this[this.metadata.createdAtColumn as keyof this]) {
             this.fill({
                 [this.metadata.createdAtColumn]: new Date(),
@@ -173,45 +221,14 @@ export abstract class Entity {
                 [this.metadata.updatedAtColumn]: new Date(),
             });
         }
-
-        // tslint:disable-next-line:no-any
-        const databaseData: {[key: string]: any} = {};
-
-        const manyToManyRelationships: ManyToManyField<this, Entity>[] = [];
-
-        // TODO diff the values so we don't update every value from the entity
-        Object.keys(columns).forEach((column) => {
-            const type = columns[column];
-            if (type.column) {
-                databaseData[type.column] = type.relationshipColumnValue(this, this[column as keyof Entity]);
-            }
-            if (type instanceof ManyToManyField) {
-                manyToManyRelationships.push(type);
-            }
-        });
-
-        const query = this.newQuery();
-
-        if (this.exists) {
-            delete databaseData[this.getPrimaryKey() as string];
-            await query.where(this.getPrimaryKey(), this[this.getPrimaryKey()]).update(databaseData);
-        } else {
-            await query.insert(databaseData);
-            const id = await EntityQuery.lastInsertedId();
-            this.fill({id});
-        }
-
-        await this.syncRelationships(manyToManyRelationships);
-
-        return this;
     }
 
     fill(data: ChildObject<this, Entity> | {}) {
+        const fields = {...this.metadata.columns, ...this.metadata.relationships, ...this.metadata.inverseRelationships};
         Object.keys(data).forEach(key => {
-            const field = this.metadata.columns[key];
+            const field = fields[key];
             if (field) {
-                // @ts-ignore
-                const value = field.value(data as this, key) as object;
+                const value = data[key as keyof {}];
                 this[field.property as keyof this] = this.convertValueByType(value, field);
             }
         });
@@ -227,8 +244,8 @@ export abstract class Entity {
         await this.newQuery().where(this.getPrimaryKey(), this[this.getPrimaryKey()]).delete();
     }
 
-    async sync(property: KeysOfType<this, Entity[]>, ids: number[], detach = true) {
-        const relatedField = this.metadata.columns[property as string] as ManyToManyField<this, Entity>;
+    async sync(property: string, ids: number[], detach = true) {
+        const relatedField = this.metadata.inverseRelationships[property as string] as BelongsToManyField<this, Entity>;
         const existingRelations = await Query.table(relatedField.getPivotTable())
             .where(relatedField.getParentForeignKey(), this[this.getPrimaryKey()] as unknown as SqlValue)
             .get();
@@ -256,7 +273,7 @@ export abstract class Entity {
         return this;
     }
 
-    private async syncRelationships(manyToManyRelationships: ManyToManyField<this, Entity>[]) {
+    private async syncRelationships(manyToManyRelationships: BelongsToManyField<this, Entity>[]) {
         await manyToManyRelationships.forEachAsync(async (field) => {
             // @ts-ignore
             await this.sync(field.property, ((this[field.property] || []) as Entity[]).pluck(field.type().getPrimaryKey()));
@@ -275,7 +292,7 @@ export abstract class Entity {
             }, <{ [K in keyof this]: this[K] }>{});
     }
 
-    private convertValueByType(value: unknown, property: ColumnField<Entity>) {
+    private convertValueByType(value: unknown, property: ColumnField<Entity> | InverseField<Entity>) {
         const converter = types.get(property.type()) || (() => value);
         return converter(value);
     }
