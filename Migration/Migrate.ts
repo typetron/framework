@@ -1,4 +1,4 @@
-import { Column, Entity, ID } from "../Database";
+import { Column, Entity, ID, CreatedAt } from "../Database";
 
 export class Migrate extends Entity {
 
@@ -10,4 +10,7 @@ export class Migrate extends Entity {
 
     @Column()
     batch: number;
+
+    @CreatedAt()
+    time: Date;
 }

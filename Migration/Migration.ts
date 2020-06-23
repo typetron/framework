@@ -1,5 +1,7 @@
-export interface Migration {
-    up ():Promise<any>;
+import {Connection} from '../Database/Connection';
 
-    down ():Promise<any>;
+export interface Migration {
+    up (connection: Connection): Promise<any>;
+
+    down (connection: Connection): Promise<any>;
 }
