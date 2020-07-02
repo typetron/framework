@@ -72,8 +72,8 @@ export class Runner {
             return runner.files().then(async function (files: string[]) {
                 const migrateQuery = TypetronMigrations.whereIn('name', files);
 
-                const lastMigration = await  TypetronMigrations.orderBy('batch', 'DESC').limit(1).get();
-                const lastBatch = lastMigration[0] ? lastMigration[0].batch : 0;
+                const lastMigration = await  TypetronMigrations.orderBy('batch', 'DESC').first();
+                const lastBatch = lastMigration ? lastMigration.batch : 0;
 
                 const migrates = await migrateQuery.get();
                 const rootPath = process.env.INIT_CWD;
