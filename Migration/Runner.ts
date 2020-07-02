@@ -1,5 +1,5 @@
 import * as glob from 'glob';
-import { Migrate } from './Migrate';
+import { TypetronMigrations } from './TypetronMigrations';
 import { Migration } from './Migration';
 import { Connection } from '../Database/Connection';
 import * as path from 'path';
@@ -45,7 +45,7 @@ export class Runner {
 
     protected async createMigrationTable(): Promise<unknown> {
         return this.connection.runRaw(
-            `CREATE TABLE IF NOT EXISTS migrate(
+            `CREATE TABLE IF NOT EXISTS typetronmigrations(
                 id INTEGER PRIMARY KEY,
                 name TEXT,
                 batch INTEGER,
@@ -59,10 +59,10 @@ export class Runner {
 
     protected async clearTable(): Promise<unknown> {
         // return Migrate.truncate();
-        return this.connection.runRaw('DELETE FROM migrate;');
+        return TypetronMigrations.newQuery().delete();
     }
 
-    public migrate(options?: MigrateOptions): Promise<boolean> {
+    public async migrate(options?: MigrateOptions): Promise<boolean> {
         const runner = this;
         return runner.createMigrationTable().then(async function () {
             if (options && options.fresh) {
@@ -70,7 +70,10 @@ export class Runner {
             }
 
             return runner.files().then(async function (files: string[]) {
-                const migrateQuery = Migrate.whereIn('name', files);
+                const migrateQuery = TypetronMigrations.whereIn('name', files);
+
+                const lastMigration = await  TypetronMigrations.orderBy('batch', 'DESC').limit(1).get();
+                const lastBatch = lastMigration[0] ? lastMigration[0].batch : 0;
 
                 const migrates = await migrateQuery.get();
                 const rootPath = process.env.INIT_CWD;
@@ -86,9 +89,14 @@ export class Runner {
                         const MigrationClass = Object.values(migrationModule)[0];
                         const migration = new MigrationClass(runner._getConnection());
 
-                        console.log(`INFO: Migrating {file}`);
+                        console.log(`INFO: Migrating ${file}`);
                         try {
                             await migration.up();
+                            await TypetronMigrations.create({
+                                name: file,
+                                batch: lastBatch + 1,
+                                time: new Date()
+                            });
                             console.log(`INFO: Migrated ${file}`);
                         } catch (err) {
                             console.log(`ERROR: Failed to run the migration ${file}`);

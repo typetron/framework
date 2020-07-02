@@ -19,9 +19,9 @@ class RunnerTest {
     @test
     async getFilesByPath() {
 
-        const runnerProto = await (this.runner as any).files() as string[];
+        const migrationFiles = await (this.runner as any).files() as string[];
 
-        expect(runnerProto).to.have.length(1);
+        expect(migrationFiles).to.have.length(1);
 
     }
 

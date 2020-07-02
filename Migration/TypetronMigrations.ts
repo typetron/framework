@@ -1,6 +1,6 @@
-import { Column, Entity, ID, CreatedAt } from "../Database";
+import { Column, Entity, ID, CreatedAt } from '../Database';
 
-export class Migrate extends Entity {
+export class TypetronMigrations extends Entity {
 
     @Column()
     id: ID;
