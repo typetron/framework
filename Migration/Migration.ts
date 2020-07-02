@@ -1,7 +1,17 @@
-import {Connection} from '../Database/Connection';
+import { Connection } from '../Database/Connection';
 
-export interface Migration {
-    up (connection: Connection): Promise<any>;
+export class Migration {
 
-    down (connection: Connection): Promise<any>;
+    protected connection: Connection;
+    constructor(connection: Connection) {
+        this.connection = connection;
+    }
+
+    public async up(): Promise<unknown> {
+        return Promise.resolve(() => { });
+    }
+
+    public async down(): Promise<unknown> {
+        return Promise.resolve(() => { });
+    }
 }

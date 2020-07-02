@@ -1,8 +1,8 @@
-import * as glob from "glob";
+import * as glob from 'glob';
 import { Migrate } from './Migrate';
-import { Migration } from "./Migration";
+import { Migration } from './Migration';
 import { Connection } from '../Database/Connection';
-import {Readable} from 'stream';
+import * as path from 'path';
 
 interface MigrateOptions {
     fresh?: boolean;
@@ -39,18 +39,18 @@ export class Runner {
                 } else {
                     resolve(matches);
                 }
-            })
+            });
         });
     }
 
     protected async createMigrationTable(): Promise<unknown> {
         return this.connection.runRaw(
             `CREATE TABLE IF NOT EXISTS migrate(
-                    id INTEGER PRIMARY KEY,
-                    name TEXT,
-                    batch INTEGER,
-                    time TIMESTAMP
-                )`
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                batch INTEGER,
+                time TIMESTAMP
+            )`
         ).then(() => {
             return true;
         });
@@ -59,20 +59,21 @@ export class Runner {
 
     protected async clearTable(): Promise<unknown> {
         // return Migrate.truncate();
-        return this.connection.runRaw('TRUNCATE TABLE migrate');
+        return this.connection.runRaw('DELETE FROM migrate;');
     }
 
-    public migrate(options?: MigrateOptions): Readable {
+    public migrate(options?: MigrateOptions): Promise<boolean> {
         const runner = this;
-        const stream = new Readable();
-        runner.createMigrationTable().then(async function () {
+        return runner.createMigrationTable().then(async function () {
             if (options && options.fresh) {
                 await runner.clearTable();
             }
 
-            runner.files().then(async function (files: string[]) {
-                const migrates = await Migrate.whereIn('name', files).get();
+            return runner.files().then(async function (files: string[]) {
+                const migrateQuery = Migrate.whereIn('name', files);
 
+                const migrates = await migrateQuery.get();
+                const rootPath = process.env.INIT_CWD;
                 for (const file of files) {
                     if (!migrates.find((migrate) => {
                         if (migrate.name === file) {
@@ -80,17 +81,25 @@ export class Runner {
                         }
                         return false;
                     })) {
-                        const migration: Migration = require(file);
-                        // await migration.up(runner.connection);
-                        // stream.push(file);
-                        console.log(migration);
+                        const migrationPath = path.join(typeof rootPath === 'undefined' ? './' : rootPath, file);
+                        const migrationModule: { [x: string]: typeof Migration } = require(migrationPath);
+                        const MigrationClass = Object.values(migrationModule)[0];
+                        const migration = new MigrationClass(runner._getConnection());
+
+                        console.log(`INFO: Migrating {file}`);
+                        try {
+                            await migration.up();
+                            console.log(`INFO: Migrated ${file}`);
+                        } catch (err) {
+                            console.log(`ERROR: Failed to run the migration ${file}`);
+                            return false;
+                        }
                     }
                 }
+                return true;
             });
 
         });
-
-        return stream;
     }
 
     public _getConnection() {

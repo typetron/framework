@@ -1,6 +1,7 @@
 import { suite, test } from '@testdeck/mocha';
 import { expect } from 'chai';
 import { Runner } from '../../Migration/Runner';
+import { Query } from '../../Database/Query';
 
 @suite
 class RunnerTest {
@@ -12,6 +13,7 @@ class RunnerTest {
             databaseFilePath: ':memory:',
             path: './test/Migration/migrations/*.ts'
         });
+        Query.connection = this.runner._getConnection();
     }
 
     @test
