@@ -1,15 +1,14 @@
-import { Column, CreatedAt, Entity, BelongToMany, Meta, HasMany, HasOne, UpdatedAt, BelongsTo, PrimaryColumn } from '../../../Database';
-import { Article } from './Article';
-import { Role } from './Role';
+import { Column, CreatedAt, Entity, PrimaryColumn, Relation, UpdatedAt } from '../../../Database';
 import { User } from './User';
+import { BelongsTo } from '../../../Database/Fields';
 
 export class Profile extends Entity {
 
     @PrimaryColumn()
     id: number;
 
-    @BelongsTo(() => User, 'profile')
-    user: User;
+    @Relation(() => User, 'profile')
+    user: BelongsTo<User>;
 
     @Column()
     address: string;

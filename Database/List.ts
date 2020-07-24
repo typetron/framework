@@ -1,18 +1,21 @@
 import { Entity } from './Entity';
-import { EntityConstructor, EntityKeys, EntityObject } from './index';
+import { EntityKeys, EntityObject } from './index';
 import { EntityQuery } from './EntityQuery';
 import { Boolean, Operator, WhereValue } from './Types';
-import { Relationship } from './Fields';
+import { BelongsToManyField, HasManyField } from './Fields';
+import { RelationClass } from './ORM/RelationClass';
 
-export class List<E extends Entity> implements Iterable<E>, ArrayLike<E> {
+export class List<E extends Entity, P extends Entity = Entity> extends RelationClass<E, P> implements Iterable<E>, ArrayLike<E> {
 
     items: E[] = [];
 
+    public relationship: HasManyField<E, P> | BelongsToManyField<E, P>;
+
     constructor(
-        public entityClass: EntityConstructor<E>,
-        public parent: Entity,
-        public property: keyof E,
+        relationship: HasManyField<E, P> | BelongsToManyField<E, P>,
+        parent: P
     ) {
+        super(relationship, parent);
         return new Proxy(this, new ListProxyHandler());
     }
 
@@ -26,23 +29,15 @@ export class List<E extends Entity> implements Iterable<E>, ArrayLike<E> {
 
     readonly [n: number]: E;
 
-    async save(...items: EntityObject<E>[]) {
+    async save(...items: Partial<EntityObject<E> | E>[]) {
         if (!this.parent.exists) {
             await this.parent.save();
         }
-        for await (const item of items) {
-            const instance = item instanceof Entity ? item as E : this.entityClass.new(item);
-            instance.fill({
-                [this.property]: this.parent
-            });
-            await instance.save();
-            this.items.push(instance);
-        }
-    }
+        const instances = await this.relationship.save(items, this.parent);
 
-    get relationship(): Relationship<Entity, Entity> {
-        const relationships = this.entityClass.metadata.relationships;
-        return relationships[this.property as unknown as string];
+        this.items.push(...instances);
+
+        return this.items;
     }
 
     push(...items: E[]) {
@@ -71,7 +66,7 @@ export class List<E extends Entity> implements Iterable<E>, ArrayLike<E> {
     }
 
     newQuery(): EntityQuery<E> {
-        return new EntityQuery(this.entityClass).table(this.entityClass.getTable());
+        return new EntityQuery(this.relationship.entity).table(this.relationship.entity.getTable());
     }
 
     where<K extends EntityKeys<E>>(
@@ -80,9 +75,7 @@ export class List<E extends Entity> implements Iterable<E>, ArrayLike<E> {
         value?: WhereValue | E[K],
         boolean?: Boolean
     ): EntityQuery<E> {
-        return this.newQuery()
-            .where(column, operator, value, boolean)
-            .andWhere(this.relationship.column, this.parent[this.parent.getPrimaryKey()]);
+        return this.relationship.getQuery(this.parent as E & P).where(column, operator, value, boolean);
     }
 
     findWhere(name: string, value: string): E | undefined {
@@ -90,14 +83,14 @@ export class List<E extends Entity> implements Iterable<E>, ArrayLike<E> {
     }
 }
 
-export class ListProxyHandler<T extends Entity> {
+export class ListProxyHandler<E extends Entity, P extends Entity> {
     constructor() {
     }
 
-    get(target: List<T>, property: string | number) {
+    get(target: List<E, P>, property: string | number) {
         if (Number.isInteger(Number(property.toString()))) {
             return target.items[property as number];
         }
-        return target[property as keyof List<T>];
+        return target[property as keyof List<E, P>];
     }
 }

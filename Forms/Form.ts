@@ -52,7 +52,7 @@ export abstract class Form {
         return value;
     }
 
-    fill(data: FormFields<this>) {
+    fill(data: Partial<FormFields<this>>) {
         const fields = Object.values(this.fields()) as FormField[];
         fields.forEach(field => {
             if (field.name in data) {

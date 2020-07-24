@@ -2,8 +2,6 @@ import { Entity } from './Entity';
 import { EntityQuery } from './EntityQuery';
 import { EntityConstructor } from './index';
 import { Type } from '../Support';
-import { BelongsToManyField, HasManyField } from './Fields';
-import { List } from './List';
 
 export class EntityProxyHandler<T extends Entity> {
     constructor(private object: Type<T> | T) {
@@ -15,11 +13,11 @@ export class EntityProxyHandler<T extends Entity> {
     }
 
     get(target: T, property: keyof T) {
-        const relationships = {...target.metadata.relationships, ...target.metadata.inverseRelationships};
+        const relationships = target.metadata.allRelationships;
         const relationship = relationships[property as unknown as string];
-        if (relationship && (relationship instanceof HasManyField || relationship instanceof BelongsToManyField)) {
-            return target[property] ||
-                (target[property] = new List(relationship.related, target, relationship.inverseBy) as unknown as T[keyof T]);
+        if (relationship) {
+            // @ts-ignore
+            return target[property] || (target[property] = new relationship.relationClass(relationship, target) as unknown as T[keyof T]);
         }
         if (!(property in this.object)) {
             const targetConstructor = target.constructor as EntityConstructor<T>;

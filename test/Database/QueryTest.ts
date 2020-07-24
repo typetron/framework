@@ -1,7 +1,7 @@
-import {expect} from 'chai';
-import {suite, test} from '@testdeck/mocha';
-import {Connection, Query} from '../../Database';
-import {anyOfClass, instance, mock, when} from 'ts-mockito';
+import { expect } from 'chai';
+import { suite, test } from '@testdeck/mocha';
+import { Connection, Query } from '../../Database';
+import { anyOfClass, instance, mock, when } from 'ts-mockito';
 
 @suite
 class QueryTest {
@@ -378,8 +378,11 @@ class QueryTest {
             'SELECT * FROM `users` INNER JOIN `pets` ON pets.user_id = users.id'
         );
 
-        // this.new.query.table('users').join('pets', 'pets.user_id', '=', 'users.id').leftJoin('pet_types', 'pet_types.id', '=', 'pets.type_id');
-        // (await this.expectSql()).to.equal('SELECT * FROM users INNER JOIN pets ON pets.user_id = users.id LEFT JOIN pet_types ON pet_types.id = pets.type_id');
+        // this.new.query.table('users')
+        // .join('pets', 'pets.user_id', '=', 'users.id')
+        // .leftJoin('pet_types', 'pet_types.id', '=', 'pets.type_id');
+        // (await this.expectSql()).to
+        // .equal('SELECT * FROM users INNER JOIN pets ON pets.user_id = users.id LEFT JOIN pet_types ON pet_types.id = pets.type_id');
     }
 
     @test
@@ -487,13 +490,23 @@ class QueryTest {
         this.expectBindings().to.deep.equal(['Doe', 'John']);
     }
 
-    // @test
-    // async subSelects() {
-    //     Query.table('users').where('age', query => {
-    //         query.max('age').table('users');
-    //     });
-    //     (await this.expectSql()).to.equal('SELECT * FROM users where age = (SELECT MAX(age) FROM users)');
-    // }
+    @test
+    async subSelectWhere() {
+        const query = Query.table('users').where('id', q => {
+            q.select('userId').from('roles').where('id', 1);
+        });
+        expect(query.toSql()).to.equal('SELECT * FROM `users` WHERE id = (SELECT `userId` FROM `roles` WHERE id = ?)');
+        expect(query.getBindings()).to.deep.equal([1]);
+    }
+
+    @test
+    async subSelectWhereIn() {
+        const query = Query.table('users').whereIn('id', q => {
+            q.select('userId').from('roles').where('id', 1);
+        });
+        expect(query.toSql()).to.equal('SELECT * FROM `users` WHERE id IN (SELECT `userId` FROM `roles` WHERE id = ?)');
+        expect(query.getBindings()).to.deep.equal([1]);
+    }
 }
 
 interface User {

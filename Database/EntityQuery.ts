@@ -2,8 +2,7 @@ import { Query } from './Query';
 import { Entity } from './Entity';
 import { EntityConstructor, Expression } from './index';
 import { ChildObject, KeysOfType } from '../Support';
-import { InverseRelationship, Relationship } from './Fields';
-import { List } from './List';
+import { BelongsTo, BelongsToMany, HasMany, HasOne, InverseRelationship, Relationship } from './Fields';
 
 export class EntityQuery<T extends Entity> extends Query<T> {
 
@@ -58,8 +57,8 @@ export class EntityQuery<T extends Entity> extends Query<T> {
 
     async firstOrNew<K extends keyof T>(
         // tslint:disable-next-line:no-any
-        properties: ChildObject<T, Entity> | Record<string, any>,
-        values?: ChildObject<this, Entity>
+        properties: Partial<ChildObject<T, Entity> | Record<string, any>>,
+        values?: Partial<ChildObject<T, Entity>>
     ): Promise<T> {
         Object.entries(properties).forEach(([property, value]) => {
             // TODO inside entity metadata add: columns, relations, inverseRelations.
@@ -72,7 +71,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
     }
 
     // tslint:disable-next-line:no-any
-    with<K extends KeysOfType<T, Entity | List<any>>>(...relations: K[]) {
+    with<K extends KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>>>(...relations: K[]) {
         this.eagerLoad = this.eagerLoad.concat(relations as string[]);
 
         return this;

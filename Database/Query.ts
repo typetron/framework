@@ -8,18 +8,20 @@ import {
     SqlValueMap,
     Where,
     WhereBetween,
+    WhereFunction,
     WhereIn,
     WhereLike,
     WhereNull,
+    WhereSubSelect,
     WhereValue
 } from './Types';
-import {Select} from './Statements/Select';
-import {Insert} from './Statements/Insert';
-import {Statement} from './Statements/Statement';
-import {Delete} from './Statements/Delete';
-import {Update} from './Statements/Update';
-import {Connection} from './Connection';
-import {Expression} from './Expression';
+import { Select } from './Statements/Select';
+import { Insert } from './Statements/Insert';
+import { Statement } from './Statements/Statement';
+import { Delete } from './Statements/Delete';
+import { Update } from './Statements/Update';
+import { Connection } from './Connection';
+import { Expression } from './Expression';
 
 export class Query<T = {}> {
     static connection: Connection;
@@ -44,6 +46,10 @@ export class Query<T = {}> {
 
     static table<T = {[key: string]: SqlValue}>(table: string) {
         return (new this as Query<T>).table(table);
+    }
+
+    static from<T = {[key: string]: SqlValue}>(table: string) {
+        return Query.table<T>(table);
     }
 
     static async lastInsertedId(): Promise<number | string> {
@@ -80,6 +86,10 @@ export class Query<T = {}> {
         return this;
     }
 
+    from(table: string) {
+        return this.table(table);
+    }
+
     async first<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T | undefined> {
         return Query.connection.first(this.select(...columns || this.components.columns));
     }
@@ -92,8 +102,8 @@ export class Query<T = {}> {
 
     where<K extends keyof T>(
         column: K | string,
-        operator: Operator | WhereValue | T[K],
-        value?: WhereValue | T[K],
+        operator: Operator | WhereValue | WhereFunction | T[K],
+        value?: WhereValue | WhereFunction | T[K],
         boolean: Boolean = 'AND'
     ): this {
         // if (column instanceof Function) {
@@ -102,16 +112,17 @@ export class Query<T = {}> {
         //     column(query);
         //     return this;
         // }
-        if (value instanceof Function) {
-            // const query = new WhereSubSelect();
-            // this.components.wheres = query;
-            // column(query);
-            return this;
+        if (!value) {
+            value = operator;
+            operator = '=' as Operator;
         }
 
-        if (!value) {
-            value = operator as string;
-            operator = '=';
+        if (typeof value === 'function') {
+            const query = new Query();
+            // @ts-ignore
+            value(query);
+            this.components.wheres.push(new WhereSubSelect(column as string, operator as Operator, query, boolean));
+            return this;
         }
 
         // this.bindings.push(value);
@@ -138,7 +149,18 @@ export class Query<T = {}> {
         return this.where(column, operator, value);
     }
 
-    whereIn<K extends keyof T>(column: K | string, values: WhereValue[] | T[K][], boolean: Boolean = 'AND', not = false): this {
+    whereIn<K extends keyof T>(
+        column: K | string,
+        values: WhereFunction | WhereValue[] | T[K][],
+        boolean: Boolean = 'AND',
+        not = false
+    ): this {
+        if (typeof values === 'function') {
+            const query = new Query();
+            values(query);
+            this.components.wheres.push(new WhereSubSelect(column as string, 'IN', query, boolean));
+            return this;
+        }
         this.components.wheres.push(new WhereIn(column as string, values as WhereValue[], boolean, not));
 
         return this;

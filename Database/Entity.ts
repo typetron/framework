@@ -3,11 +3,11 @@ import { EntityQuery } from './EntityQuery';
 import { ChildObject, KeysOfType } from '../Support';
 import { EntityMetadata, EntityMetadataKey, ID } from './Decorators';
 import { EntityNotFoundError } from './EntityNotFoundError';
-import { BelongsToManyField, ColumnField, InverseField } from './Fields';
+import { BelongsTo, BelongsToMany, BelongsToManyField, ColumnField, HasMany, HasOne, InverseField } from './Fields';
 import { Boolean, Direction, Operator, SqlValue, SqlValueMap, WhereValue } from './Types';
 import { EntityConstructor, EntityKeys } from './index';
 import { Query } from './Query';
-import { List } from './List';
+import { RelationClass } from './ORM/RelationClass';
 
 export abstract class Entity {
 
@@ -75,8 +75,8 @@ export abstract class Entity {
     // tslint:disable-next-line:no-any
     static async firstOrNew<T extends Entity, K extends keyof Entity>(
         this: EntityConstructor<T>,
-        properties: ChildObject<T, Entity>,
-        values?: ChildObject<T, Entity>
+        properties: Partial<ChildObject<T, Entity>>,
+        values?: Partial<ChildObject<T, Entity>>
     ): Promise<T> {
         return this.newQuery().firstOrNew(properties, values);
     }
@@ -84,8 +84,8 @@ export abstract class Entity {
     // tslint:disable-next-line:no-any
     static async firstOrCreate<T extends Entity, K extends keyof Entity>(
         this: EntityConstructor<T>,
-        properties: ChildObject<T, Entity>,
-        values?: ChildObject<T, Entity>
+        properties: Partial<ChildObject<T, Entity>>,
+        values?: Partial<ChildObject<T, Entity>>
     ): Promise<T> {
         return (await this.firstOrNew(properties, values)).save();
     }
@@ -120,7 +120,10 @@ export abstract class Entity {
     }
 
     // tslint:disable-next-line:no-any
-    static with<T extends Entity, K extends KeysOfType<T, Entity | List<any>>>(this: EntityConstructor<T>, ...relations: K[]) {
+    static with<T extends Entity, K extends KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>>>(
+        this: EntityConstructor<T>,
+        ...relations: K[]
+    ) {
         return this.newQuery().with(...relations);
     }
 
@@ -156,7 +159,9 @@ export abstract class Entity {
     }
 
     // tslint:disable-next-line:no-any
-    async load<K extends KeysOfType<this, Entity | List<any>>>(...relations: K[]) {
+    async load<K extends KeysOfType<this, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>>>(
+        ...relations: K[]
+    ) {
         await this.newQuery().with(...relations).eagerLoadRelationships([this]);
 
         return this;
@@ -194,18 +199,9 @@ export abstract class Entity {
         }
 
         for await(const field of Object.values(this.metadata.inverseRelationships)) {
-            const entity = field.value(this, field.property) as unknown as Entity;
-            if (entity) {
-                if (entity instanceof Entity) {
-                    entity.fill({
-                        [field.inverseBy]: this
-                    });
-                    await entity.save();
-                }
-            }
+            const relationship = field.value(this, field.property) as RelationClass<Entity>;
+            await relationship.save();
         }
-
-        // await this.syncRelationships(manyToManyRelationships);
 
         return this;
     }
@@ -229,7 +225,7 @@ export abstract class Entity {
             const field = fields[key];
             if (field) {
                 const value = data[key as keyof {}];
-                this[field.property as keyof this] = this.convertValueByType(value, field);
+                field.set(this, this.convertValueByType(value, field));
             }
         });
 
@@ -271,13 +267,6 @@ export abstract class Entity {
             await Query.table(relatedField.getPivotTable()).insert(relations);
         }
         return this;
-    }
-
-    private async syncRelationships(manyToManyRelationships: BelongsToManyField<this, Entity>[]) {
-        await manyToManyRelationships.forEachAsync(async (field) => {
-            // @ts-ignore
-            await this.sync(field.property, ((this[field.property] || []) as Entity[]).pluck(field.type().getPrimaryKey()));
-        });
     }
 
     getPrimaryKey<T extends Entity>(this: T): EntityKeys<T> {

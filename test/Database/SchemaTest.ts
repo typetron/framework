@@ -16,7 +16,7 @@ class SchemaTest {
         await Schema.synchronize(Query.connection, [User, Role].pluck('metadata'));
         const tableName = [User.getTable(), Role.getTable()].sort().join('_');
         const table = await Query.connection.firstRaw(`SELECT * FROM sqlite_master WHERE name = '${tableName}'`);
-        expect(Boolean(table)).to.be.equal(true);
+        expect(Boolean(table)).to.be.equal(true, 'Pivot table was not created');
         const tableColumns = await Query.connection.getRaw(`PRAGMA table_info(${tableName})`) as {name: string, type: string}[];
         expect(tableColumns).to.have.length(3);
         expect(tableColumns[0]).to.deep.include({name: 'id', type: 'integer'});

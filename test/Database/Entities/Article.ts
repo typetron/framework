@@ -1,5 +1,6 @@
-import { Column, Entity, BelongsTo, PrimaryColumn } from '../../../Database';
+import { Column, Entity, PrimaryColumn, Relation } from '../../../Database';
 import { User } from './User';
+import { BelongsTo } from '../../../Database/Fields';
 
 export class Article extends Entity {
 
@@ -15,6 +16,6 @@ export class Article extends Entity {
     @Column()
     published = false;
 
-    @BelongsTo(() => User, 'articles')
-    author: User;
+    @Relation(() => User, 'articles')
+    author: BelongsTo<User>;
 }

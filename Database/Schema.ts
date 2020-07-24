@@ -1,6 +1,6 @@
 import { Entity } from './Entity';
 import { Connection } from './Connection';
-import { ColumnField, BelongsToManyField, HasManyField, PrimaryField } from './Fields';
+import { BelongsToManyField, ColumnField, PrimaryField } from './Fields';
 import { EntityMetadata } from './Decorators';
 import { wrap } from './Helpers';
 import { EntityConstructor } from './index';

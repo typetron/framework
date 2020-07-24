@@ -1,6 +1,6 @@
-import { BelongToMany, Column, Entity, PrimaryColumn } from '../../../Database';
+import { Column, Entity, PrimaryColumn, Relation } from '../../../Database';
 import { User } from './User';
-import { List } from '../../../Database/List';
+import { BelongsToMany } from '../../../Database/Fields';
 
 export class Role extends Entity {
 
@@ -10,6 +10,6 @@ export class Role extends Entity {
     @Column()
     name: string;
 
-    @BelongToMany(() => User, 'roles')
-    users: List<User>;
+    @Relation(() => User, 'roles')
+    users: BelongsToMany<User>;
 }
