@@ -40,13 +40,9 @@ export class List<E extends Entity, P extends Entity = Entity> extends RelationC
         return this.items;
     }
 
-    push(...items: E[]) {
-        this.items.push(...items);
-    }
-
     async get() {
         // @ts-ignore
-        await this.parent.load(this.relationship.inverseBy);
+        await this.parent.load(this.relationship.property);
     }
 
     async clear() {

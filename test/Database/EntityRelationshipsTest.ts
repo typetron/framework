@@ -81,128 +81,129 @@ class EntityRelationshipsTest {
         });
     }
 
-    // // @test
-    // // async hasManySaveUsingPush() {
-    // //     const user = await User.create(this.joe);
-    // //
-    // //     user.articles.push(new Article({
-    // //         title: 'title',
-    // //         content: 'content',
-    // //     }));
-    // //
-    // //     await user.save();
-    // //
-    // //     expect(user.articles).to.have.length(1);
-    // //     expect(user.articles).to.have.deep.members([
-    // //         {
-    // //             id: 1,
-    // //             title: 'title',
-    // //             content: 'content'
-    // //         }
-    // //     ]);
-    // // }
-    //
     // @test
-    // async hasManySave() {
+    // async hasManySaveUsingPush() {
     //     const user = await User.create(this.joe);
     //
-    //     await user.articles.save({
-    //         title: 'title',
-    //         content: 'content',
-    //     });
-    //
-    //     expect(user.articles).to.have.length(1);
-    //     expect(user.articles[0]).to.deep.include({
-    //         id: 1,
-    //         title: 'title',
-    //         content: 'content',
-    //     });
-    // }
-    //
-    // @test
-    // async hasManySaveUsingPlainObject() {
-    //     const user = await User.create(this.joe);
-    //
-    //     await user.articles.save({
-    //         title: 'title',
-    //         content: 'content',
-    //     } as Article);
-    //
-    //     expect(user.articles).to.have.length(1);
-    //     expect(user.articles[0]).to.deep.include({
-    //         id: 1,
-    //         title: 'title',
-    //         content: 'content',
-    //     });
-    // }
-    //
-    // @test
-    // async hasManySaveUsingSaveOnUnsavedParent() {
-    //     const user = new User(this.joe);
-    //
-    //     await user.articles.save(new Article({
+    //     user.articles.push(new Article({
     //         title: 'title',
     //         content: 'content',
     //     }));
     //
-    //     expect(user.id).to.be.equal(1);
+    //     await user.save();
+    //
     //     expect(user.articles).to.have.length(1);
-    //     expect(user.articles[0]).to.deep.include({
-    //         id: 1,
-    //         title: 'title',
-    //         content: 'content',
-    //     });
+    //     expect(user.articles[0]).to.have.deep.members([
+    //         {
+    //             id: 1,
+    //             title: 'title',
+    //             content: 'content'
+    //         }
+    //     ]);
     // }
-    //
-    // @test
-    // async hasManyLoad() {
-    //     const user = await User.create(this.joe);
-    //     await Article.create({
-    //         title: 'title',
-    //         content: 'content',
-    //         author: user
-    //     });
-    //
-    //     await user.load('articles');
-    //     expect(user.articles[0]).to.deep.include({
-    //         id: 1,
-    //         title: 'title',
-    //         content: 'content',
-    //     });
-    // }
-    //
-    // @test
-    // async hasManyGet() {
-    //     const user = await User.create(this.joe);
-    //     await Article.create({
-    //         title: 'title',
-    //         content: 'content',
-    //         author: user
-    //     });
-    //     await user.articles.get();
-    //     expect(user.articles[0]).to.deep.include({
-    //         id: 1,
-    //         title: 'title',
-    //         content: 'content',
-    //     });
-    // }
-    //
-    // @test
-    // async hasManyEagerLoad() {
-    //     const user = new User(this.joe);
-    //     await user.articles.save(new Article({
-    //         title: 'title',
-    //         content: 'content',
-    //     }));
-    //
-    //     const sameUser = await User.with('articles').first() as User;
-    //     expect(sameUser.articles).to.have.length(1);
-    //     expect(user.articles[0]).to.deep.include({
-    //         id: 1,
-    //         title: 'title',
-    //         content: 'content',
-    //     });
-    // }
+
+    @test
+    async hasManySave() {
+        const user = await User.create(this.joe);
+
+        await user.articles.save(new Article({
+            title: 'title',
+            content: 'content',
+        }));
+
+        expect(user.articles).to.have.length(1);
+        expect(user.articles[0]).to.deep.include({
+            id: 1,
+            title: 'title',
+            content: 'content',
+        });
+    }
+
+    @test
+    async hasManySaveUsingPlainObject() {
+        const user = await User.create(this.joe);
+
+        await user.articles.save({
+            title: 'title',
+            content: 'content',
+        } as Article);
+
+        expect(user.articles).to.have.length(1);
+        expect(user.articles[0]).to.deep.include({
+            id: 1,
+            title: 'title',
+            content: 'content',
+        });
+    }
+
+    @test
+    async hasManySaveUsingSaveOnUnsavedParent() {
+        const user = new User(this.joe);
+
+        await user.articles.save(new Article({
+            title: 'title',
+            content: 'content',
+        }));
+
+        expect(user.id).to.be.equal(1);
+        expect(user.articles).to.have.length(1);
+        expect(user.articles[0]).to.deep.include({
+            id: 1,
+            title: 'title',
+            content: 'content',
+        });
+    }
+
+    @test
+    async hasManyLoad() {
+        const user = await User.create(this.joe);
+        await Article.create({
+            title: 'title',
+            content: 'content',
+            author: user
+        });
+
+        await user.load('articles');
+        expect(user.articles[0]).to.deep.include({
+            id: 1,
+            title: 'title',
+            content: 'content',
+        });
+    }
+
+    @test
+    async hasManyGet() {
+        const user = await User.create(this.joe);
+        await Article.create({
+            title: 'title',
+            content: 'content',
+            author: user
+        });
+        await user.articles.get();
+        expect(user.articles[0]).to.deep.include({
+            id: 1,
+            title: 'title',
+            content: 'content',
+        });
+    }
+
+    @test
+    async hasManyEagerLoad() {
+        const user = new User(this.joe);
+        await user.articles.save(new Article({
+            title: 'title',
+            content: 'content',
+        }));
+
+        const sameUser = await User.with('articles').first() as User;
+        expect(sameUser.articles).to.have.length(1);
+        expect(user.articles[0]).to.deep.include({
+            id: 1,
+            title: 'title',
+            content: 'content',
+        });
+    }
+
     //
     // @test
     // async hasManyQuery() {

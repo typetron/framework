@@ -211,6 +211,15 @@ export class HasManyField<T extends Entity, R extends Entity> extends InverseRel
 
     async save(items: Partial<EntityObject<T> | T>[], parent: R) {
         const entities: T[] = [];
+        for await (const item of items) {
+            const entity = item instanceof Entity ? item : this.type().new(item);
+
+            entity.fill({
+                [this.property]: parent
+            });
+            await entity.save();
+            entities.push(entity as T);
+        }
         return entities;
     }
 }

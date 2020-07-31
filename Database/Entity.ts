@@ -20,7 +20,10 @@ export abstract class Entity {
             this.original = data;
             this.fill(data);
         }
-        return new Proxy(this, new EntityProxyHandler<this>(this));
+        const entityProxyHandler = new EntityProxyHandler<this>();
+        const proxy = new Proxy(this, entityProxyHandler);
+        entityProxyHandler.entityProxy = proxy;
+        return proxy;
     }
 
     static get metadata(): EntityMetadata<Entity> {
@@ -102,7 +105,11 @@ export abstract class Entity {
         return this.metadata.table || this.name.toLowerCase(); // TODO make metadata.table un-optional
     }
 
-    static new<T extends Entity>(this: EntityConstructor<T>, data = {}, exists = false): T {
+    static new<T extends Entity, K extends keyof T>(
+        this: EntityConstructor<T>,
+        data = {},
+        exists = false
+    ): T {
         const instance = new this;
         instance.exists = exists;
         instance.original = data;
