@@ -62,10 +62,6 @@ export class Query<T = {}> {
         return statement.bindings;
     }
 
-    static raw(value: string) {
-        return new Expression(value);
-    }
-
     toSql() {
         const statement = this.statement;
         const sql = statement.toSql();
@@ -73,7 +69,7 @@ export class Query<T = {}> {
     }
 
     async get<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T[]> {
-        return Query.connection.get(this.select(...columns || this.components.columns));
+        return Query.connection.get(this.select(...(columns.length ? columns : this.components.columns)));
     }
 
     async run<K extends keyof T>(): Promise<void> {
@@ -91,7 +87,7 @@ export class Query<T = {}> {
     }
 
     async first<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T | undefined> {
-        return Query.connection.first(this.select(...columns || this.components.columns));
+        return Query.connection.first(this.select(...(columns.length ? columns : this.components.columns)));
     }
 
     select<K extends keyof T>(...columns: (K | string | Expression)[]) {

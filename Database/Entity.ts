@@ -7,7 +7,6 @@ import { BelongsTo, BelongsToMany, BelongsToManyField, ColumnField, HasMany, Has
 import { Boolean, Direction, Operator, SqlValue, SqlValueMap, WhereValue } from './Types';
 import { EntityConstructor, EntityKeys } from './index';
 import { Query } from './Query';
-import { RelationClass } from './ORM/RelationClass';
 
 export abstract class Entity {
 
@@ -186,8 +185,6 @@ export abstract class Entity {
         // tslint:disable-next-line:no-any
         const dataToSave: Record<string, any> = {};
 
-        // const manyToManyRelationships: BelongsToManyField<this, Entity>[] = [];
-
         // TODO diff the values so we don't update every value from the entity
         Object.values({...this.metadata.columns, ...this.metadata.relationships}).forEach(field => {
             dataToSave[field.column] = field.value(this, field.property);
@@ -203,11 +200,6 @@ export abstract class Entity {
             const id = await EntityQuery.lastInsertedId();
             this.exists = true;
             this.fill({id});
-        }
-
-        for await(const field of Object.values(this.metadata.inverseRelationships)) {
-            const relationship = field.value(this, field.property) as RelationClass<Entity>;
-            await relationship.save();
         }
 
         return this;

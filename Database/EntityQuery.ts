@@ -2,7 +2,7 @@ import { Query } from './Query';
 import { Entity } from './Entity';
 import { EntityConstructor, Expression } from './index';
 import { ChildObject, KeysOfType } from '../Support';
-import { BelongsTo, BelongsToMany, HasMany, HasOne, InverseRelationship, Relationship } from './Fields';
+import { BelongsTo, BelongsToMany, HasMany, HasOne, InverseRelationship, RelationshipField } from './Fields';
 
 export class EntityQuery<T extends Entity> extends Query<T> {
 
@@ -24,7 +24,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
 
     public async eagerLoadRelationships(entities: T[]) {
         await this.eagerLoad.forEachAsync(async (field) => {
-            const relation = this.entity.metadata.allRelationships[field] as Relationship<T, Entity> | InverseRelationship<T, Entity>;
+            const relation = this.entity.metadata.allRelationships[field] as RelationshipField<T, Entity> | InverseRelationship<T, Entity>;
             const results = await relation.getRelatedValue(entities);
             if (results.length) {
                 entities = relation.match(entities, results);
@@ -35,7 +35,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
 
     public async eagerLoadRelationshipsCounts(entities: T[]) {
         await this.eagerLoadCount.forEachAsync(async (field) => {
-            const relation = this.entity.metadata.allRelationships[field] as Relationship<T, Entity> | InverseRelationship<T, Entity>;
+            const relation = this.entity.metadata.allRelationships[field] as RelationshipField<T, Entity> | InverseRelationship<T, Entity>;
             const results = await relation.getRelatedCount(entities);
             if (results.length) {
                 entities = relation.matchCounts(entities, results);

@@ -1,6 +1,6 @@
 import { KeysOfType } from '../Support';
 import { Entity } from './Entity';
-import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseRelationship, PrimaryField, Relationship } from './Fields';
+import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseRelationship, PrimaryField, RelationshipField } from './Fields';
 import { EntityConstructor } from './index';
 import { List } from './List';
 
@@ -15,7 +15,7 @@ export class EntityOptions<T extends Entity> {
 
 export class EntityMetadata<T extends Entity> extends EntityOptions<T> {
     columns: Record<string, ColumnField<T>> = {};
-    relationships: Record<string, Relationship<T, Entity>> = {};
+    relationships: Record<string, RelationshipField<T, Entity>> = {};
     inverseRelationships: Record<string, InverseRelationship<T, Entity>> = {};
     createdAtColumn?: string;
     updatedAtColumn?: string;

@@ -1,7 +1,7 @@
 import { Entity } from './Entity';
-import { EntityConstructor, EntityKeys, EntityObject, Query } from './index';
+import { EntityConstructor, EntityKeys, EntityObject, Expression, Query } from './index';
 import { List } from './List';
-import { RelationClass } from './ORM/RelationClass';
+import { BaseRelationship } from './ORM/BaseRelationship';
 
 export interface EntityField<T extends Entity> {
 
@@ -48,8 +48,8 @@ export abstract class InverseField<T extends Entity> implements EntityField<T> {
 export class PrimaryField<T extends Entity> extends ColumnField<T> {
 }
 
-export abstract class Relationship<T extends Entity, R extends Entity> extends ColumnField<T> {
-    abstract relationClass: typeof RelationClass;
+export abstract class RelationshipField<T extends Entity, R extends Entity> extends ColumnField<T> {
+    abstract relationClass: typeof BaseRelationship;
 
     protected constructor(
         entity: EntityConstructor<T>,
@@ -75,7 +75,7 @@ export abstract class Relationship<T extends Entity, R extends Entity> extends C
 }
 
 export abstract class InverseRelationship<T extends Entity, R extends Entity> extends InverseField<T> {
-    abstract relationClass: typeof RelationClass;
+    abstract relationClass: typeof BaseRelationship;
 
     protected constructor(
         entity: EntityConstructor<T>,
@@ -204,27 +204,27 @@ export class HasManyField<T extends Entity, R extends Entity> extends InverseRel
         return entities;
     }
 
-    getQuery(parent: R) {
-        // return this.entity.newQuery().where(this.column, parent[parent.getPrimaryKey()] as unknown as T[keyof T]);
-        return this.entity.newQuery();
-    }
-
-    async save(items: Partial<EntityObject<T> | T>[], parent: R) {
-        const entities: T[] = [];
+    async save(items: Partial<EntityObject<R> | R>[], parent: T) {
+        const entities: R[] = [];
         for await (const item of items) {
             const entity = item instanceof Entity ? item : this.type().new(item);
 
             entity.fill({
-                [this.property]: parent
+                [this.inverseBy]: parent
             });
             await entity.save();
-            entities.push(entity as T);
+            entities.push(entity as R);
         }
         return entities;
     }
+
+    getQuery(parent: T) {
+        const inverseField = this.related.metadata.relationships[this.inverseBy];
+        return this.type().newQuery().where(inverseField.column, parent[parent.getPrimaryKey()] as unknown as R[keyof R]);
+    }
 }
 
-export class BelongsToField<T extends Entity, R extends Entity> extends Relationship<T, R> {
+export class BelongsToField<T extends Entity, R extends Entity> extends RelationshipField<T, R> {
     relationClass = BelongsTo;
 
     constructor(
@@ -260,7 +260,7 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
 
     async getRelatedValue(parents: R[]) {
         const relationIds = parents
-            .pluck(parent => parent[this.column as keyof R] as unknown)
+            .map(parent => parent[this.column as keyof R] as unknown)
             .filter(item => item !== undefined) as number[];
         if (relationIds.length) {
             return await this.related.whereIn(this.related.getPrimaryKey() as EntityKeys<R>, relationIds).get();
@@ -286,12 +286,12 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
         return entities;
     }
 
-    getQuery(parent: R) {
+    getQuery(parent: T) {
         return this.entity.newQuery().where(this.column, parent[parent.getPrimaryKey()] as unknown as T[keyof T]);
     }
 
-    async save(items: Partial<EntityObject<T> | T>[], parent: R) {
-        const entities: T[] = [];
+    async save(items: Partial<EntityObject<R> | R>[], parent: T) {
+        const entities: R[] = [];
         for await (const item of items) {
             const entity = item instanceof Entity ? item : this.entity.new(item);
 
@@ -299,7 +299,7 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
                 [this.property]: parent
             });
             await entity.save();
-            entities.push(entity as T);
+            entities.push(entity as R);
         }
         return entities;
     }
@@ -329,11 +329,16 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         const parentForeignKey = `${this.getPivotTable()}.${this.getParentForeignKey()}`;
         const relatedKey = `${this.related.getTable()}.${this.related.getPrimaryKey()}`;
 
-        const results = await this.related.newQuery()
-            .addSelect(relatedForeignKey, parentForeignKey)
+        const query = this.related.newQuery()
+            .addSelect(
+                new Expression(`${this.related.getTable()}.*`),
+                new Expression(relatedForeignKey),
+                new Expression(parentForeignKey)
+            )
             .join(this.getPivotTable(), relatedForeignKey, '=', relatedKey)
-            .whereIn(parentForeignKey, parentIds.unique())
-            .get();
+            .whereIn(parentForeignKey, parentIds.unique());
+
+        const results = await query.get();
 
         return results.map(entity => {
             entity.original.pivot = {
@@ -361,10 +366,9 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
 
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
-            // TODO fix these weird types. Get rid of `unknown`
             const entityPrimaryKey = entity[this.entity.getPrimaryKey()];
-            entity[this.property as keyof T] = relatedEntities
-                .filter(related => related.original.pivot[this.getParentForeignKey()] === entityPrimaryKey) as unknown as T[keyof T];
+            (entity[this.property as keyof T] as unknown as BelongsToMany<R>).items = relatedEntities
+                .filter(related => related.original.pivot[this.getParentForeignKey()] === entityPrimaryKey);
             return entity;
         });
     }
@@ -392,30 +396,30 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         return value;
     }
 
-    getQuery(entity: T) {
-        return this.entity.newQuery();
-        // .whereIn(this.entity.getPrimaryKey(), query => query);
-        // .whereIn(this.getPivotTable(), this.getParentForeignKey(), '=', this.getRelatedForeignKey());
-    }
-
-    async save(items: Partial<EntityObject<T> | T>[], parent: R) {
-        const entities: T[] = [];
+    async attach(items: number[], parent: T) {
+        const entities: R[] = [];
         // tslint:disable-next-line:no-any
         const dataToInsert: Record<string, any>[] = [];
         for await (const item of items) {
-            const entity = item instanceof Entity ? item : this.entity.new(item);
-
-            await entity.save();
-            entities.push(entity as T);
             dataToInsert.push({
-                [this.getParentForeignKey()]: entity[entity.getPrimaryKey()],
-                [this.getRelatedForeignKey()]: parent[parent.getPrimaryKey()],
+                [this.getRelatedForeignKey()]: item,
+                [this.getParentForeignKey()]: parent[parent.getPrimaryKey()],
             });
+            entities.push(this.related.new({[this.related.getPrimaryKey()]: item}));
         }
         if (dataToInsert.length) {
             await Query.table(this.getPivotTable()).insert(dataToInsert);
         }
         return entities;
+
+    }
+
+    getQuery(parent: T) {
+        return this.related.newQuery().whereIn(this.related.getPrimaryKey(), query => {
+            query.select(this.getRelatedForeignKey())
+                .table(this.getPivotTable())
+                .where(this.getParentForeignKey(), parent[parent.getPrimaryKey()] as unknown as string);
+        });
     }
 }
 
@@ -424,9 +428,9 @@ export interface RelationshipOptions {
     table: string;
 }
 
-export class BelongsTo<T extends Entity, P extends Entity = Entity> extends RelationClass<T, P> {
+export class BelongsTo<T extends Entity, P extends Entity = Entity> extends BaseRelationship<T, P> {
 
-    public relationship: Relationship<T, P>;
+    public relationship: RelationshipField<P, T>;
     private instance?: T;
 
     static relationship<T extends Entity, R extends Entity>(
@@ -439,11 +443,11 @@ export class BelongsTo<T extends Entity, P extends Entity = Entity> extends Rela
         options.column = options.column || (property as string) + (entityClass.getPrimaryKey() as string).capitalize();
 
         return new BelongsToField(
-            entityClass, /*: EntityConstructor<T>,*/
-            property as string, /*: string,*/
-            type, /*: () => EntityConstructor<R>,*/
-            inverseBy as string, /*: string,*/
-            options.column, /*: string*/
+            entityClass,
+            property as string,
+            type,
+            inverseBy as string,
+            options.column,
         );
     }
 
@@ -470,9 +474,9 @@ export class BelongsTo<T extends Entity, P extends Entity = Entity> extends Rela
 
 }
 
-export class HasOne<T extends Entity, P extends Entity = Entity> extends RelationClass<T, P> {
+export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRelationship<T, P> {
 
-    public relationship: Relationship<T, P>;
+    public relationship: RelationshipField<P, T>;
     private instance?: T;
 
     static relationship<T extends Entity, R extends Entity>(
@@ -483,10 +487,10 @@ export class HasOne<T extends Entity, P extends Entity = Entity> extends Relatio
         options: RelationshipOptions
     ) {
         return new HasOneField(
-            entityClass, /*: EntityConstructor<T>,*/
-            property as string, /*: string,*/
-            type, /*: () => EntityConstructor<R>,*/
-            inverseBy as string, /*: string,*/
+            entityClass,
+            property as string,
+            type,
+            inverseBy as string,
         );
     }
 
@@ -494,25 +498,32 @@ export class HasOne<T extends Entity, P extends Entity = Entity> extends Relatio
         return this.instance;
     }
 
-    set(instance: T) {
+    set(instance: T | undefined) {
         this.instance = instance;
     }
 
-    async save(data: EntityObject<T> | {} | undefined = {}): Promise<T | undefined> {
-        if (!this.instance) {
-            return;
+    async save(instance: T | undefined = this.instance): Promise<T | undefined> {
+        this.set(instance);
+
+        if (instance) {
+            (instance[this.relationship.inverseBy as keyof T] as unknown as BelongsTo<P, T>).set(this.parent);
+            await instance.save();
+
         }
-        this.instance.fill(data);
 
-        (this.instance[this.relationship.inverseBy as keyof T] as unknown as BelongsTo<P, T>).set(this.parent);
-
-        await this.instance.save();
         return this.instance;
     }
 
 }
 
 export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T, P> {
+
+    constructor(
+        public relationship: HasManyField<P, T>,
+        parent: P
+    ) {
+        super(relationship, parent);
+    }
 
     static relationship<T extends Entity, R extends Entity>(
         entityClass: EntityConstructor<T>,
@@ -522,16 +533,38 @@ export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T
         options: RelationshipOptions
     ) {
         return new HasManyField(
-            entityClass, /*: EntityConstructor<T>,*/
-            property as string, /*: string,*/
-            type, /*: () => EntityConstructor<R>,*/
-            inverseBy as string, /*: string,*/
+            entityClass,
+            property as string,
+            type,
+            inverseBy as string,
         );
+    }
+
+    async save(...items: Partial<EntityObject<T> | T>[]) {
+        if (!this.parent.exists) {
+            await this.parent.save();
+        }
+        const instances = await this.relationship.save(items, this.parent);
+
+        this.items.push(...instances);
+
+        return this.items;
+    }
+
+    async clear() {
+
     }
 
 }
 
 export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends List<T, P> {
+
+    constructor(
+        public relationship: BelongsToManyField<P, T>,
+        parent: P
+    ) {
+        super(relationship, parent);
+    }
 
     static relationship<T extends Entity, R extends Entity>(
         entityClass: EntityConstructor<T>,
@@ -543,12 +576,69 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         options.column = options.column || (property as string) + (entityClass.getPrimaryKey() as string).capitalize();
 
         return new BelongsToManyField(
-            entityClass, /*: EntityConstructor<T>,*/
-            property as string, /*: string,*/
-            type, /*: () => EntityConstructor<R>,*/
-            inverseBy as string, /*: string,*/
-            options.table, /*: string*/
+            entityClass,
+            property as string,
+            type,
+            inverseBy as string,
+            options.table,
         );
+    }
+
+    async has(item: number) {
+        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`;
+        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`;
+
+        return Boolean(
+            await Query.table(this.relationship.getPivotTable())
+                .where(parentForeignKey, this.parent[this.parent.getPrimaryKey()] as unknown as string)
+                .andWhere(relatedForeignKey, item)
+                .first()
+        );
+    }
+
+    async attach(...items: number[]) {
+        if (!this.parent.exists) {
+            await this.parent.save();
+        }
+        this.items = this.items.concat(await this.relationship.attach(items, this.parent));
+
+        return this.items;
+    }
+
+    async detach(...items: number[]) {
+        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`;
+        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`;
+
+        await Query.table(this.relationship.getPivotTable())
+            .where(parentForeignKey, this.parent[this.parent.getPrimaryKey()] as unknown as string)
+            .whereIn(relatedForeignKey, items)
+            .delete();
+
+        this.items = this.items.filter(item => !items.includes(item[item.getPrimaryKey()] as unknown as number));
+    }
+
+    async toggle(...items: number[]) {
+        const attachedEntities = await this.relationship.getQuery(this.parent).get();
+        const entitiesToDetach = items.filter(item =>
+            attachedEntities.some(entity => entity[entity.getPrimaryKey()] as unknown as number === item)
+        );
+        const entitiesToAttach = items.filter(item =>
+            attachedEntities.some(entity => entity[entity.getPrimaryKey()] as unknown as number !== item)
+        );
+        await this.attach(...entitiesToAttach);
+        await this.detach(...entitiesToDetach);
+    }
+
+    async clear() {
+        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`;
+        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`;
+
+        await Query.table(this.relationship.getPivotTable())
+            .where(parentForeignKey, this.parent[this.parent.getPrimaryKey()] as unknown as string)
+            .whereIn(relatedForeignKey, this.items.pluck(this.relationship.related.getPrimaryKey()))
+            .delete();
+
+        this.items = [];
     }
 
 }

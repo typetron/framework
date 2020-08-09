@@ -48,7 +48,7 @@ export class Select extends Statement {
 }
 
 /*
-const q = `SELECT *
+const query = `SELECT *
 		   FROM users
 		   where name = 'john'                  --  where basic
 			  or (age in (1, 2, 3) and age > 2) -- where nested

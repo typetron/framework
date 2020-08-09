@@ -80,6 +80,8 @@ export type WhereCondition = {[key: string]: string | number};
 // export type WhereValue = SqlValue | WhereFunction | WhereCondition;
 export type WhereValue = SqlValue;
 
+export type Direction = 'ASC' | 'DESC';
+
 interface SqlClause {
     toSql(): string;
 
@@ -143,5 +145,3 @@ export class WhereSubSelect extends WhereExpression {
         super(column, new SqlExpression(`${operator} (${query.toSql()})`, query.getBindings()), boolean);
     }
 }
-
-export type Direction = 'ASC' | 'DESC';

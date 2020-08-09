@@ -1,18 +1,18 @@
 import { Entity } from './Entity';
-import { EntityKeys, EntityObject } from './index';
+import { EntityKeys } from './index';
 import { EntityQuery } from './EntityQuery';
 import { Boolean, Operator, WhereValue } from './Types';
 import { BelongsToManyField, HasManyField } from './Fields';
-import { RelationClass } from './ORM/RelationClass';
+import { BaseRelationship as Relationship } from './ORM/BaseRelationship';
 
-export class List<E extends Entity, P extends Entity = Entity> extends RelationClass<E, P> implements Iterable<E>, ArrayLike<E> {
+export abstract class List<E extends Entity, P extends Entity = Entity> extends Relationship<E, P> implements Iterable<E>, ArrayLike<E> {
 
     items: E[] = [];
 
-    public relationship: HasManyField<E, P> | BelongsToManyField<E, P>;
+    public relationship: HasManyField<P, E> | BelongsToManyField<P, E>;
 
-    constructor(
-        relationship: HasManyField<E, P> | BelongsToManyField<E, P>,
+    protected constructor(
+        relationship: HasManyField<P, E> | BelongsToManyField<P, E>,
         parent: P
     ) {
         super(relationship, parent);
@@ -29,40 +29,13 @@ export class List<E extends Entity, P extends Entity = Entity> extends RelationC
 
     readonly [n: number]: E;
 
-    async save(...items: Partial<EntityObject<E> | E>[]) {
-        if (!this.parent.exists) {
-            await this.parent.save();
-        }
-        const instances = await this.relationship.save(items, this.parent);
-
-        this.items.push(...instances);
-
-        return this.items;
-    }
-
     async get() {
         // @ts-ignore
         await this.parent.load(this.relationship.property);
     }
 
-    async clear() {
-
-    }
-
-    async toggle(...items: E[] | number[]) {
-
-    }
-
-    async has(...items: E[] | number[]) {
-
-    }
-
-    async remove(...items: E[] | number[]) {
-
-    }
-
     newQuery(): EntityQuery<E> {
-        return new EntityQuery(this.relationship.entity).table(this.relationship.entity.getTable());
+        return this.relationship.getQuery(this.parent);
     }
 
     where<K extends EntityKeys<E>>(
@@ -71,7 +44,7 @@ export class List<E extends Entity, P extends Entity = Entity> extends RelationC
         value?: WhereValue | E[K],
         boolean?: Boolean
     ): EntityQuery<E> {
-        return this.relationship.getQuery(this.parent as E & P).where(column, operator, value, boolean);
+        return this.relationship.getQuery(this.parent).where(column, operator, value, boolean);
     }
 
     findWhere(name: string, value: string): E | undefined {

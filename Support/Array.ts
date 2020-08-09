@@ -12,8 +12,6 @@ declare global {
 
         pluck<K extends keyof T>(this: T[], property: K): T[K][];
 
-        pluck<U>(this: T[], property: ArrayItemCallback<T, U>): U[];
-
         mapAsync<U>(callback: ArrayItemCallback<T, Promise<U>>, thisArg?: this): Promise<U[]>;
 
         forEachAsync(callback: ArrayItemCallback<T, void>, thisArg?: this): Promise<void>;
@@ -57,9 +55,8 @@ Array.prototype.findWhere = function (property, value) {
     return this.find(item => item[property] === value);
 };
 
-Array.prototype.pluck = function <T, K extends keyof T, U>(property: K | ((value: T, index: number, array: T[]) => U)) {
-    const callback = property instanceof Function ? property : (item: T) => item[property] as unknown as U;
-    return this.map(callback);
+Array.prototype.pluck = function <T, K extends keyof T, U>(property: K) {
+    return this.map((item: T) => item[property] as unknown as U);
 };
 
 Array.prototype.remove = function (...items) {

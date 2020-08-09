@@ -33,14 +33,12 @@ class EntityRelationshipsTest {
 
     @test
     async hasOneSave() {
-        const user = new User(this.joe);
+        const user = await User.create(this.joe);
 
         const profile = new Profile({
             address: 'address'
         });
-        user.profile.set(profile);
-
-        await user.save();
+        await user.profile.save(profile);
 
         expect(user.profile.get()?.id).to.be.equal(profile.id);
         expect(user.profile.get()?.user.get()?.id).to.be.equal(user.id);
@@ -49,15 +47,16 @@ class EntityRelationshipsTest {
 
     @test
     async hasOneLoad() {
-        const user = await User.create({
-            ...this.joe,
-            profile: new Profile({
-                address: 'address'
-            })
+        const user = await User.create(this.joe);
+
+        const profile = new Profile({
+            address: 'address'
         });
+        await user.profile.save(profile);
 
         const sameUser = await User.find(user.id);
         expect(sameUser.profile).to.be.instanceOf(HasOne);
+        expect(sameUser.profile.get()).to.be.equal(undefined);
         await sameUser.load('profile');
 
         expect(sameUser.profile.get()?.id).to.be.equal(user.profile.get()?.id);
@@ -66,13 +65,12 @@ class EntityRelationshipsTest {
 
     @test
     async hasOneEagerLoad() {
+        const user = await User.create(this.joe);
+
         const profile = new Profile({
             address: 'address'
         });
-        const user = await User.create({
-            ...this.joe,
-            profile: profile
-        });
+        await user.profile.save(profile);
 
         const sameUser = await User.with('profile').where('id', user.id).first() as User;
         expect(sameUser.profile.get()).to.deep.include({
@@ -106,14 +104,15 @@ class EntityRelationshipsTest {
     async hasManySave() {
         const user = await User.create(this.joe);
 
-        await user.articles.save(new Article({
+        const article = new Article({
             title: 'title',
             content: 'content',
-        }));
+        });
+        await user.articles.save(article);
 
         expect(user.articles).to.have.length(1);
         expect(user.articles[0]).to.deep.include({
-            id: 1,
+            id: article.id,
             title: 'title',
             content: 'content',
         });
@@ -130,7 +129,6 @@ class EntityRelationshipsTest {
 
         expect(user.articles).to.have.length(1);
         expect(user.articles[0]).to.deep.include({
-            id: 1,
             title: 'title',
             content: 'content',
         });
@@ -145,10 +143,8 @@ class EntityRelationshipsTest {
             content: 'content',
         }));
 
-        expect(user.id).to.be.equal(1);
         expect(user.articles).to.have.length(1);
         expect(user.articles[0]).to.deep.include({
-            id: 1,
             title: 'title',
             content: 'content',
         });
@@ -165,7 +161,6 @@ class EntityRelationshipsTest {
 
         await user.load('articles');
         expect(user.articles[0]).to.deep.include({
-            id: 1,
             title: 'title',
             content: 'content',
         });
@@ -174,14 +169,13 @@ class EntityRelationshipsTest {
     @test
     async hasManyGet() {
         const user = await User.create(this.joe);
-        await Article.create({
+        const article = new Article({
             title: 'title',
             content: 'content',
-            author: user
         });
+        await user.articles.save(article);
         await user.articles.get();
         expect(user.articles[0]).to.deep.include({
-            id: 1,
             title: 'title',
             content: 'content',
         });
@@ -190,261 +184,154 @@ class EntityRelationshipsTest {
     @test
     async hasManyEagerLoad() {
         const user = new User(this.joe);
-        await user.articles.save(new Article({
+        const article = new Article({
             title: 'title',
             content: 'content',
-        }));
+        });
+        await user.articles.save(article);
 
-        const sameUser = await User.with('articles').first() as User;
+        const sameUser = await User.with('articles').where('id', user.id).first() as User;
         expect(sameUser.articles).to.have.length(1);
         expect(user.articles[0]).to.deep.include({
-            id: 1,
+            id: article.id,
             title: 'title',
             content: 'content',
         });
     }
 
-    //
-    // @test
-    // async hasManyQuery() {
-    //     const user = await User.create(this.joe);
-    //     await user.articles.save(
-    //         {
-    //             title: 'title',
-    //             content: 'content',
-    //         },
-    //         {
-    //             title: 'other title',
-    //             content: 'other content',
-    //         },
-    //     );
-    //     const doe = await User.create(this.doe);
-    //     await doe.articles.save({
-    //         title: 'title',
-    //         content: 'content',
-    //     });
-    //
-    //     const articles = await user.articles.where('title', 'title').get();
-    //     expect(articles).to.have.length(1);
-    //     expect(user.articles[0]).to.deep.include({
-    //         id: 1,
-    //         title: 'title',
-    //         content: 'content',
-    //     });
-    // }
-    //
-    // @test
-    // async belongsToManySave() {
-    //     const user = new User(this.joe);
-    //
-    //     const admin = await Role.create(this.admin);
-    //     const developer = await Role.create(this.developer);
-    //     await user.roles.save(admin, developer);
-    //
-    //     expect(user.roles).to.have.length(2);
-    //     expect(user.roles).to.have.deep.members([
-    //         this.admin,
-    //         this.developer
-    //     ]);
-    // }
-    //
-    // @test
-    // async belongsToManyGet() {
-    //     const user = await User.create(this.joe);
-    //
-    //     const admin = await Role.create(this.admin);
-    //     const developer = await Role.create(this.developer);
-    //     await user.roles.save(admin, developer);
-    //
-    //     const sameUser = await User.with('roles').first() as User;
-    //
-    //     expect(sameUser.roles).to.have.length(2);
-    //     expect(sameUser.roles).to.have.deep.members([
-    //         this.admin,
-    //         this.developer
-    //     ]);
-    // }
-    //
-    // @test
-    // async belongsToManyUsingPush() {
-    //     const user = new User(this.joe);
-    //
-    //     user.roles.push(new Role(this.admin), new Role(this.developer));
-    //     await user.save();
-    //
-    //     expect(user.roles).to.have.length(2);
-    //     expect(user.roles).to.have.deep.members([
-    //         this.admin,
-    //         this.developer
-    //     ]);
-    // }
-    //
-    // @test
-    // async belongsToManyClearing() {
-    //     const user = new User(this.joe);
-    //     await user.roles.save(this.admin, this.developer);
-    //
-    //     expect(user.roles).to.have.length(2);
-    //     await user.roles.clear();
-    //     expect(user.roles).to.have.length(0);
-    //
-    // }
-    //
-    // @test
-    // async belongsToManyRemove() {
-    //     const user = new User(this.joe);
-    //     await user.roles.save(this.admin, this.developer);
-    //
-    //     const adminRole = await Role.first() as Role;
-    //
-    //     expect(user.roles).to.have.length(2);
-    //     await user.roles.remove(adminRole);
-    //     expect(user.roles).to.have.length(1);
-    // }
-    //
-    // @test
-    // async belongsToManyRemoveById() {
-    //     const user = new User(this.joe);
-    //     await user.roles.save(this.admin, this.developer);
-    //     const adminRole = user.roles.findWhere('name', 'Admin') as Role;
-    //
-    //     expect(user.roles).to.have.length(2);
-    //     await user.roles.remove(adminRole.id);
-    //     expect(user.roles).to.have.deep.members([this.developer]);
-    // }
-    //
-    // @test
-    // async belongsToManyToggle() {
-    //     const user = new User(this.joe);
-    //     await user.roles.save(this.admin);
-    //     const adminRole = user.roles.findWhere('name', 'Admin') as Role;
-    //     const developerRole = await Role.create(this.developer);
-    //
-    //     expect(user.roles).to.have.length(2);
-    //     await user.roles.toggle(adminRole.id, developerRole.id);
-    //     expect(user.roles).to.have.deep.members([this.developer]);
-    // }
-    //
-    // @test
-    // async belongsToManyLoad() {
-    //     const user = new User(this.joe);
-    //     await user.roles.save(this.admin);
-    //
-    //     const sameUser = await User.first() as User;
-    //     await sameUser.load('roles');
-    //     expect(sameUser.roles).to.have.deep.members([this.admin]);
-    // }
-    //
-    // @test
-    // async belongsToManyEagerLoad() {
-    //     const user = new User(this.joe);
-    //     await user.roles.save(this.admin);
-    //
-    //     const sameUser = await User.with('roles').first() as User;
-    //     expect(sameUser.roles).to.have.deep.members([this.admin]);
-    // }
-    //
-    // @test
-    // async belongsToManyQuery() {
-    //     const user = new User(this.joe);
-    //     await user.roles.save(this.admin, this.developer);
-    //
-    //     const roles = await user.roles.where('name', 'developer').get();
-    //     expect(roles).to.have.deep.members([this.developer]);
-    // }
-    //
-    // @test
-    // async belongsToManyHas() {
-    //     const user = new User(this.joe);
-    //     await user.roles.save(this.admin, this.developer);
-    //     const adminRole = user.roles.findWhere('name', 'Admin') as Role;
-    //
-    //     expect(await user.roles.has(adminRole.id)).to.be.equal(true);
-    // }
+    @test
+    async hasManyQuery() {
+        const user = await User.create(this.joe);
+        await user.articles.save(
+            {
+                title: 'title',
+                content: `joe's content`,
+            },
+            {
+                title: 'other title',
+                content: 'other content',
+            },
+        );
+        const doe = await User.create(this.doe);
+        await doe.articles.save({
+            title: 'title',
+            content: `doe's content`,
+        });
 
-    /*
-            @test
-            async relationships() {
-                // saving OneToMany
-                {
-                    const user = await User.find(1);
+        const articles = await user.articles.where('title', 'title').get();
+        expect(articles).to.have.length(1);
+        expect(user.articles[0]).to.deep.include({
+            title: 'title',
+            content: `joe's content`,
+        });
+    }
 
-                    // add articles to user. Method 1
-                    const article = new Article({
-                        title: 'some title',
-                        content: 'some content',
-                    });
-                    await user.articles.save(article);
+    @test
+    async belongsToManySave() {
+        const user = new User(this.joe);
 
-                    // add articles to user. Method 2
-                    await user.articles.save({
-                        title: 'some title',
-                        content: 'some content',
-                    });
-                }
-                {
-                    const user = await User.find(1);
+        const admin = await Role.create(this.admin);
+        const developer = await Role.create(this.developer);
+        await user.roles.attach(admin.id, developer.id);
 
-                    const article = new Article({
-                        title: 'some title',
-                        content: 'some content',
-                    });
-                    article.author = user;
-                    await article.save();
-                }
+        expect(user.roles).to.have.length(2);
+        expect(user.roles[0].id).to.be.equal(admin.id);
+        expect(user.roles[1].id).to.be.equal(developer.id);
+    }
 
-                // getting OneToMany
-                {
-                    const user = await User.find(1);
+    @test
+    async belongsToManyEagerLoad() {
+        const user = await User.create(this.joe);
 
-                    const articles = await user.articles.get();
-                }
-                {
-                    const user = await User.with('articles').first() as User;
-                    const articles = user.articles;
-                }
+        const admin = await Role.create(this.admin);
+        const developer = await Role.create(this.developer);
+        await user.roles.attach(admin.id, developer.id);
 
-                // filtering OneToMany
-                {
-                    const user = await User.find(1);
-                    const articles = await user.articles.where('published', true).get();
-                }
+        const sameUser = await User.with('roles').where('id', user.id).first() as User;
 
-                // saving/removing/adding ManyToMany
-                {
-                    const user = await User.with('roles').first() as User;
+        expect(sameUser.roles).to.have.length(2);
+        expect(sameUser.roles[0]).to.deep.include({
+            id: admin.id,
+            name: admin.name
+        });
+        expect(sameUser.roles[1]).to.deep.include({
+            id: developer.id,
+            name: developer.name
+        });
+    }
 
-                    user.roles.clear();
+    @test
+    async belongsToManyClearing() {
+        const user = new User(this.joe);
+        const admin = await Role.create(this.admin);
+        const developer = await Role.create(this.developer);
+        await user.roles.attach(admin.id, developer.id);
 
-                    await user.roles.has(this.admin);
-                    await user.roles.toggle(this.admin);
-                    await user.roles.remove(this.admin);
-                    await user.roles.save(this.admin);
+        expect(user.roles).to.have.length(2);
+        await user.roles.clear();
+        expect(user.roles).to.have.length(0);
+    }
 
-                    await user.roles.has(this.admin, this.developer);
-                    await user.roles.toggle(this.admin, this.developer);
-                    await user.roles.remove(this.admin, this.developer);
-                    await user.roles.save(this.admin, this.developer);
+    @test
+    async belongsToManyRemove() {
+        const user = new User(this.joe);
+        const admin = await Role.create(this.admin);
+        const developer = await Role.create(this.developer);
+        await user.roles.attach(admin.id, developer.id);
 
-                    await user.roles.has(this.admin.id);
-                    await user.roles.toggle(this.admin.id);
-                    await user.roles.remove(this.admin.id);
-                    await user.roles.save(this.admin.id);
-                }
-                // getting ManyToMany
-                {
-                    const user = await User.find(1);
-                    const roles = await user.roles.get();
-                }
-                {
-                    const user = await User.with('roles').first() as User;
-                    const roles = user.roles;
-                }
-                // filtering
-                {
-                    const user = await User.find(1);
-                    const roles = await user.roles.whereIn('name', ['Admin', 'Developer']).get();
-                }
-            }
-    */
+        expect(user.roles).to.have.length(2);
+        await user.roles.detach(admin.id);
+        expect(user.roles).to.have.length(1);
+    }
+
+    @test
+    async belongsToManyToggle() {
+        const user = new User(this.joe);
+        const admin = await Role.create(this.admin);
+        await user.roles.attach(admin.id);
+
+        expect(user.roles).to.have.length(1);
+        expect(user.roles[0]).to.have.property('id', admin.id);
+
+        const developer = await Role.create(this.developer);
+        await user.roles.toggle(admin.id, developer.id);
+
+        expect(user.roles).to.have.length(1);
+        expect(user.roles[0]).to.have.property('id', developer.id);
+    }
+
+    @test
+    async belongsToManyLoad() {
+        const user = new User(this.joe);
+        const admin = await Role.create(this.admin);
+        await user.roles.attach(admin.id);
+
+        const sameUser = await User.first() as User;
+        await sameUser.load('roles');
+        expect(sameUser.roles[0]).to.deep.include(this.admin);
+    }
+
+    @test
+    async belongsToManyQuery() {
+        const user = new User(this.joe);
+        const admin = await Role.create(this.admin);
+        const developer = await Role.create(this.developer);
+        await user.roles.attach(admin.id, developer.id);
+
+        expect(user.roles).to.have.length(2);
+        const roles = await user.roles.where('name', developer.name).get();
+        expect(roles).to.have.length(1);
+        expect(roles[0]).to.deep.include(this.developer);
+    }
+
+    @test
+    async belongsToManyHas() {
+        const user = new User(this.joe);
+        const admin = await Role.create(this.admin);
+        const developer = await Role.create(this.developer);
+        await user.roles.attach(admin.id);
+
+        expect(await user.roles.has(admin.id)).to.be.equal(true);
+        expect(await user.roles.has(developer.id)).to.be.equal(false);
+    }
 }

@@ -42,11 +42,6 @@ class ArrayTest {
     }
 
     @test
-    pluckCallback() {
-        expect(this.users.pluck(user => user.name)).to.have.members([this.joe.name, this.doe.name]);
-    }
-
-    @test
     remove() {
         this.users.remove(this.joe);
         expect(this.users).to.have.members([this.doe]);
