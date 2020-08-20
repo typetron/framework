@@ -27,8 +27,30 @@ class RunnerTest {
 
     @test
     async shouldMigrate() {
-        this.runner.migrate({
+        const migrated = await this.runner.migrate({
             fresh: true
         });
+
+        expect(migrated).equals(true);
+
+        const hasTable = await Query.connection.firstRaw('SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'migrationTestUsers\';') as { name: string };
+
+        expect(typeof hasTable).not.equal('undefined');
+        expect(hasTable.name).equal('migrationTestUsers');
+    }
+
+    @test
+    async shouldRollback() {
+        await this.runner.migrate({
+            fresh: true
+        });
+
+        const rollback = await this.runner.rollback({});
+
+        expect(rollback).equals(true);
+
+        const hasTable = await Query.connection.firstRaw('SELECT name FROM sqlite_master WHERE type=\'table\' AND name=\'migrationTestUsers\';') as { name: string };
+
+        expect(typeof hasTable).equal('undefined');
     }
 }

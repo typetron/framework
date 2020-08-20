@@ -62,6 +62,13 @@ export class Runner {
         return TypetronMigrations.newQuery().delete();
     }
 
+    protected async getLastBatchId(): Promise<number> {
+
+        const lastMigration = await TypetronMigrations.orderBy('batch', 'DESC').first();
+        return lastMigration ? lastMigration.batch : 0;
+
+    }
+
     public async migrate(options?: MigrateOptions): Promise<boolean> {
         const runner = this;
         return runner.createMigrationTable().then(async function () {
@@ -72,11 +79,10 @@ export class Runner {
             return runner.files().then(async function (files: string[]) {
                 const migrateQuery = TypetronMigrations.whereIn('name', files);
 
-                const lastMigration = await  TypetronMigrations.orderBy('batch', 'DESC').first();
-                const lastBatch = lastMigration ? lastMigration.batch : 0;
+                const lastBatch = await runner.getLastBatchId();
 
                 const migrates = await migrateQuery.get();
-                const rootPath = process.env.INIT_CWD;
+
                 for (const file of files) {
                     if (!migrates.find((migrate) => {
                         if (migrate.name === file) {
@@ -84,10 +90,8 @@ export class Runner {
                         }
                         return false;
                     })) {
-                        const migrationPath = path.join(typeof rootPath === 'undefined' ? './' : rootPath, file);
-                        const migrationModule: { [x: string]: typeof Migration } = require(migrationPath);
-                        const MigrationClass = Object.values(migrationModule)[0];
-                        const migration = new MigrationClass(runner._getConnection());
+
+                        const migration = runner.getMigration(file);
 
                         console.log(`INFO: Migrating ${file}`);
                         try {
@@ -114,7 +118,50 @@ export class Runner {
         return this.connection;
     }
 
-    public rollback() {
+    private getMigration(filename: string): Migration {
+        const rootPath = process.env.INIT_CWD;
+        const migrationPath = path.join(typeof rootPath === 'undefined' ? './' : rootPath, filename);
+        const migrationModule: { [x: string]: typeof Migration } = require(migrationPath);
+        const MigrationClass = Object.values(migrationModule)[0];
+        const migration = new MigrationClass(this._getConnection());
 
+        return migration;
+    }
+
+    public async rollback(options: RollbackOptions) {
+        this.createMigrationTable();
+
+        let migrations: TypetronMigrations[] = [];
+
+        if (options.all) {
+
+            migrations = await TypetronMigrations.orderBy('time', 'DESC').get();
+
+        } else {
+            const lastMigration = await TypetronMigrations.newQuery().orderBy('time', 'DESC').first();
+
+            if (!lastMigration) {
+                throw new Error('Can not find any migration to rollback.');
+            }
+
+            migrations = await TypetronMigrations.where('batch', lastMigration.batch).orderBy('time', 'DESC').get();
+        }
+
+        for (const migrationEntity of migrations) {
+            const name = migrationEntity.name;
+            const migration = this.getMigration(name);
+
+            console.log(`INFO: Rolling back the ${name} migration.`);
+            try {
+                await migration.down();
+                console.log(`INFO: Reverted ${name} migration.`);
+                await migrationEntity.delete();
+            } catch (err) {
+                console.log(`ERROR: Failed to run the migration ${name}`);
+                return false;
+            }
+        }
+
+        return true;
     }
 }
