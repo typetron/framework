@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { suite, test } from '@testdeck/mocha';
-import { Field, FieldTypeMany, Model } from '../../Models';
+import { Field, FieldMany, Model } from '../../Models';
 
 @suite
 class ModelTest {
@@ -120,7 +120,7 @@ class ModelTest {
             name: string;
 
             @Field()
-            @FieldTypeMany(PostModel)
+            @FieldMany(PostModel)
             posts: PostModel[];
         }
 

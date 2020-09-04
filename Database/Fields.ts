@@ -1,5 +1,5 @@
 import { Entity } from './Entity';
-import { EntityConstructor, EntityKeys, EntityObject, Expression, Query } from './index';
+import { EntityConstructor, EntityKeys, EntityMetadata, EntityObject, Expression, Query } from './index';
 import { List } from './List';
 import { BaseRelationship } from './ORM/BaseRelationship';
 
@@ -189,7 +189,7 @@ export class HasManyField<T extends Entity, R extends Entity> extends InverseRel
                 related => related.original[inverseField.column as keyof object] === entity[this.entity.getPrimaryKey()]
             );
             // TODO fix these weird types. Get rid of `unknown`
-            entity[this.property as keyof T] = relatedEntity as unknown as T[keyof T];
+            (entity[this.property as keyof T] as unknown as HasMany<R, T>).items = relatedEntity;
         });
         return entities;
     }
@@ -232,9 +232,9 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
         property: string,
         type: () => EntityConstructor<R>,
         inverseBy: string,
-        column: string
+        column?: string
     ) {
-        super(entity, property, type, inverseBy, column);
+        super(entity, property, type, inverseBy, column || property + (entity.getPrimaryKey() as string).capitalize());
     }
 
     set(target: T, value: T[keyof T]) {
@@ -260,8 +260,11 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
 
     async getRelatedValue(parents: R[]) {
         const relationIds = parents
-            .map(parent => parent[this.column as keyof R] as unknown)
-            .filter(item => item !== undefined) as number[];
+            .map(parent => {
+                const relation = (parent[this.property as keyof R] as unknown as BelongsTo<R>).get();
+                return relation?.[relation.getPrimaryKey()];
+            })
+            .filter(Boolean) as unknown as number[];
         if (relationIds.length) {
             return await this.related.whereIn(this.related.getPrimaryKey() as EntityKeys<R>, relationIds).get();
         }
@@ -277,7 +280,7 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
             // TODO fix these weird types. Get rid of `unknown`
             const value = (entity[this.column as keyof T] || (entity.original || {})[this.column]) as unknown as R[keyof R];
             const instance = relatedEntities.findWhere(this.related.getPrimaryKey() as keyof R, value);
-            entity[this.property as keyof T] = instance as unknown as T[keyof T];
+            this.set(entity, instance as unknown as T[keyof T]);
             return entity;
         });
     }
@@ -313,9 +316,9 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         property: string,
         type: () => EntityConstructor<R>,
         inverseBy: string,
-        private table?: string,
-        private parentKey?: string,
-        private relatedKey?: string
+        public table?: string,
+        public parentColumn?: string,
+        public relatedColumn?: string
     ) {
         super(entity, property, type, inverseBy);
     }
@@ -353,11 +356,11 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
     }
 
     getParentForeignKey() {
-        return this.parentKey || `${this.entity.name.toLocaleLowerCase()}${(this.entity.getPrimaryKey() as string).capitalize()}`;
+        return this.parentColumn || `${this.entity.name.toLocaleLowerCase()}${(this.entity.getPrimaryKey() as string).capitalize()}`;
     }
 
     getRelatedForeignKey() {
-        return this.relatedKey || `${this.related.name.toLocaleLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`;
+        return this.relatedColumn || `${this.related.name.toLocaleLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`;
     }
 
     async getRelatedCount(relatedEntities: R[]) {
@@ -423,32 +426,48 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
     }
 }
 
-export interface RelationshipOptions {
-    column: string;
-    table: string;
+export interface EntityFieldOptions {
+    table?: string;
+    column?: string;
+}
+
+export interface BelongsToManyFieldOptions extends EntityFieldOptions {
+    foreignColumn?: string;
 }
 
 export class BelongsTo<T extends Entity, P extends Entity = Entity> extends BaseRelationship<T, P> {
 
-    public relationship: RelationshipField<P, T>;
     private instance?: T;
 
+    constructor(
+        relationship: RelationshipField<P, T>,
+        parent: P
+    ) {
+        super(relationship, parent);
+        const parentId = parent.original[relationship.column];
+        if (parentId) {
+            this.set(new relationship.related({[relationship.related.getPrimaryKey()]: parentId}));
+        }
+    }
+
     static relationship<T extends Entity, R extends Entity>(
+        metadata: EntityMetadata<T>,
         entityClass: EntityConstructor<T>,
         property: keyof T,
         type: () => EntityConstructor<R>,
         inverseBy: keyof R,
-        options: RelationshipOptions
+        options?: EntityFieldOptions
     ) {
-        options.column = options.column || (property as string) + (entityClass.getPrimaryKey() as string).capitalize();
 
-        return new BelongsToField(
+        metadata.relationships[property as string] = new BelongsToField(
             entityClass,
             property as string,
             type,
             inverseBy as string,
-            options.column,
+            options?.column,
         );
+
+        return metadata;
     }
 
     get() {
@@ -472,6 +491,10 @@ export class BelongsTo<T extends Entity, P extends Entity = Entity> extends Base
         return this.instance;
     }
 
+    toJSON() {
+        return this.instance?.toJSON();
+    }
+
 }
 
 export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRelationship<T, P> {
@@ -480,18 +503,20 @@ export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRel
     private instance?: T;
 
     static relationship<T extends Entity, R extends Entity>(
+        metadata: EntityMetadata<T>,
         entityClass: EntityConstructor<T>,
         property: keyof T,
         type: () => EntityConstructor<R>,
         inverseBy: keyof R,
-        options: RelationshipOptions
+        options?: EntityFieldOptions
     ) {
-        return new HasOneField(
+        metadata.inverseRelationships[property as string] = new HasOneField(
             entityClass,
             property as string,
             type,
             inverseBy as string,
         );
+        return metadata;
     }
 
     get() {
@@ -508,12 +533,14 @@ export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRel
         if (instance) {
             (instance[this.relationship.inverseBy as keyof T] as unknown as BelongsTo<P, T>).set(this.parent);
             await instance.save();
-
         }
 
         return this.instance;
     }
 
+    toJSON() {
+        return this.instance?.toJSON();
+    }
 }
 
 export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T, P> {
@@ -526,18 +553,21 @@ export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T
     }
 
     static relationship<T extends Entity, R extends Entity>(
+        metadata: EntityMetadata<T>,
         entityClass: EntityConstructor<T>,
         property: keyof T,
         type: () => EntityConstructor<R>,
         inverseBy: keyof R,
-        options: RelationshipOptions
+        options?: EntityFieldOptions
     ) {
-        return new HasManyField(
+        metadata.inverseRelationships[property as string] = new HasManyField(
             entityClass,
             property as string,
             type,
             inverseBy as string,
         );
+
+        return metadata;
     }
 
     async save(...items: Partial<EntityObject<T> | T>[]) {
@@ -546,9 +576,7 @@ export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T
         }
         const instances = await this.relationship.save(items, this.parent);
 
-        this.items.push(...instances);
-
-        return this.items;
+        return this;
     }
 
     async clear() {
@@ -567,21 +595,27 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
     }
 
     static relationship<T extends Entity, R extends Entity>(
+        metadata: EntityMetadata<T>,
         entityClass: EntityConstructor<T>,
         property: keyof T,
         type: () => EntityConstructor<R>,
         inverseBy: keyof R,
-        options: RelationshipOptions
+        options?: BelongsToManyFieldOptions
     ) {
-        options.column = options.column || (property as string) + (entityClass.getPrimaryKey() as string).capitalize();
+        // options.column = options.column || (property as string) + (entityClass.getPrimaryKey() as string).capitalize();
 
-        return new BelongsToManyField(
+        const inverseField = metadata.inverseRelationships[inverseBy as string] as BelongsToManyField<T, R> | undefined;
+
+        metadata.inverseRelationships[property as string] = new BelongsToManyField(
             entityClass,
             property as string,
             type,
             inverseBy as string,
-            options.table,
+            options?.table || inverseField?.table,
+            options?.column || inverseField?.relatedColumn,
+            options?.foreignColumn || inverseField?.parentColumn,
         );
+        return metadata;
     }
 
     async has(item: number) {

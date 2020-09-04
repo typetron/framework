@@ -9,6 +9,7 @@ import { RootDir } from './RootDir';
 import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware';
 import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Http';
 import { Storage } from '../Storage';
+import { AuthResolver } from './Resolvers/AuthResolver';
 
 export class Application extends Container {
     static defaultConfigDirectory = 'config';
@@ -69,6 +70,7 @@ export class Application extends Container {
     private registerResolvers() {
         this.resolvers.unshift(new FormResolver(this));
         this.resolvers.unshift(new EntityResolver(this));
+        this.resolvers.unshift(new AuthResolver(this));
     }
 
     private async bootstrap() {

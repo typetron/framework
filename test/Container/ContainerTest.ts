@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { suite, test } from '@testdeck/mocha';
-import { Container, Inject, Injectable, Scope } from '../../Container';
+import { BaseResolver, Container, Inject, Injectable, Scope } from '../../Container';
+import { ServiceIdentifier } from '../../Container/Contracts';
 
 @suite
 class ContainerTest {
@@ -64,6 +65,37 @@ class ContainerTest {
         const request2 = container.get(Request);
         expect(request1).not.to.be.equal(request2);
     }
+
+    @test
+    requestScope() {
+        @Injectable(Scope.REQUEST)
+        class Request {}
+
+        const container = new Container();
+        const childContainer = container.createChildContainer();
+        const request = childContainer.get(Request);
+        expect(Object.values(container.getInstances())).to.have.length(0);
+        expect(Object.values(childContainer.getInstances())).to.have.length(1);
+        expect(request).to.be.instanceof(Request);
+    }
+
+    // @test
+    // requestScopeWithSingletonDependencyFromParenContainer() {
+    //     @Injectable(Scope.REQUEST)
+    //     class Request {}
+    //
+    //     class Controller {
+    //         @Inject()
+    //         request: Request;
+    //     }
+    //
+    //     const container = new Container();
+    //     const childContainer = container.createChildContainer();
+    //     const controller = childContainer.get(Controller);
+    //     expect(Object.values(container.getInstances())).to.have.length(0);
+    //     expect(Object.values(childContainer.getInstances())).to.have.length(1);
+    //     expect(Object.values(childContainer.getInstances())[0]).to.be.instanceof(Request);
+    // }
 
     @test
     bindsStringToImplementation() {
@@ -201,13 +233,13 @@ class ContainerTest {
 
     @test
     childContainerGetsObjectFromParentContainer() {
-        class Request {}
+        class Storage {}
 
         const container = new Container();
         const childContainer = container.createChildContainer();
 
-        const request = container.get(Request);
-        expect(childContainer.get(Request)).to.equal(request);
+        const storage = container.get(Storage);
+        expect(childContainer.get(Storage)).to.equal(storage);
     }
 
     @test
@@ -220,4 +252,69 @@ class ContainerTest {
         const request = childContainer.get(Request);
         expect(childContainer.get(Request)).to.equal(request);
     }
+
+    @test
+    async resolvesAsyncDependencies() {
+        class User {}
+
+        class Request {
+            @Inject()
+            user: User;
+        }
+
+        class UserResolver extends BaseResolver {
+            canResolve<T>(abstract: ServiceIdentifier<T>): boolean {
+                return abstract === User;
+            }
+
+            async resolve<T>(abstract: ServiceIdentifier<T>, parameters: object[]): Promise<T> {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return new User as T;
+            }
+        }
+
+        const container = new Container();
+        container.resolvers.unshift(new UserResolver(container));
+
+        const request = container.get(Request);
+        expect(request).to.be.instanceof(Promise);
+        const resolvedRequest = await container.get(Request);
+        expect(resolvedRequest).to.be.instanceof(Request);
+    }
+
+    // @test
+    // async customDecorators() {
+    //     class Database {
+    //         debug = false;
+    //
+    //         async init() {
+    //             this.debug = true;
+    //         }
+    //     }
+    //
+    //     function CustomDecorator() {
+    //         return function (target: Object, targetKey: string) {
+    //             // @ts-ignore
+    //             console.log('thi ->', this);
+    //             const metadata = InjectableMetadata.get(target.constructor);
+    //             metadata.dependencies[targetKey] = AuthUserIdentifier;
+    //             metadata.scope = Scope.REQUEST;
+    //             InjectableMetadata.set(metadata, target.constructor);
+    //         };
+    //         // return Container.createPropertyDecorator(container => {
+    //         //
+    //         // });
+    //     }
+    //
+    //     class Controller {
+    //         @CustomDecorator()
+    //         database: Database;
+    //     }
+    //
+    //     const container = new Container();
+    //     const controller = await container.get(Controller);
+    //
+    //     expect(controller.database).to.be.instanceof(Database);
+    //     expect(controller.database.debug).to.equal(true);
+    // }
 }

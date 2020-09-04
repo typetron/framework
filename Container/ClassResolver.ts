@@ -9,7 +9,7 @@ export class ClassResolver extends BaseResolver {
         return abstract.prototype && abstract.prototype.constructor.name;
     }
 
-    resolve<T>(abstract: Constructor<T>, parametersValues: object[]): T {
+    resolve<T>(abstract: Constructor<T>, parametersValues: object[]) {
         const parametersTypes: Constructor[] = Reflect.getMetadata('design:paramtypes', abstract) || [];
 
         const parameters = parametersTypes.map((parameterType, index) => {
@@ -24,9 +24,32 @@ export class ClassResolver extends BaseResolver {
         const instance = new abstract(...parameters);
 
         const metadata = InjectableMetadata.get(abstract);
-        Object.keys(metadata.dependencies).forEach(dependency => {
-            instance[dependency as keyof T] = this.container.get(metadata.dependencies[dependency]) as T[keyof T];
-        });
+        let asyncDependencies = 0;
+        let resolve: (value?: T | PromiseLike<T>) => void;
+        let reject: (reason?: unknown) => void;
+        for (const dependency in metadata.dependencies) {
+            const value = this.container.get(metadata.dependencies[dependency]) as T[keyof T];
+            if (value instanceof Promise) {
+                asyncDependencies++;
+                value.then(resolvedValue => {
+                    instance[dependency as keyof T] = resolvedValue;
+                    asyncDependencies--;
+                    if (!asyncDependencies) {
+                        resolve(instance);
+                    }
+                }).catch(error => {
+                    reject(error);
+                });
+            } else {
+                instance[dependency as keyof T] = value;
+            }
+        }
+        if (asyncDependencies) {
+            return new Promise<T>((resolveFunction, rejectFunction) => {
+                resolve = resolveFunction;
+                reject = rejectFunction;
+            });
+        }
 
         return instance;
     }
@@ -48,6 +71,10 @@ export class ClassResolver extends BaseResolver {
                 continue;
             }
             const dependency = metadata.dependencies[dependencyName];
+            if (typeof dependency === 'symbol') {
+                concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T];
+                continue;
+            }
             const dependencyMetadata = InjectableMetadata.get(dependency);
             if (dependencyMetadata.scope === Scope.REQUEST) {
                 concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T];

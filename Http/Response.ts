@@ -1,11 +1,11 @@
 import { OutgoingHttpHeaders, ServerResponse } from 'http';
 import { Http } from '.';
 
-export class Response {
+export class Response<T = string | object | undefined> {
 
     constructor(
         public status: Http.Status = Http.Status.OK,
-        public content?: string | object,
+        public content?: T,
         public headers: OutgoingHttpHeaders = {
             'Content-Type': 'text/html'
         }

@@ -23,7 +23,7 @@ export class Route {
     }
 
     async run(request: Request, container: Container): Promise<object | string | Response> {
-        const controller = container.get(this.controller);
+        const controller = await container.get(this.controller);
 
         try {
             const metadata = ControllerMetadata.get(this.controller).routes[this.action];

@@ -50,6 +50,10 @@ export abstract class List<E extends Entity, P extends Entity = Entity> extends 
     findWhere(name: string, value: string): E | undefined {
         return undefined;
     }
+
+    toJSON() {
+        return this.items;
+    }
 }
 
 export class ListProxyHandler<E extends Entity, P extends Entity> {

@@ -3,10 +3,10 @@ import { EntityQuery } from './EntityQuery';
 import { ChildObject, KeysOfType } from '../Support';
 import { EntityMetadata, EntityMetadataKey, ID } from './Decorators';
 import { EntityNotFoundError } from './EntityNotFoundError';
-import { BelongsTo, BelongsToMany, BelongsToManyField, ColumnField, HasMany, HasOne, InverseField } from './Fields';
-import { Boolean, Direction, Operator, SqlValue, SqlValueMap, WhereValue } from './Types';
-import { EntityConstructor, EntityKeys } from './index';
-import { Query } from './Query';
+import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseField } from './Fields';
+import { Boolean, Direction, Operator, WhereValue } from './Types';
+import { EntityConstructor, EntityKeys, EntityObject } from './index';
+import { BaseRelationship } from './ORM/BaseRelationship';
 
 export abstract class Entity {
 
@@ -15,13 +15,14 @@ export abstract class Entity {
     original: Record<string, any> = {};
 
     constructor(data?: object) {
-        if (data) {
-            this.original = data;
-            this.fill(data);
-        }
         const entityProxyHandler = new EntityProxyHandler<this>();
         const proxy = new Proxy(this, entityProxyHandler);
         entityProxyHandler.entityProxy = proxy;
+
+        if (data) {
+            this.original = data;
+            proxy.fill(data);
+        }
         return proxy;
     }
 
@@ -77,8 +78,8 @@ export abstract class Entity {
     // tslint:disable-next-line:no-any
     static async firstOrNew<T extends Entity, K extends keyof Entity>(
         this: EntityConstructor<T>,
-        properties: Partial<ChildObject<T, Entity>>,
-        values?: Partial<ChildObject<T, Entity>>
+        properties: Partial<EntityObject<T>>,
+        values?: Partial<EntityObject<T>>
     ): Promise<T> {
         return this.newQuery().firstOrNew(properties, values);
     }
@@ -86,8 +87,8 @@ export abstract class Entity {
     // tslint:disable-next-line:no-any
     static async firstOrCreate<T extends Entity, K extends keyof Entity>(
         this: EntityConstructor<T>,
-        properties: Partial<ChildObject<T, Entity>>,
-        values?: Partial<ChildObject<T, Entity>>
+        properties: Partial<EntityObject<T>>,
+        values?: Partial<EntityObject<T>>
     ): Promise<T> {
         return (await this.firstOrNew(properties, values)).save();
     }
@@ -133,7 +134,7 @@ export abstract class Entity {
         return this.newQuery().with(...relations);
     }
 
-    static withCount<T extends Entity, K extends KeysOfType<T, Entity | Entity[]>>(this: EntityConstructor<T>, ...relations: K[]) {
+    static withCount<T extends Entity, K extends KeysOfType<T, BaseRelationship<Entity>>>(this: EntityConstructor<T>, ...relations: K[]) {
         return this.newQuery().withCount(...relations);
     }
 
@@ -239,43 +240,16 @@ export abstract class Entity {
         await this.newQuery().where(this.getPrimaryKey(), this[this.getPrimaryKey()]).delete();
     }
 
-    async sync(property: string, ids: number[], detach = true) {
-        const relatedField = this.metadata.inverseRelationships[property as string] as BelongsToManyField<this, Entity>;
-        const existingRelations = await Query.table(relatedField.getPivotTable())
-            .where(relatedField.getParentForeignKey(), this[this.getPrimaryKey()] as unknown as SqlValue)
-            .get();
-        const relatedIds = existingRelations.pluck(relatedField.getRelatedForeignKey());
-        const idsToAdd = ids.filter(id => !relatedIds.includes(id));
-        if (detach) {
-            const idsToRemove = relatedIds.filter(id => !ids.includes(id as number));
-            if (idsToRemove.length) {
-                await Query.table(relatedField.getPivotTable())
-                    .where(relatedField.getParentForeignKey(), this[this.getPrimaryKey()] as unknown as SqlValue)
-                    .andWhereIn(relatedField.getRelatedForeignKey(), idsToRemove)
-                    .delete();
-            }
-        }
-
-        if (idsToAdd.length) {
-            const relations: SqlValueMap[] = idsToAdd.map(id => {
-                return {
-                    [relatedField.getParentForeignKey()]: this[this.getPrimaryKey()] as unknown as number,
-                    [relatedField.getRelatedForeignKey()]: id,
-                };
-            });
-            await Query.table(relatedField.getPivotTable()).insert(relations);
-        }
-        return this;
-    }
-
     getPrimaryKey<T extends Entity>(this: T): EntityKeys<T> {
         return this.static.getPrimaryKey();
     }
 
     toJSON() {
-        return Object.keys(this.metadata.columns)
+        return Object.keys({...this.metadata.columns, ...this.metadata.allRelationships})
             .reduce((obj, key) => {
-                obj[key as keyof this] = this[key as keyof this];
+                if (this.hasOwnProperty(key)) {
+                    obj[key as keyof this] = this[key as keyof this];
+                }
                 return obj;
             }, <{ [K in keyof this]: this[K] }>{});
     }

@@ -1,18 +1,26 @@
-import { Injectable } from '../../Container';
+import { Inject, Injectable } from '../../Container';
 import { MiddlewareInterface, RequestHandler } from '../../Router';
-import { Request, Response } from '../../Http';
+import { ErrorHandlerInterface, Request, Response } from '../../Http';
 
 @Injectable()
 export class CorsMiddleware implements MiddlewareInterface {
 
+    @Inject()
+    errorHandler: ErrorHandlerInterface;
+
     async handle(request: Request, next: RequestHandler) {
         let response: Response;
         if (request.method === 'OPTIONS') {
-            response = new Response;
-            response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE';
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type';
+            // tslint:disable-next-line:no-any
+            response = new Response<any>();
+            response.headers['Access-Control-Allow-Methods'] = 'GET, PUT, POST, DELETE';
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
         } else {
-            response = await next(request);
+            try {
+                response = await next(request);
+            } catch (error) {
+                response = await this.errorHandler.handle(error, request);
+            }
         }
 
         response.headers['Access-Control-Allow-Origin'] = '*';

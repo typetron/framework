@@ -35,13 +35,13 @@ export class ModelType<T extends Model> extends ModelTypeInterface<T> {
 
 export class ArrayType<T extends Model> extends ModelTypeInterface<T, T[]> {
     transform(value: T[]) {
-        return value.map(item => {
+        return Array.from(value).map(item => {
             return this.model.from(item);
         });
     }
 }
 
-export function FieldTypeMany(type: typeof Model) {
+export function FieldMany(type: typeof Model) {
     return function (target: Object, property: string) {
         const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, target.constructor) || {};
         const field = fields[property] || {name: property, type: new ArrayType(type)} as ModelField;

@@ -1,8 +1,9 @@
 import { Query } from './Query';
 import { Entity } from './Entity';
-import { EntityConstructor, Expression } from './index';
-import { ChildObject, KeysOfType } from '../Support';
-import { BelongsTo, BelongsToMany, HasMany, HasOne, InverseRelationship, RelationshipField } from './Fields';
+import { EntityConstructor, EntityObject, Expression } from './index';
+import { KeysOfType } from '../Support';
+import { BelongsTo, BelongsToMany, HasMany, HasOne } from './Fields';
+import { BaseRelationship } from './ORM/BaseRelationship';
 
 export class EntityQuery<T extends Entity> extends Query<T> {
 
@@ -16,18 +17,19 @@ export class EntityQuery<T extends Entity> extends Query<T> {
     async get<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T[]> {
         let entities = await super.get(...columns);
 
+        entities = this.entity.hydrate(this.entity, entities, true);
+
         entities = await this.eagerLoadRelationships(entities);
 
-        entities = this.entity.hydrate(this.entity, entities, true);
         return await this.eagerLoadRelationshipsCounts(entities);
     }
 
     public async eagerLoadRelationships(entities: T[]) {
         await this.eagerLoad.forEachAsync(async (field) => {
-            const relation = this.entity.metadata.allRelationships[field] as RelationshipField<T, Entity> | InverseRelationship<T, Entity>;
+            const relation = this.entity.metadata.allRelationships[field];
             const results = await relation.getRelatedValue(entities);
             if (results.length) {
-                entities = relation.match(entities, results);
+                entities = relation.match(entities, results) as T[];
             }
         });
         return entities;
@@ -35,10 +37,10 @@ export class EntityQuery<T extends Entity> extends Query<T> {
 
     public async eagerLoadRelationshipsCounts(entities: T[]) {
         await this.eagerLoadCount.forEachAsync(async (field) => {
-            const relation = this.entity.metadata.allRelationships[field] as RelationshipField<T, Entity> | InverseRelationship<T, Entity>;
+            const relation = this.entity.metadata.allRelationships[field];
             const results = await relation.getRelatedCount(entities);
             if (results.length) {
-                entities = relation.matchCounts(entities, results);
+                entities = relation.matchCounts(entities, results) as T[];
             }
         });
         return entities;
@@ -57,17 +59,19 @@ export class EntityQuery<T extends Entity> extends Query<T> {
 
     async firstOrNew<K extends keyof T>(
         // tslint:disable-next-line:no-any
-        properties: Partial<ChildObject<T, Entity> | Record<string, any>>,
-        values?: Partial<ChildObject<T, Entity>>
+        properties: Partial<EntityObject<T> | Record<string, any>>,
+        values?: Partial<EntityObject<T>>
     ): Promise<T> {
         Object.entries(properties).forEach(([property, value]) => {
-            // TODO inside entity metadata add: columns, relations, inverseRelations.
-            // This way we can get rid of `as ColumnField<Entity>` from framework.
-            const column = this.entity.metadata.columns[property];
-            this.andWhere(column.column, value);
+            const field = this.entity.metadata.columns[property] || this.entity.metadata.relationships[property];
+            this.andWhere(field.column, value instanceof Entity ? value[value.getPrimaryKey()] : value);
         });
         const instance = await this.first();
-        return instance ?? new this.entity({...properties, ...values});
+        if (!instance) {
+            return new this.entity({...properties, ...values});
+        }
+        instance.exists = true;
+        return instance;
     }
 
     // tslint:disable-next-line:no-any
@@ -77,7 +81,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         return this;
     }
 
-    withCount<K extends KeysOfType<T, Entity | Entity[]>>(...relations: K[]) {
+    withCount<K extends KeysOfType<T, BaseRelationship<Entity>>>(...relations: K[]) {
         this.eagerLoadCount = this.eagerLoadCount.concat(relations as string[]);
 
         return this;

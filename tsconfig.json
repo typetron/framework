@@ -9,7 +9,7 @@
 		"strict": true,
 		"strictPropertyInitialization": false,
 		"forceConsistentCasingInFileNames": true,
-//		"useDefineForClassFields": true, // TODO why some tests fail when using this flag
+//		"useDefineForClassFields": true, // TODO some tests fail when using this flag
 		"declarationMap": true,
 		//		"noUnusedLocals": true,
 		//		"noUnusedParameters": true,

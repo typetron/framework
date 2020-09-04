@@ -1,10 +1,10 @@
-import { Column, CreatedAt, Entity, Meta, PrimaryColumn, Relation, UpdatedAt } from '../../../Database';
+import { Column, CreatedAt, Entity, Options, PrimaryColumn, Relation, UpdatedAt } from '../../../Database';
 import { Article } from './Article';
 import { Role } from './Role';
 import { Profile } from './Profile';
 import { BelongsToMany, HasMany, HasOne } from '../../../Database/Fields';
 
-@Meta({
+@Options({
     table: 'users'
 })
 export class User extends Entity {

@@ -5,7 +5,7 @@ import { Article } from './Entities/Article';
 import { Role } from './Entities/Role';
 import { Profile } from './Entities/Profile';
 import { expect } from 'chai';
-import { HasOne } from '../../Database/Fields';
+import { BelongsTo, HasMany, HasOne } from '../../Database/Fields';
 
 @suite
 class EntityRelationshipsTest {
@@ -79,27 +79,6 @@ class EntityRelationshipsTest {
         });
     }
 
-    // @test
-    // async hasManySaveUsingPush() {
-    //     const user = await User.create(this.joe);
-    //
-    //     user.articles.push(new Article({
-    //         title: 'title',
-    //         content: 'content',
-    //     }));
-    //
-    //     await user.save();
-    //
-    //     expect(user.articles).to.have.length(1);
-    //     expect(user.articles[0]).to.have.deep.members([
-    //         {
-    //             id: 1,
-    //             title: 'title',
-    //             content: 'content'
-    //         }
-    //     ]);
-    // }
-
     @test
     async hasManySave() {
         const user = await User.create(this.joe);
@@ -160,6 +139,7 @@ class EntityRelationshipsTest {
         });
 
         await user.load('articles');
+        expect(user.articles).to.be.instanceOf(HasMany);
         expect(user.articles[0]).to.deep.include({
             title: 'title',
             content: 'content',
@@ -224,6 +204,19 @@ class EntityRelationshipsTest {
             title: 'title',
             content: `joe's content`,
         });
+    }
+
+    @test
+    async belongsToSave() {
+        const user = await User.create(this.joe);
+        const article = new Article();
+
+        await user.articles.save(article);
+
+        const articles = await Article.with('author').get();
+
+        expect(articles).to.have.length(1);
+        expect(articles[0].author).to.be.instanceof(BelongsTo);
     }
 
     @test

@@ -28,6 +28,10 @@ export class Container {
         return Container.instance = container;
     }
 
+    getInstances() {
+        return this.instances;
+    }
+
     set<T>(abstract: ServiceIdentifier<T>, concrete: T | Type<T> | Function) {
         const abstractName = this.getAbstractName(abstract);
         const currentInstance = this.instances[abstractName];
@@ -57,8 +61,8 @@ export class Container {
         if (concrete) {
             return concrete;
         }
-        if (metadata.scope !== Scope.REQUEST && this.parent && (concrete = this.parent.get(abstract))) {
-            return metadata.resolver ? metadata.resolver.reload(abstract, concrete, this) : concrete;
+        if (this.parent && (concrete = this.parent.getInstance(abstract))) {
+            return concrete;
         }
         const resolver = this.getResolver(abstract, abstractName, metadata);
         concrete = resolver.resolve(abstract, parameters) as T;
@@ -92,6 +96,9 @@ export class Container {
                 This might be due to circular dependencies in your app
             `);
         }
+        if (typeof abstract === 'symbol') {
+            return abstract.toString();
+        }
         if ('name' in abstract) {
             return abstract.name;
         }
@@ -112,6 +119,9 @@ export class Container {
     }
 
     private setResolverForAbstract<T>(abstract: ServiceIdentifier<T>, resolver: Resolver, metadata: InjectableMetadata) {
+        if (typeof abstract === 'symbol') {
+            return;
+        }
         metadata.resolver = resolver;
         InjectableMetadata.set(metadata, abstract);
     }

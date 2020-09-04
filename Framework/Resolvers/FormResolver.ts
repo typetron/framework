@@ -10,10 +10,10 @@ export class FormResolver extends BaseResolver {
         this.setFormScopeToRequest();
     }
 
-    resolve<T>(abstract: Constructor<T & Form>, parameters: object[]): T {
+    async resolve<T>(abstract: Constructor<T & Form>, parameters: object[]) {
         const request = this.container.get(Request);
         const classResolver = new ClassResolver(this.container);
-        const form = classResolver.resolve(abstract, parameters);
+        const form = await classResolver.resolve(abstract, parameters);
         form.fill({...request.content as object, ...request.files} as FormFields<Form>);
 
         if (!form.valid()) {
