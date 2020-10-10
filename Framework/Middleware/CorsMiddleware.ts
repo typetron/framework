@@ -13,7 +13,7 @@ export class CorsMiddleware implements MiddlewareInterface {
         if (request.method === 'OPTIONS') {
             // tslint:disable-next-line:no-any
             response = new Response<any>();
-            response.headers['Access-Control-Allow-Methods'] = 'GET, PUT, POST, DELETE';
+            response.headers['Access-Control-Allow-Methods'] = 'GET, PUT, PATCH, POST, DELETE';
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
         } else {
             try {

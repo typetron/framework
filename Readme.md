@@ -21,9 +21,9 @@ Also, every package can be tuned for performance or updated in no time if needed
 ##### Features List
 
 * [x] Routing
-* [x] Controllers
+* [x] Controllers (class based)
 * [x] IoC Container
-* [x] Query builder
+* [x] SQL Query builder
 * [x] ORM (Active Record)
 * [x] Services
 * [x] Providers
@@ -34,21 +34,20 @@ Also, every package can be tuned for performance or updated in no time if needed
 * [ ] HTTP2
 * [x] Persistence (SQL, NoSQL)
 * [ ] Migrations
-* [ ] Intuitive directory structure
+* [x] Intuitive directory structure
 * [ ] Deployment(aws, azure, GCP, DO etc or custom server)
 * [x] Models
 * [x] Forms
 * [x] Validations
-* [ ] Sessions
 * [ ] I18n
 * [ ] I18n routing
 * [ ] Mailing
 * [ ] Multi-threading / Worker threads
-* [ ] Custom error handling
+* [x] Custom error handling
 * [ ] Logging
 * [ ] Monitoring
 * [ ] Instant error alerts
-* [ ] Authentication
+* [x] Authentication
 * [ ] Authorization
 * [x] Utilities
 * [x] Debugging
@@ -57,15 +56,15 @@ Also, every package can be tuned for performance or updated in no time if needed
 
 ##### Performance
 Being built with packages created from scratch using the latest features of the language, Typetron comes with
-really good performance out of the box compared to other available frameworks.
+excellent performance out of the box compared to other available frameworks.
 
 ##### Developer experience
 Typetron's source code is built around developer's expectations: it is modern, clean and beautiful.
 Also, the tools Typetron is providing are everything a developer needs to build his next awesome project.
 
 ##### Code sharing
-A few years ago we wrote websites. Nowadays we write web applications. The web evolved along side the tools we are
-using. A typical web application is composed from at least two parts: a backend app and a frontend app.
+A few years ago we wrote websites. Nowadays we write web applications. The web evolved alongside the tools we are
+using. A typical web application is composed of at least two parts: a backend app and a frontend app.
 This separation led to two different camps that have a very distinct line between them. Typetron provides tools to make
 these two camps work together. 
 
