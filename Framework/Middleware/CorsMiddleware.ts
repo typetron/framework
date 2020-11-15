@@ -17,14 +17,14 @@ export class CorsMiddleware implements MiddlewareInterface {
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         } else {
             try {
-                response = await next(request);
+                response = await next(request)
             } catch (error) {
-                response = await this.errorHandler.handle(error, request);
+                response = await this.errorHandler.handle(error, request)
             }
         }
 
-        response.headers['Access-Control-Allow-Origin'] = '*';
-        return response;
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
     }
 
 }

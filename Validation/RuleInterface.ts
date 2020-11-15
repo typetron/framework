@@ -1,4 +1,4 @@
-import { RuleValue } from '.';
+import { RuleValue } from '.'
 
 export interface RuleInterface {
     identifier: string;

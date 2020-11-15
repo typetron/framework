@@ -1,4 +1,4 @@
-import { Request, Response } from '../Http';
+import { Request, Response } from '../Http'
 
 export type RequestHandler = (request: Request) => Promise<Response>;
 

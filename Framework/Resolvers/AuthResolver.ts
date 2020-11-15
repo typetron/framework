@@ -1,5 +1,5 @@
-import { BaseResolver } from '../../Container';
-import { Auth, AuthUserIdentifier } from '../Auth';
+import { BaseResolver } from '../../Container'
+import { Auth, AuthUserIdentifier } from '../Auth'
 
 export class AuthResolver extends BaseResolver {
 
@@ -9,8 +9,8 @@ export class AuthResolver extends BaseResolver {
     // }
 
     async resolve<T>(abstract: Symbol, parameters: object[]): Promise<T> {
-        const auth = this.container.get(Auth);
-        return await auth.user() as unknown as T;
+        const auth = this.container.get(Auth)
+        return await auth.user() as unknown as T
     }
 
     // // tslint:disable-next-line:no-any
@@ -19,7 +19,7 @@ export class AuthResolver extends BaseResolver {
     // }
 
     canResolve<T>(abstract: Symbol): boolean {
-        return abstract === AuthUserIdentifier;
+        return abstract === AuthUserIdentifier
     }
 
     // private setScopeToRequest() {

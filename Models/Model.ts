@@ -26,7 +26,7 @@ export class Model {
             } else {
                 data[field.name as keyof T] = value
             }
-        });
-        return data as T;
+        })
+        return data as T
     }
 }

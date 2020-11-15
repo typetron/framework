@@ -11,11 +11,11 @@ export class Article extends Entity {
     title: string
 
     @Column()
-    content: string;
+    content: string
 
     @Column()
     published: boolean = false
 
     @Relation(() => User, 'articles')
-    author: BelongsTo<User>;
+    author: BelongsTo<User>
 }

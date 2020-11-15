@@ -15,7 +15,7 @@ export class RouteMetadata {
 }
 
 export class ControllerMetadata extends MetadataKey('framework:controller') {
-    middleware: Abstract<MiddlewareInterface>[] = [];
-    routes: {[key: string]: RouteMetadata} = {};
-    guards: typeof Guard[] = [];
+    middleware: Abstract<MiddlewareInterface>[] = []
+    routes: {[key: string]: RouteMetadata} = {}
+    guards: typeof Guard[] = []
 }

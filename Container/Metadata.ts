@@ -1,6 +1,6 @@
-import { Resolver } from './Resolver';
-import { ServiceIdentifier } from './Contracts';
-import { MetadataKey } from '../Support/Metadata';
+import { Resolver } from './Resolver'
+import { ServiceIdentifier } from './Contracts'
+import { MetadataKey } from '../Support/Metadata'
 
 export enum Scope {
     TRANSIENT = 'TRANSIENT',
@@ -9,8 +9,8 @@ export enum Scope {
 }
 
 export class InjectableMetadata extends MetadataKey('injectable') {
-    resolver?: Resolver;
+    resolver?: Resolver
 
-    scope: Scope = Scope.SINGLETON;
-    dependencies: {[key: string]: ServiceIdentifier<{}>} = {};
+    scope: Scope = Scope.SINGLETON
+    dependencies: {[key: string]: ServiceIdentifier<{}>} = {}
 }

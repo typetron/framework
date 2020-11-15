@@ -1,4 +1,4 @@
-import { Http } from '../index';
+import { Http } from '../index'
 
 export class HttpError extends Error {
 
@@ -6,10 +6,10 @@ export class HttpError extends Error {
         public content: string | object,
         public status: Http.Status = Http.Status.BAD_REQUEST
     ) {
-        super(typeof content === 'string' ? content : 'HTTP Error');
+        super(typeof content === 'string' ? content : 'HTTP Error')
     }
 
     getMessage() {
-        return this.content;
+        return this.content
     }
 }

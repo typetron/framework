@@ -1,6 +1,6 @@
-import { expect } from 'chai';
-import { suite, test } from '@testdeck/mocha';
-import { Field, FieldMany, Model } from '../../Models';
+import { expect } from 'chai'
+import { suite, test } from '@testdeck/mocha'
+import { Field, FieldMany, Model } from '../../Models'
 
 @suite
 class ModelTest {
@@ -8,22 +8,22 @@ class ModelTest {
     mapsSingleObject() {
         class UserModel extends Model {
             @Field()
-            id: number;
+            id: number
 
             @Field()
-            name: string;
+            name: string
         }
 
         const user = {
             id: 1,
             name: 'John',
             age: 20
-        };
+        }
         const expectedUser = {
             id: 1,
             name: 'John'
-        };
-        expect(UserModel.from(user)).to.deep.equal(expectedUser);
+        }
+        expect(UserModel.from(user)).to.deep.equal(expectedUser)
     }
 
     // @test
@@ -50,40 +50,40 @@ class ModelTest {
     mapsListOfObject() {
         class UserModel extends Model {
             @Field()
-            id: number;
+            id: number
 
             @Field()
-            name: string;
+            name: string
         }
 
         const user = {
             id: 1,
             name: 'John',
             age: 20
-        };
+        }
         const expectedUser = {
             id: 1,
             name: 'John'
-        };
-        expect(UserModel.fromMany([user, user])).to.deep.equal([expectedUser, expectedUser]);
+        }
+        expect(UserModel.fromMany([user, user])).to.deep.equal([expectedUser, expectedUser])
     }
 
     @test
     mapsDeepModelObject() {
         class ProfileModel extends Model {
             @Field()
-            address: string;
+            address: string
         }
 
         class UserModel extends Model {
             @Field()
-            id: number;
+            id: number
 
             @Field()
-            name: string;
+            name: string
 
             @Field()
-            profile: ProfileModel;
+            profile: ProfileModel
         }
 
         const user = {
@@ -94,34 +94,34 @@ class ModelTest {
                 address: 'somewhere',
                 picture: 'avatar'
             }
-        };
+        }
         const expectedUser = {
             id: 1,
             name: 'John',
             profile: {
                 address: 'somewhere'
             }
-        };
-        expect(UserModel.from(user)).to.deep.equal(expectedUser);
+        }
+        expect(UserModel.from(user)).to.deep.equal(expectedUser)
     }
 
     @test
     mapsDeepListOfObject() {
         class PostModel extends Model {
             @Field()
-            title: string;
+            title: string
         }
 
         class UserModel extends Model {
             @Field()
-            id: number;
+            id: number
 
             @Field()
-            name: string;
+            name: string
 
             @Field()
             @FieldMany(PostModel)
-            posts: PostModel[];
+            posts: PostModel[]
         }
 
         const user = {
@@ -134,7 +134,7 @@ class ModelTest {
                     content: 'some content'
                 }
             ]
-        };
+        }
         const expectedUser = {
             id: 1,
             name: 'John',
@@ -143,8 +143,8 @@ class ModelTest {
                     title: 'first post',
                 }
             ]
-        };
-        expect(UserModel.from(user)).to.deep.equal(expectedUser);
+        }
+        expect(UserModel.from(user)).to.deep.equal(expectedUser)
     }
 
 }

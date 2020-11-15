@@ -27,94 +27,94 @@ export function Controller(path = '', options = new ControllerOptions) {
                 prefix + (routeMetadata.name || action),
                 routeMetadata.parametersTypes,
                 metadata.middleware.concat(routeMetadata.middleware)
-            );
-            route.guards = routeMetadata.guards;
-        });
-    };
+            )
+            route.guards = routeMetadata.guards
+        })
+    }
 }
 
 function addRoute(controller: Constructor, action: string, method: Http.Method, path: string, name: string) {
-    const metadata = ControllerMetadata.get(controller);
+    const metadata = ControllerMetadata.get(controller)
 
-    const route = metadata.routes[action] || new RouteMetadata;
-    route.parametersTypes = Reflect.getMetadata('design:paramtypes', controller.prototype, action);
-    route.path = path;
-    route.name = name;
-    route.method = method;
+    const route = metadata.routes[action] || new RouteMetadata
+    route.parametersTypes = Reflect.getMetadata('design:paramtypes', controller.prototype, action)
+    route.path = path
+    route.name = name
+    route.method = method
 
-    metadata.routes[action] = route;
+    metadata.routes[action] = route
 
-    ControllerMetadata.set(metadata, controller);
+    ControllerMetadata.set(metadata, controller)
 }
 
 export function Get(path = '', name = '') {
     return (target: Object, action: string) => {
-        addRoute(target.constructor as Constructor, action, Http.Method.GET, path, name);
-    };
+        addRoute(target.constructor as Constructor, action, Http.Method.GET, path, name)
+    }
 }
 
 export function Post(path: string = '', name = '') {
     return (target: Object, action: string) => {
-        addRoute(target.constructor as Constructor, action, Http.Method.POST, path, name);
-    };
+        addRoute(target.constructor as Constructor, action, Http.Method.POST, path, name)
+    }
 }
 
 export function Put(path: string = '', name = '') {
     return (target: Object, action: string) => {
-        addRoute(target.constructor as Constructor, action, Http.Method.PUT, path, name);
-    };
+        addRoute(target.constructor as Constructor, action, Http.Method.PUT, path, name)
+    }
 }
 
 export function Patch(path: string = '', name = '') {
     return (target: Object, action: string) => {
-        addRoute(target.constructor as Constructor, action, Http.Method.PATCH, path, name);
-    };
+        addRoute(target.constructor as Constructor, action, Http.Method.PATCH, path, name)
+    }
 }
 
 export function Delete(path: string = '', name = '') {
     return (target: Object, action: string) => {
-        addRoute(target.constructor as Constructor, action, Http.Method.DELETE, path, name);
-    };
+        addRoute(target.constructor as Constructor, action, Http.Method.DELETE, path, name)
+    }
 }
 
 export function Middleware(...middleware: Abstract<MiddlewareInterface>[]) {
     return (target: Object, action?: string) => {
         if (action) {
-            target = target.constructor;
+            target = target.constructor
         }
 
-        const metadata = ControllerMetadata.get(target);
+        const metadata = ControllerMetadata.get(target)
 
         if (action) {
-            const route = metadata.routes[action] || new RouteMetadata;
-            route.middleware = route.middleware.concat(middleware);
-            metadata.routes[action] = route;
+            const route = metadata.routes[action] || new RouteMetadata
+            route.middleware = route.middleware.concat(middleware)
+            metadata.routes[action] = route
         } else {
-            metadata.middleware = metadata.middleware.concat(middleware);
+            metadata.middleware = metadata.middleware.concat(middleware)
         }
 
-        ControllerMetadata.set(metadata, target);
-    };
+        ControllerMetadata.set(metadata, target)
+    }
 }
 
 export function AllowIf(...guards: Type<Guard>[]) {
     return function (target: object, action: string) {
         if (action) {
-            target = target.constructor;
+            target = target.constructor
         }
 
-        const metadata = ControllerMetadata.get(target);
+        const metadata = ControllerMetadata.get(target)
 
         if (action) {
-            const route = metadata.routes[action] || new RouteMetadata;
-            route.guards = route.guards.concat(guards);
-            metadata.routes[action] = route;
+            const route = metadata.routes[action] || new RouteMetadata
+            route.guards = route.guards.concat(guards)
+            metadata.routes[action] = route
         } else {
-            metadata.guards = metadata.guards.concat(guards);
+            metadata.guards = metadata.guards.concat(guards)
         }
 
-        ControllerMetadata.set(metadata, target);
-    };
+        ControllerMetadata.set(metadata, target)
+    }
 }
 
 export function Query(name: string) {
@@ -132,7 +132,7 @@ export function Query(name: string) {
             return value
         }
 
-        metadata.routes[action] = route;
-        ControllerMetadata.set(metadata, target.constructor);
-    };
+        metadata.routes[action] = route
+        ControllerMetadata.set(metadata, target.constructor)
+    }
 }

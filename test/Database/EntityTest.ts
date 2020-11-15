@@ -1,10 +1,10 @@
-import { suite, test } from '@testdeck/mocha';
-import { expect } from 'chai';
-import { Connection, Query, Schema } from '../../Database';
-import { User } from './Entities/User';
-import { EntityQuery } from '../../Database/EntityQuery';
-import { Article } from './Entities/Article';
-import { Role } from './Entities/Role';
+import { suite, test } from '@testdeck/mocha'
+import { expect } from 'chai'
+import { Connection, Query, Schema } from '../../Database'
+import { User } from './Entities/User'
+import { EntityQuery } from '../../Database/EntityQuery'
+import { Article } from './Entities/Article'
+import { Role } from './Entities/Role'
 
 @suite
 class EntityTest {
@@ -12,67 +12,67 @@ class EntityTest {
         id: 1,
         name: 'Joe',
         email: 'joe@example.com',
-    };
+    }
 
     doe = {
         id: 2,
         name: 'Doe',
         email: 'doe@example.com',
-    };
+    }
 
     admin = {
         id: 1,
         name: 'Admin'
-    };
+    }
     developer = {
         id: 1,
         name: 'Developer'
-    };
+    }
 
     data = {
         users: [this.joe, this.doe],
         roles: [this.admin, this.developer],
-    };
+    }
 
     async before() {
-        Query.connection = new Connection(':memory:');
-        await Schema.synchronize(Query.connection, [User, Article, Role].pluck('metadata'));
+        Query.connection = new Connection(':memory:')
+        await Schema.synchronize(Query.connection, [User, Article, Role].pluck('metadata'))
     }
 
     expectToContain(actual: User, expected: {[key: string]: string | number | Date}) {
-        const keys = Object.keys(expected);
+        const keys = Object.keys(expected)
         keys.forEach(key => {
-            expect(actual).to.have.property(key, expected[key]);
-        });
+            expect(actual).to.have.property(key, expected[key])
+        })
     }
 
     @test
     fillEntityWhenInstantiating() {
-        expect(new User({name: 'Joe'})).to.deep.include({name: 'Joe'});
+        expect(new User({name: 'Joe'})).to.deep.include({name: 'Joe'})
     }
 
     @test
     getEntityTable() {
-        expect(User.getTable()).to.equal('users');
-        expect((new User).getTable()).to.equal('users');
+        expect(User.getTable()).to.equal('users')
+        expect((new User).getTable()).to.equal('users')
     }
 
     @test
     async createsNewQuery() {
-        expect(User.newQuery()).to.be.an.instanceof(EntityQuery);
-        const user = new User;
-        expect(user.newQuery()).to.be.an.instanceof(EntityQuery);
+        expect(User.newQuery()).to.be.an.instanceof(EntityQuery)
+        const user = new User
+        expect(user.newQuery()).to.be.an.instanceof(EntityQuery)
     }
 
     @test
     async getEveryRecord() {
-        await Query.table(User.getTable()).insert([this.joe, this.doe]);
+        await Query.table(User.getTable()).insert([this.joe, this.doe])
 
-        const users = await User.get();
+        const users = await User.get()
 
-        expect(users).to.have.length(2);
+        expect(users).to.have.length(2)
 
-        users.forEach((user, index) => this.expectToContain(user, this.data.users[index]));
+        users.forEach((user, index) => this.expectToContain(user, this.data.users[index]))
     }
 
     // @test
@@ -100,15 +100,15 @@ class EntityTest {
     //
     @test
     async insert() {
-        const data = {email: 'tester', name: 'Tester'};
-        const user = new User().fill(data);
+        const data = {email: 'tester', name: 'Tester'}
+        const user = new User().fill(data)
 
-        this.expectToContain(user, data);
-        expect(user.id).to.be.equal(undefined);
-        await user.save();
-        expect(user.id).to.be.equal(1);
-        expect(user.createdAt).to.be.an.instanceOf(Date);
-        expect(user.updatedAt).to.be.an.instanceOf(Date);
+        this.expectToContain(user, data)
+        expect(user.id).to.be.equal(undefined)
+        await user.save()
+        expect(user.id).to.be.equal(1)
+        expect(user.createdAt).to.be.an.instanceOf(Date)
+        expect(user.updatedAt).to.be.an.instanceOf(Date)
     }
 
     // @test
@@ -124,53 +124,53 @@ class EntityTest {
 
     @test
     async getSpecificColumns() {
-        await Query.table(User.getTable()).insert([this.joe]);
+        await Query.table(User.getTable()).insert([this.joe])
 
-        const users = await User.get('id', 'name');
+        const users = await User.get('id', 'name')
 
-        expect(users).to.have.length(1);
-        expect(users.first()).to.have.property('name', this.joe.name);
-        expect(users.first()).and.to.have.property('id', this.joe.id);
-        expect(users.first()).and.to.not.have.property('email');
+        expect(users).to.have.length(1)
+        expect(users.first()).to.have.property('name', this.joe.name)
+        expect(users.first()).and.to.have.property('id', this.joe.id)
+        expect(users.first()).and.to.not.have.property('email')
     }
 
     @test
     async getFirstRecord() {
-        await Query.table(User.getTable()).insert([this.joe, this.doe]);
+        await Query.table(User.getTable()).insert([this.joe, this.doe])
 
-        const user = await User.first() as User;
+        const user = await User.first() as User
 
-        this.expectToContain(user, this.joe);
+        this.expectToContain(user, this.joe)
     }
 
     @test
     async getFirstRecordWithSpecificColumns() {
-        await Query.table(User.getTable()).insert([this.joe]);
+        await Query.table(User.getTable()).insert([this.joe])
 
-        const user = await User.first('id') as User;
+        const user = await User.first('id') as User
 
-        expect(user).to.have.property('id', this.joe.id);
-        expect(user).to.not.have.property('name');
+        expect(user).to.have.property('id', this.joe.id)
+        expect(user).to.not.have.property('name')
     }
 
     @test
     async getFirstRecordOrInstantiateOneIfNot() {
-        const a = await User.first();
-        const john = await User.firstOrNew({name: 'John'}, {email: 'john@example.com'});
+        const a = await User.first()
+        const john = await User.firstOrNew({name: 'John'}, {email: 'john@example.com'})
 
-        expect(john).to.have.property('name', 'John');
-        expect(john).to.have.property('email', 'john@example.com');
-        expect(john).to.not.have.property('id');
-        expect(await User.get()).to.have.length(0);
+        expect(john).to.have.property('name', 'John')
+        expect(john).to.have.property('email', 'john@example.com')
+        expect(john).to.not.have.property('id')
+        expect(await User.get()).to.have.length(0)
     }
 
     @test
     async getFirstRecordOrCreateOneIfNot() {
-        const john = await User.firstOrCreate({name: 'John'}, {email: 'john@example.com'});
+        const john = await User.firstOrCreate({name: 'John'}, {email: 'john@example.com'})
 
-        expect(john).to.have.property('name', 'John');
-        expect(john).to.have.property('email', 'john@example.com');
-        expect(john).to.have.property('id');
-        expect(await User.get()).to.have.length(1);
+        expect(john).to.have.property('name', 'John')
+        expect(john).to.have.property('email', 'john@example.com')
+        expect(john).to.have.property('id')
+        expect(await User.get()).to.have.length(1)
     }
 }

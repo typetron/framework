@@ -1,8 +1,8 @@
-import { Column, CreatedAt, Entity, Options, PrimaryColumn, Relation, UpdatedAt } from '../../../Database';
-import { Article } from './Article';
-import { Role } from './Role';
-import { Profile } from './Profile';
-import { BelongsToMany, HasMany, HasOne } from '../../../Database/Fields';
+import { Column, CreatedAt, Entity, Options, PrimaryColumn, Relation, UpdatedAt } from '../../../Database'
+import { Article } from './Article'
+import { Role } from './Role'
+import { Profile } from './Profile'
+import { BelongsToMany, HasMany, HasOne } from '../../../Database/Fields'
 
 @Options({
     table: 'users'
@@ -10,26 +10,26 @@ import { BelongsToMany, HasMany, HasOne } from '../../../Database/Fields';
 export class User extends Entity {
 
     @PrimaryColumn()
-    id: number;
+    id: number
 
     @Column()
-    name: string;
+    name: string
 
     @Column()
-    email: string;
+    email: string
 
     @Relation(() => Profile, 'user')
-    profile: HasOne<Profile>;
+    profile: HasOne<Profile>
 
     @Relation(() => Article, 'author')
-    articles: HasMany<Article>;
+    articles: HasMany<Article>
 
     @Relation(() => Role, 'users')
-    roles: BelongsToMany<Role>;
+    roles: BelongsToMany<Role>
 
     @CreatedAt()
-    createdAt: Date;
+    createdAt: Date
 
     @UpdatedAt()
-    updatedAt: Date;
+    updatedAt: Date
 }

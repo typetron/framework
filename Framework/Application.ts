@@ -26,70 +26,70 @@ export class Application extends Container {
 
     static async create(directory: string, configDirectory = Application.defaultConfigDirectory) {
         try {
-            const app = new this(directory, configDirectory);
-            await app.bootstrap();
-            return app;
+            const app = new this(directory, configDirectory)
+            await app.bootstrap()
+            return app
         } catch (error) {
-            console.error(error);
-            throw error;
+            console.error(error)
+            throw error
         }
+    }
+
+    startServer() {
+        const httpHandler = this.get(HttpHandler)
+        return httpHandler.startServer(this)
     }
 
     private async registerProviders(providers: Type<Provider>[]) {
         await Promise.all(
             providers.map(provider => {
-                const instance = this.get(provider);
-                instance.setApplication(this);
-                return instance.register();
+                const instance = this.get(provider)
+                instance.setApplication(this)
+                return instance.register()
             })
-        );
+        )
     }
 
     private async loadConfig(configDirectory: string) {
-        const path = this.directory + '/' + configDirectory;
+        const path = this.directory + '/' + configDirectory
 
-        const storage = this.get(Storage);
+        const storage = this.get(Storage)
 
         if (!await storage.exists(path)) {
-            console.warn(`Config path '${path}' does not exist. Running with default config.`);
+            console.warn(`Config path '${path}' does not exist. Running with default config.`)
         }
 
         storage
             .files(path)
             .whereIn('extension', ['ts'])
             .forEach(file => {
-                const configItem = require(file.path).default as BaseConfig<{}>;
+                const configItem = require(file.path).default as BaseConfig<{}>
                 if (configItem && configItem.constructor) {
-                    configItem.applyNewValues();
-                    this.config.set(configItem.constructor, configItem);
-                    this.set(configItem.constructor, configItem);
+                    configItem.applyNewValues()
+                    this.config.set(configItem.constructor, configItem)
+                    this.set(configItem.constructor, configItem)
                 }
-            });
+            })
     }
 
     private registerResolvers() {
-        this.resolvers.unshift(new FormResolver(this));
-        this.resolvers.unshift(new EntityResolver(this));
-        this.resolvers.unshift(new AuthResolver(this));
+        this.resolvers.unshift(new FormResolver(this))
+        this.resolvers.unshift(new EntityResolver(this))
+        this.resolvers.unshift(new AuthResolver(this))
     }
 
     private async bootstrap() {
-        await this.loadConfig(this.configDirectory);
+        await this.loadConfig(this.configDirectory)
 
-        this.set(ErrorHandlerInterface, this.get(ErrorHandler));
+        this.set(ErrorHandlerInterface, this.get(ErrorHandler))
 
-        const appConfig = this.get(AppConfig);
+        const appConfig = this.get(AppConfig)
 
         if (appConfig.staticAssets) {
             appConfig.middleware.unshift(StaticAssetsMiddleware)
         }
 
-        this.registerResolvers();
-        await this.registerProviders(appConfig.providers || []);
-    }
-
-    startServer() {
-        const httpHandler = this.get(HttpHandler);
-        return httpHandler.startServer(this);
+        this.registerResolvers()
+        await this.registerProviders(appConfig.providers || [])
     }
 }

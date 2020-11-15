@@ -1,18 +1,18 @@
-import { Column, Entity, ID, PrimaryColumn } from '../../Database';
-import { Authenticable } from './Authenticable';
+import { Column, Entity, PrimaryColumn } from '../../Database'
+import { Authenticable } from './Authenticable'
 
 export class User extends Entity implements Authenticable {
 
     @PrimaryColumn()
-    id: number;
+    id: number
 
     @Column()
-    email: string;
+    email: string
 
     @Column()
-    password: string;
+    password: string
 
-    getId = () => 'id';
-    getUsername = () => 'email';
-    getPassword = () => 'password';
+    getId = () => 'id'
+    getUsername = () => 'email'
+    getPassword = () => 'password'
 }

@@ -13,23 +13,15 @@ export class Response<T = string | object | undefined> {
     }
 
     static ok(content: string | object) {
-        return new Response(Http.Status.OK, content);
+        return new Response(Http.Status.OK, content)
     }
 
     static notFound(content: string | object) {
-        return new Response(Http.Status.NOT_FOUND, content);
+        return new Response(Http.Status.NOT_FOUND, content)
     }
 
     static badRequest(content: string | object) {
-        return new Response(Http.Status.BAD_REQUEST, content);
-    }
-
-    setHeader(name: string, value: string) {
-        this.headers[name] = value;
-    }
-
-    setHeaders(headers: OutgoingHttpHeaders) {
-        this.headers = headers;
+        return new Response(Http.Status.BAD_REQUEST, content)
     }
 
     static send(response: Response, serverResponse: ServerResponse) {
@@ -46,10 +38,18 @@ export class Response<T = string | object | undefined> {
         }
 
         for (const header in response.headers) {
-            serverResponse.setHeader(header, response.headers[header] || '');
+            serverResponse.setHeader(header, response.headers[header] || '')
         }
 
-        serverResponse.statusCode = response.status;
-        serverResponse.end(rawContent);
+        serverResponse.statusCode = response.status
+        serverResponse.end(rawContent)
+    }
+
+    setHeader(name: string, value: string) {
+        this.headers[name] = value
+    }
+
+    setHeaders(headers: OutgoingHttpHeaders) {
+        this.headers = headers
     }
 }

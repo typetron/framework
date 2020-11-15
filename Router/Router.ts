@@ -67,7 +67,7 @@ export class Router {
             stack = middleware.handle.bind(middleware, request, stack)
         })
 
-        return await stack(request);
+        return await stack(request)
     }
 
     public loadControllers(directory: string) {

@@ -1,36 +1,36 @@
-import { Statement } from './Statement';
-import { wrap } from '../Helpers';
-import { Expression } from '../Expression';
+import { Statement } from './Statement'
+import { wrap } from '../Helpers'
+import { Expression } from '../Expression'
 
 export class Select extends Statement {
     get distinct() {
-        return this.components.distinct ? 'DISTINCT ' : '';
+        return this.components.distinct ? 'DISTINCT ' : ''
     }
 
     get columns() {
-        let columns = this.components.columns || [];
+        let columns = this.components.columns || []
         columns = columns.map(column => {
-            return column instanceof Expression ? column.value : wrap(column);
-        });
+            return column instanceof Expression ? column.value : wrap(column)
+        })
 
-        const aggregate = this.components.aggregate;
+        const aggregate = this.components.aggregate
         if (aggregate) {
-            columns.push(`${aggregate.function}(${wrap(aggregate.columns) || '*'}) as aggregate`);
+            columns.push(`${aggregate.function}(${wrap(aggregate.columns) || '*'}) as aggregate`)
         }
 
         if (!columns.length) {
-            return '*';
+            return '*'
         }
 
-        return columns.join(', ');
+        return columns.join(', ')
     }
 
     get wheres() {
         if (!this.components.wheres.length) {
-            return '';
+            return ''
         }
 
-        return `WHERE ${super.wheres}`;
+        return `WHERE ${super.wheres}`
     }
 
     toSql() {
@@ -43,7 +43,7 @@ export class Select extends Statement {
             ${this.havings}
             ${this.orders}
             ${this.limit}
-        `;
+        `
     }
 }
 

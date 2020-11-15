@@ -1,5 +1,5 @@
-import { Container } from './Container';
-import { ServiceIdentifier } from './Contracts';
+import { Container } from './Container'
+import { ServiceIdentifier } from './Contracts'
 
 export interface Resolver {
     container: Container;
@@ -22,6 +22,6 @@ export abstract class BaseResolver implements Resolver {
      * Used to update the dependencies that have the REQUEST scope
      */
     reload<T>(abstract: ServiceIdentifier<T>, concrete: T, container?: Container): T {
-        return concrete;
+        return concrete
     }
 }

@@ -1,15 +1,15 @@
-import { ColumnField } from '../Fields';
-import { Entity } from '../Entity';
+import { ColumnField } from '../Fields'
+import { Entity } from '../Entity'
 
 export class Create {
 
-    table: string;
-    columns: ColumnField<Entity>[] = [];
+    table: string
+    columns: ColumnField<Entity>[] = []
 
     constructor() {}
 
     getColumns() {
-        return '';
+        return ''
     }
 
     toSql() {
@@ -20,6 +20,6 @@ export class Create {
             (
                 ${this.getColumns()}
             )
-        `;
+        `
     }
 }
