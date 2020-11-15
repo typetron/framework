@@ -1,9 +1,9 @@
-import { Entity } from './Entity';
-import { Connection } from './Connection';
-import { BelongsToManyField, ColumnField, PrimaryField } from './Fields';
-import { EntityMetadata } from './Decorators';
-import { wrap } from './Helpers';
-import { EntityConstructor } from './index';
+import { Entity } from './Entity'
+import { Connection } from './Connection'
+import { BelongsToManyField, ColumnField, PrimaryField } from './Fields'
+import { EntityMetadata } from './Decorators'
+import { wrap } from './Helpers'
+import { EntityConstructor } from './index'
 
 export class Schema {
 
@@ -14,6 +14,7 @@ export class Schema {
         [Number, 'integer'],
         [String, 'varchar'],
         [Date, 'datetime'],
+        [Boolean, 'integer'],
     ]);
 
     constructor(connection: Connection) {
@@ -56,7 +57,7 @@ export class Schema {
             belongsToManyFields.forEach(field => {
                 const entity = Entity as EntityConstructor<Entity>;
                 const pivotTableColumns: ColumnField<Entity>[] = [
-                    new ColumnField(entity, 'id', () => Number, 'id'),
+                    // new ColumnField(entity, 'id', () => PrimaryField, 'id'),
                     ...[field.getParentForeignKey(), field.getRelatedForeignKey()].sort().map(columnName => {
                         return new ColumnField(entity, columnName, () => Number, columnName);
                     })

@@ -1,57 +1,60 @@
-import { Constructor } from '../Support';
-import { BaseResolver } from './Resolver';
-import { InjectableMetadata, Scope } from './Metadata';
-import { Container } from './Container';
+import { Constructor } from '../Support'
+import { BaseResolver } from './Resolver'
+import { InjectableMetadata, Scope } from './Metadata'
+import { Container } from './Container'
 
 export class ClassResolver extends BaseResolver {
 
     canResolve<T>(abstract: Constructor<T>): boolean {
-        return abstract.prototype && abstract.prototype.constructor.name;
+        return abstract.prototype && abstract.prototype.constructor.name
     }
 
     resolve<T>(abstract: Constructor<T>, parametersValues: object[]) {
-        const parametersTypes: Constructor[] = Reflect.getMetadata('design:paramtypes', abstract) || [];
+        const parametersTypes: Constructor[] = Reflect.getMetadata('design:paramtypes', abstract) || []
 
         const parameters = parametersTypes.map((parameterType, index) => {
             if (parametersValues[index]) {
-                return parametersValues[index];
+                return parametersValues[index]
             }
             if (parameterType.name === 'Object' && parametersValues[index]) {
-                parameterType = (parametersValues[index] as Constructor); // || this.getParameterValue(abstract, index);
+                parameterType = (parametersValues[index] as Constructor) // || this.getParameterValue(abstract, index);
             }
-            return this.container.get(parameterType);
-        });
-        const instance = new abstract(...parameters);
+            return this.container.get(parameterType)
+        })
+        const instance = new abstract(...parameters)
 
-        const metadata = InjectableMetadata.get(abstract);
-        let asyncDependencies = 0;
-        let resolve: (value?: T | PromiseLike<T>) => void;
-        let reject: (reason?: unknown) => void;
+        const metadata = InjectableMetadata.get(abstract)
+        let asyncDependencies = 0
+        let resolve: (value?: T | PromiseLike<T>) => void
+        let reject: (reason?: unknown) => void
         for (const dependency in metadata.dependencies) {
-            const value = this.container.get(metadata.dependencies[dependency]) as T[keyof T];
+            if (!metadata.dependencies.hasOwnProperty(dependency)) {
+                continue
+            }
+            const value = this.container.get(metadata.dependencies[dependency]) as T[keyof T]
             if (value instanceof Promise) {
-                asyncDependencies++;
+                asyncDependencies++
                 value.then(resolvedValue => {
-                    instance[dependency as keyof T] = resolvedValue;
-                    asyncDependencies--;
+                    instance[dependency as keyof T] = resolvedValue
+                    asyncDependencies--
                     if (!asyncDependencies) {
-                        resolve(instance);
+                        resolve(instance)
                     }
                 }).catch(error => {
-                    reject(error);
-                });
+                    reject(error)
+                })
             } else {
-                instance[dependency as keyof T] = value;
+                instance[dependency as keyof T] = value
             }
         }
         if (asyncDependencies) {
             return new Promise<T>((resolveFunction, rejectFunction) => {
-                resolve = resolveFunction;
-                reject = rejectFunction;
-            });
+                resolve = resolveFunction
+                reject = rejectFunction
+            })
         }
 
-        return instance;
+        return instance
     }
 
     // TODO figure out how to use this better
@@ -65,21 +68,21 @@ export class ClassResolver extends BaseResolver {
     // }
 
     reload<T>(abstract: Constructor<T>, concrete: T, container: Container = this.container): T {
-        const metadata = InjectableMetadata.get(abstract);
+        const metadata = InjectableMetadata.get(abstract)
         for (const dependencyName in metadata.dependencies) {
             if (!metadata.dependencies[dependencyName]) {
-                continue;
+                continue
             }
-            const dependency = metadata.dependencies[dependencyName];
+            const dependency = metadata.dependencies[dependencyName]
             if (typeof dependency === 'symbol') {
-                concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T];
-                continue;
+                concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T]
+                continue
             }
-            const dependencyMetadata = InjectableMetadata.get(dependency);
+            const dependencyMetadata = InjectableMetadata.get(dependency)
             if (dependencyMetadata.scope === Scope.REQUEST) {
-                concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T];
+                concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T]
             }
         }
-        return concrete;
+        return concrete
     }
 }

@@ -1,5 +1,5 @@
-import { OutgoingHttpHeaders, ServerResponse } from 'http';
-import { Http } from '.';
+import { OutgoingHttpHeaders, ServerResponse } from 'http'
+import { Http } from '.'
 
 export class Response<T = string | object | undefined> {
 
@@ -33,16 +33,16 @@ export class Response<T = string | object | undefined> {
     }
 
     static send(response: Response, serverResponse: ServerResponse) {
-        let content = response.content || '';
-        let rawContent: String | Buffer | undefined;
+        let content = response.content ?? ''
+        let rawContent: String | Buffer | undefined
         if (!(content instanceof Buffer)) {
             if (content instanceof Object) {
-                content = JSON.stringify(content);
-                response.headers['Content-Type'] = 'application/json';
+                content = JSON.stringify(content)
+                response.headers['Content-Type'] = 'application/json'
             }
-            rawContent = content.toString();
+            rawContent = content.toString()
         } else {
-            rawContent = content;
+            rawContent = content
         }
 
         for (const header in response.headers) {

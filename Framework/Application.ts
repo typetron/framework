@@ -1,27 +1,27 @@
-import { Container } from '../Container';
-import { Type } from '../Support';
-import { App } from './App';
-import { Provider } from './Provider';
-import { AppConfig, BaseConfig } from './Config';
-import { FormResolver } from './Resolvers/FormResolver';
-import { EntityResolver } from './Resolvers/EntityResolver';
-import { RootDir } from './RootDir';
-import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware';
-import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Http';
-import { Storage } from '../Storage';
-import { AuthResolver } from './Resolvers/AuthResolver';
+import { Container } from '../Container'
+import { Type } from '../Support'
+import { App } from './App'
+import { Provider } from './Provider'
+import { AppConfig, BaseConfig } from './Config'
+import { FormResolver } from './Resolvers/FormResolver'
+import { EntityResolver } from './Resolvers/EntityResolver'
+import { RootDir } from './RootDir'
+import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware'
+import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Http'
+import { Storage } from '../Storage'
+import { AuthResolver } from './Resolvers/AuthResolver'
 
 export class Application extends Container {
-    static defaultConfigDirectory = 'config';
+    static defaultConfigDirectory = 'config'
 
-    public config = new Map<Function, object>();
+    public config = new Map<Function, object>()
 
     private constructor(public directory: string, public configDirectory = Application.defaultConfigDirectory) {
-        super();
-        Application.setInstance(this);
-        this.set(Container, App.instance = this);
-        this.set(Application, App.instance);
-        this.set(RootDir, directory);
+        super()
+        Application.setInstance(this)
+        this.set(Container, App.instance = this)
+        this.set(Application, App.instance)
+        this.set(RootDir, directory)
     }
 
     static async create(directory: string, configDirectory = Application.defaultConfigDirectory) {
@@ -81,7 +81,7 @@ export class Application extends Container {
         const appConfig = this.get(AppConfig);
 
         if (appConfig.staticAssets) {
-            appConfig.middleware.push(StaticAssetsMiddleware);
+            appConfig.middleware.unshift(StaticAssetsMiddleware)
         }
 
         this.registerResolvers();

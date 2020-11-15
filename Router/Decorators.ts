@@ -1,24 +1,24 @@
-import { App } from '../Framework';
-import { Router } from './Router';
-import { Abstract, Constructor, Type } from '../Support';
-import { Http, Request } from '../Http';
-import { MiddlewareInterface } from './Middleware';
-import { ControllerMetadata, RouteMetadata } from './Metadata';
-import { Guard } from './Guard';
+import { App } from '../Framework'
+import { Router } from './Router'
+import { Abstract, Constructor, Type } from '../Support'
+import { Http, Request } from '../Http'
+import { MiddlewareInterface } from './Middleware'
+import { ControllerMetadata, RouteMetadata } from './Metadata'
+import { Guard } from './Guard'
 
 class ControllerOptions {
-    prefix?: string;
+    prefix?: string
 }
 
 export function Controller(path = '', options = new ControllerOptions) {
     return (target: Object) => {
-        const metadata = ControllerMetadata.get(target);
-        const prefix = options.prefix || path ? path + '.' : '';
+        const metadata = ControllerMetadata.get(target)
+        const prefix = options.prefix || path ? path + '.' : ''
 
-        const router = App.get(Router);
+        const router = App.get(Router)
 
         Object.keys(metadata.routes).forEach(action => {
-            const routeMetadata = metadata.routes[action];
+            const routeMetadata = metadata.routes[action]
             const route = router.add(
                 path + (path && routeMetadata.path ? '/' : '') + routeMetadata.path,
                 routeMetadata.method,
@@ -117,14 +117,20 @@ export function AllowIf(...guards: Type<Guard>[]) {
     };
 }
 
-export function Query(newParameterKey: string) {
+export function Query(name: string) {
     return function (target: Object, action: string, parameterIndex: number) {
-        const metadata = ControllerMetadata.get(target.constructor);
+        const metadata = ControllerMetadata.get(target.constructor)
+        const parametersTypes = Reflect.getMetadata('design:paramtypes', target, action)
 
-        const route = metadata.routes[action] || new RouteMetadata();
+        const route = metadata.routes[action] || new RouteMetadata()
         route.parametersOverrides[parameterIndex] = function (request: Request) {
-            return request.query[newParameterKey];
-        };
+            const value = request.query[name]
+
+            if (parametersTypes[parameterIndex].name === 'Number') {
+                return value === undefined || value === 'undefined' ? undefined : Number(value)
+            }
+            return value
+        }
 
         metadata.routes[action] = route;
         ControllerMetadata.set(metadata, target.constructor);

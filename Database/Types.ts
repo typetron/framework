@@ -1,5 +1,5 @@
-import { Query } from './Query';
-import { Expression } from './Expression';
+import { Query } from './Query'
+import { Expression } from './Expression'
 
 export enum Operators {
     '=' = '=',
@@ -12,6 +12,7 @@ export enum Operators {
     'OR' = 'OR',
     'IS' = 'IS',
     'IN' = 'IN',
+    'NOT IN' = 'NOT IN',
     'LIKE' = 'LIKE',
     'IS NOT' = 'IS NOT',
 }

@@ -1,4 +1,4 @@
-export {};
+export {}
 
 type ArrayItemCallback<T, R = T> = (item: T, index: number, array: T[]) => R;
 
@@ -40,96 +40,97 @@ declare global {
 }
 
 Array.prototype.empty = function () {
-    return !this.length;
-};
+    return !this.length
+}
 
 Array.prototype.random = function () {
-    return this[Math.randomInt(0, this.length - 1)];
-};
+    return this[Math.randomInt(0, this.length - 1)]
+}
 
 Array.prototype.randomIndex = function () {
-    return Math.randomInt(0, this.length - 1);
-};
+    return Math.randomInt(0, this.length - 1)
+}
 
-Array.prototype.findWhere = function (property, value) {
-    return this.find(item => item[property] === value);
-};
+// tslint:disable-next-line:no-any
+Array.prototype.findWhere = function <T, K extends keyof T>(property: K, value: T[K] | ArrayItemCallback<T, any>) {
+    return this.find(item => item[property] === value)
+}
 
 Array.prototype.pluck = function <T, K extends keyof T, U>(property: K) {
-    return this.map((item: T) => item[property] as unknown as U);
-};
+    return this.map((item: T) => item[property] as unknown as U)
+}
 
-Array.prototype.remove = function (...items) {
+Array.prototype.remove = function <T>(...items: T[]) {
     return items.map(item => {
-        const index = this.indexOf(item);
+        const index = this.indexOf(item)
         if (index === -1) {
-            return;
+            return
         }
-        this.splice(this.indexOf(item), 1);
-    });
-};
+        this.splice(this.indexOf(item), 1)
+    })
+}
 
-Array.prototype.where = function (property, value) {
-    return this.filter(item => item[property] === value);
-};
+Array.prototype.where = function <T, K extends keyof T>(property: K, value: T[K]) {
+    return this.filter(item => item[property] === value)
+}
 
-Array.prototype.whereIn = function (property, values) {
-    return this.filter(item => values.includes(item[property]));
-};
+Array.prototype.whereIn = function <T, K extends keyof T>(property: K, values: (T[K])[]) {
+    return this.filter(item => values.includes(item[property]))
+}
 
 Array.prototype.first = function (defaultValue = undefined) {
-    const [first] = this;
-    return first || defaultValue;
-};
+    const [first] = this
+    return first || defaultValue
+}
 
 Array.prototype.groupBy = function <T, K extends keyof T, U>(property: K | ArrayItemCallback<T, U>) {
-    const callback = property instanceof Function ? property : (item: T) => item[property];
+    const callback = property instanceof Function ? property : (item: T) => item[property]
     return this.reduce((accumulator, item, index, array) => {
         const key = callback(item, index, array);
-        (accumulator[key] = accumulator[key] || []).push(item);
-        return accumulator;
-    }, {});
-};
+        (accumulator[key] = accumulator[key] || []).push(item)
+        return accumulator
+    }, {})
+}
 
-Array.prototype.forEachAsync = async function (callback, thisArg) {
+Array.prototype.forEachAsync = async function <T>(callback: ArrayItemCallback<T, void>, thisArg: T[]) {
     for (let index = 0; index < this.length; index++) {
-        await callback.call(thisArg, this[index], index, this);
+        await callback.call(thisArg, this[index], index, this)
     }
-};
+}
 
-Array.prototype.mapAsync = async function (callback, thisArg) {
-    const promises = [];
+Array.prototype.mapAsync = async function <T, U>(callback: ArrayItemCallback<T, Promise<U>>, thisArg: T[]) {
+    const promises = []
     for (let index = 0; index < this.length; index++) {
-        promises.push(callback.call(thisArg, this[index], index, this));
+        promises.push(callback.call(thisArg, this[index], index, this))
     }
-    return Promise.all(promises);
-};
+    return Promise.all(promises)
+}
 
 Array.prototype.unique = function <T, K extends keyof T>(property?: K | ((item: T, index: number) => unknown)): T[] {
     if (!property) {
-        return [...new Set(this)] as T[];
+        return [...new Set(this)] as T[]
     }
 
-    let callback: (item: T, index: number, list: T[]) => unknown;
+    let callback: (item: T, index: number, list: T[]) => unknown
     if (typeof property === 'function') {
-        callback = property;
+        callback = property
     } else {
-        callback = (item) => item[property];
+        callback = (item) => item[property]
     }
 
-    const exists = new Set;
+    const exists = new Set
     return this.filter((item, index) => {
-        let id: unknown;
+        let id: unknown
         if (!exists.has(id = callback(item, index, this))) {
-            exists.add(id);
-            return true;
+            exists.add(id)
+            return true
         }
-    });
-};
+    })
+}
 
 Array.prototype.sum = function <T, K extends keyof T, U extends number>(property?: K | ArrayItemCallback<T, U>) {
-    const callback = property instanceof Function ? property : (item: T) => property ? item[property] : item;
+    const callback = property instanceof Function ? property : (item: T) => property ? item[property] : item
     return this.reduce((accumulator, item, index, array) => {
-        return accumulator += callback(item, index, array);
-    }, 0);
-};
+        return accumulator + callback(item, index, array)
+    }, 0)
+}

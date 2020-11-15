@@ -1,7 +1,7 @@
-import { Entity } from './Entity';
-import { EntityConstructor, EntityKeys, EntityMetadata, EntityObject, Expression, Query } from './index';
-import { List } from './List';
-import { BaseRelationship } from './ORM/BaseRelationship';
+import { Entity } from './Entity'
+import { EntityConstructor, EntityKeys, EntityMetadata, EntityObject, Expression, Query } from './index'
+import { List } from './List'
+import { BaseRelationship } from './ORM/BaseRelationship'
 
 export interface EntityField<T extends Entity> {
 
@@ -19,11 +19,11 @@ export class ColumnField<T extends Entity> implements EntityField<T> {
     ) {}
 
     value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined {
-        return entity[key as K];
+        return entity[key as K]
     }
 
     set(target: T, value: T[keyof T]) {
-        target[this.property as keyof T] = value;
+        target[this.property as keyof T] = value
     }
 }
 
@@ -35,7 +35,7 @@ export abstract class InverseField<T extends Entity> implements EntityField<T> {
     ) {}
 
     value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined {
-        return entity[key as K];
+        return entity[key as K]
     }
 
     abstract set(target: T, value: T[keyof T]): void;
@@ -49,7 +49,7 @@ export class PrimaryField<T extends Entity> extends ColumnField<T> {
 }
 
 export abstract class RelationshipField<T extends Entity, R extends Entity> extends ColumnField<T> {
-    abstract relationClass: typeof BaseRelationship;
+    abstract relationClass: typeof BaseRelationship
 
     protected constructor(
         entity: EntityConstructor<T>,
@@ -58,24 +58,24 @@ export abstract class RelationshipField<T extends Entity, R extends Entity> exte
         public inverseBy: string,
         column: string
     ) {
-        super(entity, property, type, column);
+        super(entity, property, type, column)
     }
 
     get related() {
-        return this.type();
+        return this.type()
     }
 
     abstract match(entities: T[], relatedEntities: R[]): T[];
 
-    abstract matchCounts(entities: T[], counts: Record<string, number>[]): T[];
+    abstract matchCounts(entities: T[], counts: T[]): T[];
 
-    abstract async getRelatedValue(relatedEntities: R[]): Promise<R[]>;
+    abstract async getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void): Promise<R[]>;
 
-    abstract async getRelatedCount(relatedEntities: R[]): Promise<Record<string, number>[]>;
+    abstract async getRelatedCount(relatedEntities: R[]): Promise<T[]>;
 }
 
 export abstract class InverseRelationship<T extends Entity, R extends Entity> extends InverseField<T> {
-    abstract relationClass: typeof BaseRelationship;
+    abstract relationClass: typeof BaseRelationship
 
     protected constructor(
         entity: EntityConstructor<T>,
@@ -83,25 +83,25 @@ export abstract class InverseRelationship<T extends Entity, R extends Entity> ex
         public type: () => EntityConstructor<R>,
         public inverseBy: string
     ) {
-        super(entity, property, type);
+        super(entity, property, type)
     }
 
     get related() {
-        return this.type();
+        return this.type()
     }
 
     abstract match(entities: T[], relatedEntities: R[]): T[];
 
-    abstract matchCounts(entities: T[], counts: Record<string, number>[]): T[];
+    abstract matchCounts(entities: T[], counts: T[]): T[];
 
-    abstract async getRelatedValue(relatedEntities: R[]): Promise<R[]>;
+    abstract async getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void): Promise<R[]>;
 
-    abstract async getRelatedCount(relatedEntities: R[]): Promise<Record<string, number>[]>;
+    abstract async getRelatedCount(relatedEntities: R[]): Promise<T[]>;
 
 }
 
 export class HasOneField<T extends Entity, R extends Entity> extends InverseRelationship<T, R> {
-    relationClass = HasOne;
+    relationClass = HasOne
 
     constructor(
         entity: EntityConstructor<T>,
@@ -109,123 +109,133 @@ export class HasOneField<T extends Entity, R extends Entity> extends InverseRela
         type: () => EntityConstructor<R>,
         inverseBy: string // TODO make it key of R
     ) {
-        super(entity, property, type, inverseBy);
+        super(entity, property, type, inverseBy)
     }
 
     set(target: T, value: T[keyof T]) {
-        (target[this.property as keyof T] as InstanceType<this['relationClass']>).set(value as unknown as R);
+        (target[this.property as keyof T] as InstanceType<this['relationClass']>).set(value as unknown as R)
     }
 
-    async getRelatedValue(relatedEntities: R[]) {
-        const parentIds = relatedEntities.pluck(this.entity.getPrimaryKey()) as number[];
-        const inverseByField = this.related.metadata.relationships[this.inverseBy];
-        return await this.related.whereIn(inverseByField.column as EntityKeys<R>, parentIds).get();
+    async getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void) {
+        const parentIds = relatedEntities.pluck(this.entity.getPrimaryKey()) as number[]
+        const inverseByField = this.related.metadata.relationships[this.inverseBy]
+        const query = this.related.with(eagerLoad).whereIn(inverseByField.column as EntityKeys<R>, parentIds)
+
+        customQuery?.(query)
+
+        return await query.get()
     }
 
     async getRelatedCount(relatedEntities: R[]) {
-        const relatedField = this.related.metadata.relationships[this.inverseBy];
+        const relatedField = this.related.metadata.relationships[this.inverseBy]
 
         return await this.related.newQuery()
             .whereIn(relatedField.column, relatedEntities.pluck(this.entity.getPrimaryKey()))
             .select(relatedField.column)
             .groupBy(relatedField.column)
-            .count() as unknown as Record<string, number>[];
+            .selectCount()
+            .get() as unknown as T[]
     }
 
     match(entities: T[], relatedEntities: R[]): T[] {
         entities.forEach(entity => {
-            const inverseField = this.related.metadata.relationships[this.inverseBy];
+            const inverseField = this.related.metadata.relationships[this.inverseBy]
             const relatedEntity = relatedEntities.find(
                 related => related.original[inverseField.column as keyof object] === entity[this.entity.getPrimaryKey()]
             );
             // TODO fix these weird types. Get rid of `unknown`
-            (entity[this.property as keyof T] as unknown as BelongsTo<R>).set(relatedEntity as R);
-        });
-        return entities;
+            (entity[this.property as keyof T] as unknown as BelongsTo<R>).set(relatedEntity as R)
+        })
+        return entities
     }
 
-    matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
-        const relatedField = this.related.metadata.relationships[this.inverseBy];
+    matchCounts(entities: T[], counts: T[]): T[] {
+        const relatedField = this.related.metadata.relationships[this.inverseBy]
         entities.forEach(entity => {
-            const count = counts.findWhere(relatedField.column, entity[this.entity.getPrimaryKey()]);
-            entity[this.property + 'Count' as keyof T] = (count?.aggregate ?? 0) as unknown as T[keyof T];
-        });
+            const count = counts.find(item => item.original[relatedField.column] === entity[this.entity.getPrimaryKey()])
+            entity[this.property + 'Count' as keyof T] = (count?.original.aggregate ?? 0) as unknown as T[keyof T]
+        })
 
-        return entities;
+        return entities
     }
 }
 
 export class HasManyField<T extends Entity, R extends Entity> extends InverseRelationship<T, R> {
-    relationClass = HasMany;
+    relationClass = HasMany
 
     constructor(entity: EntityConstructor<T>, property: string, type: () => EntityConstructor<R>, public inverseBy: string) {
-        super(entity, property, type, inverseBy);
+        super(entity, property, type, inverseBy)
     }
 
     set(target: T, value: T[keyof T]) {
 
     }
 
-    async getRelatedValue(relatedEntities: R[]) {
-        const parentIds = relatedEntities.pluck(this.entity.getPrimaryKey()) as number[];
-        const inverseByField = this.related.metadata.relationships[this.inverseBy];
-        return await this.related.whereIn(inverseByField.column as EntityKeys<R>, parentIds).get();
+    async getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void) {
+        const parentIds = relatedEntities.pluck(this.entity.getPrimaryKey()) as number[]
+        const inverseByField = this.related.metadata.relationships[this.inverseBy]
+        const query = this.related.with(eagerLoad).whereIn(inverseByField.column as EntityKeys<R>, parentIds)
+
+        customQuery?.(query)
+
+        return await query.get()
     }
 
     async getRelatedCount(relatedEntities: R[]) {
-        const relatedField = this.related.metadata.relationships[this.inverseBy];
+        const relatedField = this.related.metadata.relationships[this.inverseBy]
 
         return await this.related.newQuery()
             .whereIn(relatedField.column, relatedEntities.pluck(this.entity.getPrimaryKey()))
             .select(relatedField.column)
             .groupBy(relatedField.column)
-            .count() as unknown as Record<string, number>[];
+            .selectCount()
+            .get() as unknown as T[]
     }
 
     match(entities: T[], relatedEntities: R[]): T[] {
         entities.forEach(entity => {
-            const inverseField = this.related.metadata.relationships[this.inverseBy];
+            const inverseField = this.related.metadata.relationships[this.inverseBy]
             const relatedEntity = relatedEntities.filter(
                 related => related.original[inverseField.column as keyof object] === entity[this.entity.getPrimaryKey()]
             );
             // TODO fix these weird types. Get rid of `unknown`
-            (entity[this.property as keyof T] as unknown as HasMany<R, T>).items = relatedEntity;
-        });
-        return entities;
+            (entity[this.property as keyof T] as unknown as HasMany<R, T>).items = relatedEntity
+        })
+        return entities
     }
 
-    matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
-        const relatedField = this.related.metadata.relationships[this.inverseBy];
+    matchCounts(entities: T[], counts: T[]): T[] {
+        const relatedField = this.related.metadata.relationships[this.inverseBy]
         entities.forEach(entity => {
-            const count = counts.findWhere(relatedField.column, entity[this.entity.getPrimaryKey()]);
-            entity[this.property + 'Count' as keyof T] = (count?.aggregate ?? 0) as unknown as T[keyof T];
-        });
+            const count = counts.find(item => item.original[relatedField.column] === entity[this.entity.getPrimaryKey()])
+            entity[this.property + 'Count' as keyof T] = (count?.original.aggregate ?? 0) as unknown as T[keyof T]
+        })
 
-        return entities;
+        return entities
     }
 
     async save(items: Partial<EntityObject<R> | R>[], parent: T) {
-        const entities: R[] = [];
+        const entities: R[] = []
         for await (const item of items) {
-            const entity = item instanceof Entity ? item : this.type().new(item);
+            const entity = item instanceof Entity ? item : this.type().new(item)
 
             entity.fill({
                 [this.inverseBy]: parent
-            });
-            await entity.save();
-            entities.push(entity as R);
+            })
+            await entity.save()
+            entities.push(entity as R)
         }
-        return entities;
+        return entities
     }
 
     getQuery(parent: T) {
-        const inverseField = this.related.metadata.relationships[this.inverseBy];
-        return this.type().newQuery().where(inverseField.column, parent[parent.getPrimaryKey()] as unknown as R[keyof R]);
+        const inverseField = this.related.metadata.relationships[this.inverseBy]
+        return this.type().newQuery().where(inverseField.column, parent[parent.getPrimaryKey()] as unknown as R[keyof R])
     }
 }
 
 export class BelongsToField<T extends Entity, R extends Entity> extends RelationshipField<T, R> {
-    relationClass = BelongsTo;
+    relationClass = BelongsTo
 
     constructor(
         entity: EntityConstructor<T>,
@@ -234,18 +244,18 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
         inverseBy: string,
         column?: string
     ) {
-        super(entity, property, type, inverseBy, column || property + (entity.getPrimaryKey() as string).capitalize());
+        super(entity, property, type, inverseBy, column || property + (entity.getPrimaryKey() as string).capitalize())
     }
 
     set(target: T, value: T[keyof T]) {
-        (target[this.property as keyof T] as InstanceType<this['relationClass']>).set(value as unknown as R);
+        (target[this.property as keyof T] as InstanceType<this['relationClass']>).set(value as unknown as R)
     }
 
     value<K extends keyof T>(entity: T, key: string) {
-        const field = entity[key as keyof T] as unknown as BelongsTo<R, T>;
-        const instance = field.get();
+        const field = entity[key as keyof T] as unknown as BelongsTo<R, T>
+        const instance = field.get()
         if (instance) {
-            return instance[this.related.getPrimaryKey()];
+            return instance[this.related.getPrimaryKey()]
         }
         // return new this.related({
         //     [this.related.getPrimaryKey()]: entity[key as K]
@@ -258,58 +268,69 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
         // return entity[this.property as keyof T] as unknown as T[K];
     }
 
-    async getRelatedValue(parents: R[]) {
+    async getRelatedValue(parents: R[], eagerLoad: string, customQuery?: (query: Query) => void) {
         const relationIds = parents
             .map(parent => {
-                const relation = (parent[this.property as keyof R] as unknown as BelongsTo<R>).get();
-                return relation?.[relation.getPrimaryKey()];
+                const relation = (parent[this.property as keyof R] as unknown as BelongsTo<R>).get()
+                return relation?.[relation.getPrimaryKey()]
             })
-            .filter(Boolean) as unknown as number[];
+            .filter(Boolean) as unknown as number[]
         if (relationIds.length) {
-            return await this.related.whereIn(this.related.getPrimaryKey() as EntityKeys<R>, relationIds).get();
+            const query = this.related.with(eagerLoad).whereIn(this.related.getPrimaryKey() as EntityKeys<R>, relationIds)
+
+            if (customQuery) {
+                customQuery(query)
+            }
+
+            return await query.get()
         }
-        return [];
+        return []
     }
 
     async getRelatedCount(relatedEntities: R[]) {
-        return [];
+        return []
     }
 
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
             // TODO fix these weird types. Get rid of `unknown`
-            const value = (entity[this.column as keyof T] || (entity.original || {})[this.column]) as unknown as R[keyof R];
-            const instance = relatedEntities.findWhere(this.related.getPrimaryKey() as keyof R, value);
-            this.set(entity, instance as unknown as T[keyof T]);
-            return entity;
-        });
+            const related = (entity[this.property as keyof T] as unknown as BelongsTo<R>).get()
+            const value = related?.[related.getPrimaryKey()]
+            if (value) {
+                const instance = relatedEntities.findWhere(this.related.getPrimaryKey() as keyof R, value)
+                if (instance) {
+                    this.set(entity, instance as unknown as T[keyof T])
+                }
+            }
+            return entity
+        })
     }
 
-    matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
-        return entities;
+    matchCounts(entities: T[], counts: T[]): T[] {
+        return entities
     }
 
     getQuery(parent: T) {
-        return this.entity.newQuery().where(this.column, parent[parent.getPrimaryKey()] as unknown as T[keyof T]);
+        return this.entity.newQuery().where(this.column, parent[parent.getPrimaryKey()] as unknown as T[keyof T])
     }
 
     async save(items: Partial<EntityObject<R> | R>[], parent: T) {
-        const entities: R[] = [];
+        const entities: R[] = []
         for await (const item of items) {
-            const entity = item instanceof Entity ? item : this.entity.new(item);
+            const entity = item instanceof Entity ? item : this.entity.new(item)
 
             entity.fill({
                 [this.property]: parent
-            });
-            await entity.save();
-            entities.push(entity as R);
+            })
+            await entity.save()
+            entities.push(entity as R)
         }
-        return entities;
+        return entities
     }
 }
 
 export class BelongsToManyField<T extends Entity, R extends Entity> extends InverseRelationship<T, R> {
-    relationClass = BelongsToMany;
+    relationClass = BelongsToMany
 
     constructor(
         entity: EntityConstructor<T>,
@@ -320,100 +341,118 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         public parentColumn?: string,
         public relatedColumn?: string
     ) {
-        super(entity, property, type, inverseBy);
+        super(entity, property, type, inverseBy)
     }
 
     set(target: T, value: T[keyof T]) {
     }
 
-    async getRelatedValue(parents: R[]) {
-        const parentIds = parents.pluck(this.entity.getPrimaryKey()) as number[];
-        const relatedForeignKey = `${this.getPivotTable()}.${this.getRelatedForeignKey()}`;
-        const parentForeignKey = `${this.getPivotTable()}.${this.getParentForeignKey()}`;
-        const relatedKey = `${this.related.getTable()}.${this.related.getPrimaryKey()}`;
+    async getRelatedValue(parents: R[], eagerLoad: string, customQuery?: (query: Query) => void) {
+        const parentIds = parents.pluck(this.entity.getPrimaryKey()) as number[]
+        const relatedForeignKey = `${this.getPivotTable()}.${this.getRelatedForeignKey()}`
+        const parentForeignKey = `${this.getPivotTable()}.${this.getParentForeignKey()}`
+        const relatedKey = `${this.related.getTable()}.${this.related.getPrimaryKey()}`
 
-        const query = this.related.newQuery()
+        const query = this.related
+            .with(eagerLoad)
             .addSelect(
                 new Expression(`${this.related.getTable()}.*`),
                 new Expression(relatedForeignKey),
                 new Expression(parentForeignKey)
             )
             .join(this.getPivotTable(), relatedForeignKey, '=', relatedKey)
-            .whereIn(parentForeignKey, parentIds.unique());
+            .whereIn(parentForeignKey, parentIds.unique())
 
-        const results = await query.get();
+        customQuery?.(query)
+
+        const results = await query.get()
 
         return results.map(entity => {
             entity.original.pivot = {
                 [this.getParentForeignKey()]: entity.original[this.getParentForeignKey()],
                 [this.getRelatedForeignKey()]: entity.original[this.getRelatedForeignKey()],
-            };
-            delete entity.original[this.getParentForeignKey()];
-            delete entity.original[this.getRelatedForeignKey()];
+            }
+            delete entity.original[this.getParentForeignKey()]
+            delete entity.original[this.getRelatedForeignKey()]
 
-            return entity;
-        });
+            return entity
+        })
     }
 
     getParentForeignKey() {
-        return this.parentColumn || `${this.entity.name.toLocaleLowerCase()}${(this.entity.getPrimaryKey() as string).capitalize()}`;
+        return this.parentColumn || `${this.entity.name.toLocaleLowerCase()}${(this.entity.getPrimaryKey() as string).capitalize()}`
     }
 
     getRelatedForeignKey() {
-        return this.relatedColumn || `${this.related.name.toLocaleLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`;
+        return this.relatedColumn || `${this.related.name.toLocaleLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`
     }
 
     async getRelatedCount(relatedEntities: R[]) {
-        return [];
+        const query = Query.table(this.getPivotTable())
+            .select(this.getParentForeignKey())
+            .groupBy(this.getParentForeignKey())
+            .whereIn(this.getParentForeignKey(), relatedEntities.pluck(this.related.getPrimaryKey()) as unknown as number[])
+        return await query.selectCount().get() as unknown as T[]
+
     }
 
     match(entities: T[], relatedEntities: R[]): T[] {
         return entities.map(entity => {
             const entityPrimaryKey = entity[this.entity.getPrimaryKey()];
             (entity[this.property as keyof T] as unknown as BelongsToMany<R>).items = relatedEntities
-                .filter(related => related.original.pivot[this.getParentForeignKey()] === entityPrimaryKey);
-            return entity;
-        });
+                .filter(related => related.original.pivot[this.getParentForeignKey()] === entityPrimaryKey)
+            return entity
+        })
     }
 
-    matchCounts(entities: T[], counts: Record<string, number>[]): T[] {
-        return entities;
+    matchCounts(entities: T[], counts: T[]): T[] {
+        entities.forEach(entity => {
+            const foreignKey = this.getParentForeignKey()
+            const count = counts.find(item =>
+                (item?.original?.[foreignKey] || item[foreignKey as keyof T]) === entity[this.entity.getPrimaryKey()]
+            )
+            // @ts-ignore
+            const aggregateValue = count?.aggregate || count?.original.aggregate
+            entity[this.property + 'Count' as keyof T] = (aggregateValue ?? 0) as unknown as T[keyof T]
+        })
+
+        return entities
     }
 
     getPivotTable() {
-        return this.table || [this.entity.getTable(), this.related.getTable()].sort().join('_');
+        return this.table || [this.entity.getTable(), this.related.getTable()].sort().join('_')
     }
 
     value<K extends keyof T>(entity: T, key: string): T[K] {
-        const value = entity[key as K];
+        const value = entity[key as K]
         if (value instanceof Array) {
             return value.map(related => {
                 if (related instanceof Entity) {
-                    return related;
+                    return related
                 }
-                const instance = new this.related();
-                instance[instance.getPrimaryKey() as keyof R] = related as R[keyof R];
-                return instance;
-            }) as unknown as T[K];
+                const instance = new this.related()
+                instance[instance.getPrimaryKey() as keyof R] = related as R[keyof R]
+                return instance
+            }) as unknown as T[K]
         }
-        return value;
+        return value
     }
 
     async attach(items: number[], parent: T) {
-        const entities: R[] = [];
+        const entities: R[] = []
         // tslint:disable-next-line:no-any
-        const dataToInsert: Record<string, any>[] = [];
+        const dataToInsert: Record<string, any>[] = []
         for await (const item of items) {
             dataToInsert.push({
                 [this.getRelatedForeignKey()]: item,
                 [this.getParentForeignKey()]: parent[parent.getPrimaryKey()],
-            });
-            entities.push(this.related.new({[this.related.getPrimaryKey()]: item}));
+            })
+            entities.push(this.related.new({[this.related.getPrimaryKey()]: item}))
         }
         if (dataToInsert.length) {
-            await Query.table(this.getPivotTable()).insert(dataToInsert);
+            await Query.table(this.getPivotTable()).insert(dataToInsert)
         }
-        return entities;
+        return entities
 
     }
 
@@ -421,8 +460,8 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         return this.related.newQuery().whereIn(this.related.getPrimaryKey(), query => {
             query.select(this.getRelatedForeignKey())
                 .table(this.getPivotTable())
-                .where(this.getParentForeignKey(), parent[parent.getPrimaryKey()] as unknown as string);
-        });
+                .where(this.getParentForeignKey(), parent[parent.getPrimaryKey()] as unknown as string)
+        })
     }
 }
 
@@ -437,16 +476,16 @@ export interface BelongsToManyFieldOptions extends EntityFieldOptions {
 
 export class BelongsTo<T extends Entity, P extends Entity = Entity> extends BaseRelationship<T, P> {
 
-    private instance?: T;
+    private instance?: T
 
     constructor(
         relationship: RelationshipField<P, T>,
         parent: P
     ) {
-        super(relationship, parent);
-        const parentId = parent.original[relationship.column];
+        super(relationship, parent)
+        const parentId = parent.original[relationship.column]
         if (parentId) {
-            this.set(new relationship.related({[relationship.related.getPrimaryKey()]: parentId}));
+            this.setById(parentId)
         }
     }
 
@@ -465,42 +504,50 @@ export class BelongsTo<T extends Entity, P extends Entity = Entity> extends Base
             type,
             inverseBy as string,
             options?.column,
-        );
+        )
 
-        return metadata;
+        return metadata
     }
 
     get() {
-        return this.instance;
+        return this.instance
     }
 
-    set(instance: T) {
-        this.instance = instance;
+    set(instance: T | number) {
+        if (instance instanceof Entity) {
+            this.instance = instance
+        } else {
+            this.setById(instance)
+        }
+    }
+
+    setById(id: number) {
+        this.set(new this.relationship.related({[this.relationship.related.getPrimaryKey()]: id}))
     }
 
     async save(data: EntityObject<T> | {} | undefined = {}): Promise<T | undefined> {
         if (!this.instance) {
-            return;
+            return
         }
         this.instance.fill({
             ...data,
             // [this.relationship.column]: this.parent
-        });
+        })
 
-        await this.instance.save();
-        return this.instance;
+        await this.instance.save()
+        return this.instance
     }
 
     toJSON() {
-        return this.instance?.toJSON();
+        return this.instance?.toJSON()
     }
 
 }
 
 export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRelationship<T, P> {
 
-    public relationship: RelationshipField<P, T>;
-    private instance?: T;
+    public relationship: RelationshipField<P, T>
+    private instance?: T
 
     static relationship<T extends Entity, R extends Entity>(
         metadata: EntityMetadata<T>,
@@ -515,31 +562,42 @@ export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRel
             property as string,
             type,
             inverseBy as string,
-        );
-        return metadata;
+        )
+        return metadata
     }
 
     get() {
-        return this.instance;
+        return this.instance
     }
 
-    set(instance: T | undefined) {
-        this.instance = instance;
+    set(instance: T | number | undefined) {
+        if (!instance) {
+            return
+        }
+        if (instance instanceof Entity) {
+            this.instance = instance
+        } else {
+            this.setById(instance)
+        }
+    }
+
+    setById(id: number) {
+        this.set(new this.relationship.related({[this.relationship.related.getPrimaryKey()]: id}))
     }
 
     async save(instance: T | undefined = this.instance): Promise<T | undefined> {
-        this.set(instance);
+        this.set(instance)
 
         if (instance) {
-            (instance[this.relationship.inverseBy as keyof T] as unknown as BelongsTo<P, T>).set(this.parent);
-            await instance.save();
+            (instance[this.relationship.inverseBy as keyof T] as unknown as BelongsTo<P, T>).set(this.parent)
+            await instance.save()
         }
 
-        return this.instance;
+        return this.instance
     }
 
     toJSON() {
-        return this.instance?.toJSON();
+        return this.instance?.toJSON()
     }
 }
 
@@ -549,7 +607,7 @@ export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T
         public relationship: HasManyField<P, T>,
         parent: P
     ) {
-        super(relationship, parent);
+        super(relationship, parent)
     }
 
     static relationship<T extends Entity, R extends Entity>(
@@ -565,18 +623,20 @@ export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T
             property as string,
             type,
             inverseBy as string,
-        );
+        )
 
-        return metadata;
+        return metadata
     }
 
     async save(...items: Partial<EntityObject<T> | T>[]) {
         if (!this.parent.exists) {
-            await this.parent.save();
+            await this.parent.save()
         }
-        const instances = await this.relationship.save(items, this.parent);
+        const instances = await this.relationship.save(items, this.parent)
 
-        return this;
+        this.items.push(...instances)
+
+        return this
     }
 
     async clear() {
@@ -591,7 +651,7 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         public relationship: BelongsToManyField<P, T>,
         parent: P
     ) {
-        super(relationship, parent);
+        super(relationship, parent)
     }
 
     static relationship<T extends Entity, R extends Entity>(
@@ -604,7 +664,7 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
     ) {
         // options.column = options.column || (property as string) + (entityClass.getPrimaryKey() as string).capitalize();
 
-        const inverseField = metadata.inverseRelationships[inverseBy as string] as BelongsToManyField<T, R> | undefined;
+        const inverseField = metadata.inverseRelationships[inverseBy as string] as BelongsToManyField<T, R> | undefined
 
         metadata.inverseRelationships[property as string] = new BelongsToManyField(
             entityClass,
@@ -612,67 +672,75 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
             type,
             inverseBy as string,
             options?.table || inverseField?.table,
-            options?.column || inverseField?.relatedColumn,
             options?.foreignColumn || inverseField?.parentColumn,
-        );
-        return metadata;
+            options?.column || inverseField?.relatedColumn,
+        )
+        return metadata
     }
 
     async has(item: number) {
-        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`;
-        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`;
+        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`
+        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`
 
         return Boolean(
             await Query.table(this.relationship.getPivotTable())
                 .where(parentForeignKey, this.parent[this.parent.getPrimaryKey()] as unknown as string)
                 .andWhere(relatedForeignKey, item)
                 .first()
-        );
+        )
     }
 
     async attach(...items: number[]) {
         if (!this.parent.exists) {
-            await this.parent.save();
+            await this.parent.save()
         }
-        this.items = this.items.concat(await this.relationship.attach(items, this.parent));
+        this.items = this.items.concat(await this.relationship.attach(items, this.parent))
 
-        return this.items;
+        return this.items
     }
 
     async detach(...items: number[]) {
-        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`;
-        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`;
+        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`
+        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`
 
         await Query.table(this.relationship.getPivotTable())
             .where(parentForeignKey, this.parent[this.parent.getPrimaryKey()] as unknown as string)
             .whereIn(relatedForeignKey, items)
-            .delete();
+            .delete()
 
-        this.items = this.items.filter(item => !items.includes(item[item.getPrimaryKey()] as unknown as number));
+        this.items = this.items.filter(item => !items.includes(item[item.getPrimaryKey()] as unknown as number))
     }
 
     async toggle(...items: number[]) {
-        const attachedEntities = await this.relationship.getQuery(this.parent).get();
+        const attachedEntities = await this.relationship.getQuery(this.parent).get()
         const entitiesToDetach = items.filter(item =>
             attachedEntities.some(entity => entity[entity.getPrimaryKey()] as unknown as number === item)
-        );
+        )
         const entitiesToAttach = items.filter(item =>
             attachedEntities.some(entity => entity[entity.getPrimaryKey()] as unknown as number !== item)
-        );
-        await this.attach(...entitiesToAttach);
-        await this.detach(...entitiesToDetach);
+        )
+        await this.attach(...entitiesToAttach)
+        await this.detach(...entitiesToDetach)
     }
 
     async clear() {
-        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`;
-        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`;
+        const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`
+        const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`
 
         await Query.table(this.relationship.getPivotTable())
             .where(parentForeignKey, this.parent[this.parent.getPrimaryKey()] as unknown as string)
             .whereIn(relatedForeignKey, this.items.pluck(this.relationship.related.getPrimaryKey()))
-            .delete();
+            .delete()
 
-        this.items = [];
+        this.items = []
     }
 
+    async sync(...items: number[]) {
+        const existingItems = await this.get()
+        const primaryKey = this.relationship.type().getPrimaryKey()
+        const itemsToRemove = existingItems.filter(item => !items.includes(item[primaryKey])).pluck(primaryKey)
+        const restOfItemsToAdd = items.filter(item => !existingItems.findWhere(primaryKey, item as unknown as T[keyof T]))
+        await this.detach(...itemsToRemove)
+        await this.attach(...restOfItemsToAdd)
+    }
 }

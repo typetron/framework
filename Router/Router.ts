@@ -1,20 +1,20 @@
-import { Container, Inject } from '../Container';
-import { Storage } from '../Storage';
-import { Http, Request, Response } from '../Http';
-import { Abstract, Constructor, Type } from '../Support';
-import { MiddlewareInterface, RequestHandler } from './Middleware';
-import { Route } from './Route';
-import { Application } from '../Framework';
-import { RouteNotFoundError } from './RouteNotFoundError';
+import { Container, Inject } from '../Container'
+import { Storage } from '../Storage'
+import { Http, Request, Response } from '../Http'
+import { Abstract, Constructor, Type } from '../Support'
+import { MiddlewareInterface, RequestHandler } from './Middleware'
+import { Route } from './Route'
+import { Application } from '../Framework'
+import { RouteNotFoundError } from './RouteNotFoundError'
 
 export class Router {
 
     @Inject()
-    app: Container;
+    app: Container
 
-    routes: Route[] = [];
+    routes: Route[] = []
 
-    middleware: Abstract<MiddlewareInterface>[] = [];
+    middleware: Abstract<MiddlewareInterface>[] = []
 
     add(
         uri: string,
@@ -25,47 +25,47 @@ export class Router {
         parametersTypes: (Type<Function> | FunctionConstructor)[] = [],
         middleware: Abstract<MiddlewareInterface>[] = []
     ): Route {
-        uri = this.prepareUri(uri);
-        const route = new Route(uri, method, controller, action, name, parametersTypes, middleware);
-        this.routes.push(route);
-        return route;
+        uri = this.prepareUri(uri)
+        const route = new Route(uri, method, controller, action, name, parametersTypes, middleware)
+        this.routes.push(route)
+        return route
     }
 
     async handle(app: Application, request: Request): Promise<Response> {
-        const container = app.createChildContainer();
+        const container = app.createChildContainer()
 
-        container.forceSet('Request', request);
+        container.forceSet('Request', request)
 
         let stack: RequestHandler = async () => {
-            const route = this.getRoute(request.uri || '', request.method);
+            const route = this.getRoute(request.uri || '', request.method)
             if (!route) {
-                throw new RouteNotFoundError([request.method, request.uri].join(' '));
+                throw new RouteNotFoundError([request.method, request.uri].join(' '))
             }
-            container.forceSet('Route', route);
-            request.parameters = route.parameters;
+            container.forceSet('Route', route)
+            request.parameters = route.parameters
 
             let routeStack: RequestHandler = async () => {
-                const content = await route.run(request, container);
+                const content = await route.run(request, container)
 
                 if (content instanceof Response) {
-                    return content;
+                    return content
                 }
 
-                return Response.ok(content);
-            };
+                return Response.ok(content)
+            }
 
             route.middleware.forEach(middlewareClass => {
-                const middleware = container.get(middlewareClass);
-                routeStack = middleware.handle.bind(middleware, request, routeStack);
-            });
+                const middleware = container.get(middlewareClass)
+                routeStack = middleware.handle.bind(middleware, request, routeStack)
+            })
 
-            return routeStack(request);
-        };
+            return await routeStack(request)
+        }
 
         this.middleware.forEach(middlewareClass => {
-            const middleware = container.get(middlewareClass);
-            stack = middleware.handle.bind(middleware, request, stack);
-        });
+            const middleware = container.get(middlewareClass)
+            stack = middleware.handle.bind(middleware, request, stack)
+        })
 
         return await stack(request);
     }
@@ -74,15 +74,15 @@ export class Router {
         this.app.get(Storage)
             .files(directory, true)
             .whereIn('extension', ['ts'])
-            .forEach(file => require(file.path));
+            .forEach(file => require(file.path))
     }
 
     private getRoute(uri: string, method: string): Route | undefined {
-        uri = this.prepareUri(uri);
+        uri = this.prepareUri(uri)
 
         return this.routes.find(route => {
-            return route.method === method && route.matches(uri);
-        });
+            return route.method === method && route.matches(uri)
+        })
         // return this.routes
         //     .where('uri', uri)
         //     .findWhere('method', method) || this.routeNotFound(uri);
@@ -108,11 +108,11 @@ export class Router {
 
     private prepareUri(uri: string) {
         if (uri[0] === '/') {
-            uri = uri.substr(1);
+            uri = uri.substr(1)
         }
         if (uri[uri.length - 1] === '/') {
-            uri = uri.substring(0, uri.length - 1);
+            uri = uri.substring(0, uri.length - 1)
         }
-        return uri;
+        return uri
     }
 }
