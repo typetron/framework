@@ -47,7 +47,7 @@ class RulesTest {
         })
 
         invalidEmails.forEach(email => {
-            expect(rule.passes('', email), email).to.be.equal(true)
+            expect(rule.passes('', email), email).to.be.equal(false)
         })
     }
 
