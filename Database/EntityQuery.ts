@@ -75,7 +75,12 @@ export class EntityQuery<T extends Entity> extends Query<T> {
     ): Promise<T> {
         Object.entries(properties).forEach(([property, value]) => {
             const field = this.entity.metadata.columns[property] || this.entity.metadata.relationships[property]
-            this.andWhere(field.column, value instanceof Entity ? value[value.getPrimaryKey()] : value)
+            const finalValue = value instanceof Entity ? value[value.getPrimaryKey()] : value
+            if (finalValue === undefined) {
+                this.andWhereNull(field.column)
+            } else {
+                this.andWhere(field.column, finalValue)
+            }
         })
         const instance = await this.first()
         if (!instance) {

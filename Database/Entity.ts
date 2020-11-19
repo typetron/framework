@@ -176,9 +176,9 @@ export abstract class Entity {
         return this.static.getTable()
     }
 
-    // tslint:disable-next-line:no-any
-    async load<K extends KeysOfType<this, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>>>(
-        ...relations: (K | DotNotationProperties<this>)[]
+    async load(
+        // tslint:disable-next-line:no-any
+        ...relations: (KeysOfType<this, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this>)[]
     ) {
         await this.newQuery().with(...relations).eagerLoadRelationships([this])
 
@@ -287,7 +287,7 @@ export abstract class Entity {
 }
 
 const types: Map<Function, Function> = new Map()
-types.set(Date, (value: number) => new Date(value))
+types.set(Date, (value: number) => value ? new Date(value) : value)
 types.set(String, (value: object) => value ? String(value) : value)
 types.set(Boolean, (value: string) => Boolean(value))
 

@@ -1,6 +1,6 @@
 import { Entity } from './Entity'
 import { Connection } from './Connection'
-import { BelongsToManyField, ColumnField, PrimaryField } from './Fields'
+import { BelongsToManyField, ColumnField, JSONColumnType, PrimaryField } from './Fields'
 import { EntityMetadata } from './Decorators'
 import { wrap } from './Helpers'
 import { EntityConstructor } from './index'
@@ -14,6 +14,7 @@ export class Schema {
         [Number, 'integer'],
         [String, 'varchar'],
         [Date, 'datetime'],
+        [JSONColumnType, 'text'],
         [Boolean, 'integer'],
     ])
 
@@ -73,9 +74,10 @@ export class Schema {
 
     private static getColumnSql(columnMetadata: ColumnField<Entity>): string {
         const columnType = columnMetadata.type()
-        const type = Array.from(this.typesMatches.keys()).find(key =>
-            key === columnMetadata.type() || columnType.prototype instanceof key || columnMetadata instanceof key
-        ) || String
+        const type = Array.from(this.typesMatches.keys())
+            .find(key =>
+                key === columnMetadata.type() || columnType.prototype instanceof key || columnMetadata instanceof key
+            ) || String
         return `${columnMetadata.column} ${this.typesMatches.get(type)}`
     }
 

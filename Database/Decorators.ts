@@ -10,6 +10,7 @@ import {
     HasManyField,
     HasOne,
     HasOneField,
+    JSONField,
     PrimaryField,
     RelationshipField
 } from './Fields'
@@ -63,6 +64,13 @@ export function Column<T extends Entity>(column?: string) {
     return function (entity: T, name: string) {
         const type = Reflect.getMetadata('design:type', entity, name)
         const field = new ColumnField(entity.constructor as EntityConstructor<T>, name, () => type, column || name)
+        setField(entity, field)
+    }
+}
+
+export function JSONColumn<T extends Entity>(column?: string) {
+    return function (entity: T, name: string) {
+        const field = new JSONField(entity.constructor as EntityConstructor<T>, name, () => String, column || name)
         setField(entity, field)
     }
 }

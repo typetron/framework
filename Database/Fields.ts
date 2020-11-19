@@ -27,6 +27,17 @@ export class ColumnField<T extends Entity> implements EntityField<T> {
     }
 }
 
+export class JSONField<T extends Entity> extends ColumnField<T> {
+
+    value<K extends keyof T>(entity: T, key: string): T[K] | T[K][] | string | number | undefined {
+        return JSON.stringify(entity[key as K])
+    }
+
+    set(target: T, value: T[keyof T]) {
+        target[this.property as keyof T] = typeof value === 'string' ? JSON.parse(value) : undefined
+    }
+}
+
 export abstract class InverseField<T extends Entity> implements EntityField<T> {
     protected constructor(
         public entity: EntityConstructor<T>,
