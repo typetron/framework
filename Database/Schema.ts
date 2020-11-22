@@ -1,9 +1,9 @@
-import { Entity } from './Entity'
-import { Connection } from './Connection'
-import { BelongsToManyField, ColumnField, JSONColumnType, PrimaryField } from './Fields'
-import { EntityMetadata } from './Decorators'
-import { wrap } from './Helpers'
-import { EntityConstructor } from './index'
+import { Entity } from './Entity';
+import { Connection } from './Connection';
+import { BelongsToManyField, ColumnField, JSONField, PrimaryField } from './Fields';
+import { EntityMetadata } from './Decorators';
+import { wrap } from './Helpers';
+import { EntityConstructor } from './index';
 
 export class Schema {
 
@@ -14,9 +14,9 @@ export class Schema {
         [Number, 'integer'],
         [String, 'varchar'],
         [Date, 'datetime'],
-        [JSONColumnType, 'text'],
+        [JSONField, 'text'],
         [Boolean, 'integer'],
-    ])
+    ]);
 
     constructor(connection: Connection) {
     }
