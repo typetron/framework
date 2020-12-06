@@ -268,7 +268,7 @@ class ContainerTest {
             }
 
             async resolve<T>(abstract: ServiceIdentifier<T>, parameters: object[]): Promise<T> {
-                await new Promise(resolve => setTimeout(resolve, 1000))
+                await new Promise(resolve => setTimeout(resolve, 1))
                 return new User as T
             }
         }

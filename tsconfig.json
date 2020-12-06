@@ -21,7 +21,13 @@
 		"types": [
 			"reflect-metadata",
 			"@types/node"
-		]
+		],
+		"baseUrl": ".",
+		"paths": {
+			"@Typetron/*": [
+				"*"
+			]
+		}
 	},
 	"include": [
 		"./**/*.ts"

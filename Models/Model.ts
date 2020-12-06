@@ -21,8 +21,8 @@ export class Model {
             const value = entity[field.name as keyof Q]
             if (field.type instanceof ModelTypeInterface && value) {
                 // @ts-ignore
-                const v2 = value['toJSON' as keyof object] ? value?.toJSON() : value
-                data[field.name as keyof T] = field.type.transform(v2) as Q[keyof Q]
+                const jsonValue = value['toJSON' as keyof object] ? value?.toJSON() : value
+                data[field.name as keyof T] = jsonValue ? field.type.transform(jsonValue) as Q[keyof Q] : undefined
             } else {
                 data[field.name as keyof T] = value
             }

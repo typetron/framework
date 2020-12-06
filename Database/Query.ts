@@ -44,11 +44,11 @@ export class Query<T = {}> {
         return new this.statementType(this.components)
     }
 
-    static table<T = {[key: string]: SqlValue}>(table: string) {
+    static table<T = {}>(table: string): Query<T> {
         return (new this as Query<T>).table(table)
     }
 
-    static from<T = {[key: string]: SqlValue}>(table: string) {
+    static from<T = {}>(table: string) {
         return Query.table<T>(table)
     }
 

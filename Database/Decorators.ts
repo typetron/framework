@@ -1,4 +1,4 @@
-import { ChildObject, KeysOfType } from '../Support'
+import { ChildObject, Constructor, KeysOfType } from '../Support'
 import { Entity } from './Entity'
 import {
     BelongsTo,
@@ -46,11 +46,12 @@ export class EntityMetadata<T extends Entity> extends EntityOptions<T> {
 }
 
 export function Options<T extends Entity>(options: EntityOptions<T> = {}) {
-    return (entity: typeof Entity) => {
-        const metadata = EntityMetadata.get(entity.prototype)
-        options.table = options.table || entity.name.toLowerCase()
+    return (entity: object) => {
+        const entityClass = entity as unknown as EntityConstructor<T>
+        const metadata = EntityMetadata.get(entityClass.prototype)
+        options.table = options.table || entityClass.name.toLowerCase()
         Object.assign(metadata, options)
-        Reflect.defineMetadata(EntityMetadataKey, metadata, entity.prototype)
+        Reflect.defineMetadata(EntityMetadataKey, metadata, entityClass.prototype)
     }
 }
 
@@ -61,46 +62,46 @@ function setField<T extends Entity>(entity: T, field: ColumnField<T>) {
 }
 
 export function Column<T extends Entity>(column?: string) {
-    return function (entity: T, name: string) {
+    return function (entity: object, name: string) {
         const type = Reflect.getMetadata('design:type', entity, name)
         const field = new ColumnField(entity.constructor as EntityConstructor<T>, name, () => type, column || name)
-        setField(entity, field)
+        setField(entity as T, field)
     }
 }
 
 export function JSONColumn<T extends Entity>(column?: string) {
-    return function (entity: T, name: string) {
+    return function (entity: object, name: string) {
         const field = new JSONField(entity.constructor as EntityConstructor<T>, name, () => String, column || name)
-        setField(entity, field)
+        setField(entity as T, field)
     }
 }
 
 export function Enum<T extends Entity>(...values: string[]) {
-    return function (entity: T, name: string) {
+    return function (entity: object, name: string) {
     }
 }
 
 export function PrimaryColumn<T extends Entity>(column?: string) {
-    return function (entity: T, name: string) {
+    return function (entity: object, name: string) {
         const type = Reflect.getMetadata('design:type', entity, name)
         const field = new PrimaryField(entity.constructor as EntityConstructor<T>, name, () => type, column || name)
-        setField(entity, field)
+        setField(entity as T, field)
     }
 }
 
 export function CreatedAt<T extends Entity>(column?: string) {
-    return function (entity: T, name: string) {
-        Column(column)(entity, name)
-        const entityMetadata = EntityMetadata.get(entity)
+    return function (entity: object, name: string) {
+        Column(column)(entity as T, name)
+        const entityMetadata = EntityMetadata.get(entity as T)
         entityMetadata.createdAtColumn = column || name
         Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
     }
 }
 
 export function UpdatedAt<T extends Entity>(column?: string) {
-    return function (entity: T, name: string) {
-        Column(column)(entity, name)
-        const entityMetadata = EntityMetadata.get(entity)
+    return function (entity: object, name: string) {
+        Column(column)(entity as T, name)
+        const entityMetadata = EntityMetadata.get(entity as T)
         entityMetadata.updatedAtColumn = column || name
         Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
     }
@@ -110,7 +111,7 @@ type RelationshipsList = typeof BelongsTo | typeof HasOne | typeof HasMany | typ
 const entityOptionsCache = new Map<Entity, Record<string, object>>()
 
 export function Relation<T extends Entity, R extends Entity>(
-    type: () => EntityConstructor<R>,
+    type: () => Constructor<R>,
     // tslint:disable-next-line:no-any
     // inverseBy: KeysOfType<Omit<R, keyof Entity>, Entity | HasOne<any> | BelongsTo<any> | HasMany<any> | BelongsToMany<any>>,
     // tslint:disable-next-line:no-any
@@ -119,12 +120,12 @@ export function Relation<T extends Entity, R extends Entity>(
     inverseBy: KeysOfType<ChildObject<R, Entity>, BaseRelationship<T>>,
     // options: Partial<RelationshipOptions> = {}
 ) {
-    return function (entity: T, property: string) {
-        let entityMetadata = EntityMetadata.get(entity)
+    return function (entity: object, property: string) {
+        let entityMetadata = EntityMetadata.get(entity as T)
         const fieldClass = Reflect.getMetadata('design:type', entity, property) as RelationshipsList
         const entityClass = entity.constructor as EntityConstructor<T>
 
-        const options = entityOptionsCache.get(entity) || {}
+        const options = entityOptionsCache.get(entity as T) || {}
         // @ts-ignore
         entityMetadata = fieldClass.relationship(entityMetadata, entityClass, property, type, inverseBy as string, options[property])
         Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
@@ -132,9 +133,9 @@ export function Relation<T extends Entity, R extends Entity>(
 }
 
 export function BelongsToManyOptions<T extends Entity>(options: BelongsToManyFieldOptions) {
-    return function (entity: T, property: string) {
-        const entityOptions = entityOptionsCache.get(entity) || {}
+    return function (entity: object, property: string) {
+        const entityOptions = entityOptionsCache.get(entity as T) || {}
         entityOptions[property] = options
-        entityOptionsCache.set(entity, entityOptions)
+        entityOptionsCache.set(entity as T, entityOptions)
     }
 }

@@ -7,6 +7,7 @@ export type EntityObject<T extends Entity> = ChildObject<{
     [P in keyof T]: T[P] extends BaseRelationship<infer U> ? U : T[P]
 }, Entity>;
 export type EntityConstructor<T extends Entity> = typeof Entity & Constructor<T>;
+// export type EntityConstructor<T extends Entity> = {[key in keyof typeof Entity]: (typeof Entity)[key]} & Constructor<T>;
 export type DotNotationProperties<T> = string;
 
 export * from './Query'

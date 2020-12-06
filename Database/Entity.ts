@@ -1,12 +1,13 @@
 import { EntityProxyHandler } from './EntityProxyHandler'
 import { EntityQuery } from './EntityQuery'
-import { ChildObject, KeysOfType } from '../Support'
+import { ChildObject, KeysOfType } from '@Typetron/Support'
 import { EntityMetadata, EntityMetadataKey, ID } from './Decorators'
 import { EntityNotFoundError } from './EntityNotFoundError'
 import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseField } from './Fields'
 import { Boolean as BooleanType, Direction, Operator, WhereFunction, WhereValue } from './Types'
-import { DotNotationProperties, EntityConstructor, EntityKeys, EntityObject, Query } from './index'
+import { DotNotationProperties, EntityConstructor, EntityKeys, EntityObject } from './index'
 import { BaseRelationship } from './ORM/BaseRelationship'
+import { Query } from '@Typetron/Database'
 
 export abstract class Entity {
 
@@ -191,7 +192,7 @@ export abstract class Entity {
         return this
     }
 
-    newQuery(): EntityQuery<this> {
+    newQuery() {
         return this.static.newQuery()
     }
 
