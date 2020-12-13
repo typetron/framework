@@ -1,7 +1,7 @@
 import { MetadataKey } from '../Support/Metadata'
 import { Abstract, Type } from '../Support'
 import { MiddlewareInterface } from './Middleware'
-import { Http } from '../Http'
+import { Http } from '../Web'
 import { Guard } from './Guard'
 
 export class RouteMetadata {

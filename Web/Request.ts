@@ -57,15 +57,15 @@ export class Request {
                 const files: Record<string, File | File[]> = {}
 
                 Object.keys(formidableFiles).forEach(key => {
-                    let formidableFile = formidableFiles[key] as FormidableFile | FormidableFile[]
-                    const fieldName = key.replace('[', '').replace(']', '') // this is a 'formidable' bug
-                    if (key.includes('[') && !(formidableFile instanceof Array)) {
-                        formidableFile = [formidableFile]
-                    }
+                    const formidableFile = formidableFiles[key] as FormidableFile | FormidableFile[]
+                    // const fieldName = key.replace('[', '').replace(']', '') // this is a 'formidable' bug
+                    // if (key.includes('[') && !(formidableFile instanceof Array)) {
+                    //     formidableFile = [formidableFile]
+                    // }
                     if (formidableFile instanceof Array) {
-                        files[fieldName] = formidableFile.map(item => this.formidableToFile(item, form.uploadDir))
+                        files[key] = formidableFile.map(item => this.formidableToFile(item, form.uploadDir))
                     } else {
-                        files[fieldName] = this.formidableToFile(formidableFile, form.uploadDir)
+                        files[key] = this.formidableToFile(formidableFile, form.uploadDir)
                     }
                 })
                 resolve([content, files])

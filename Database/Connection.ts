@@ -110,7 +110,7 @@ export class Connection {
                 if (error) {
                     return reject(error)
                 }
-                resolve()
+                resolve(undefined)
             })
         })
     }

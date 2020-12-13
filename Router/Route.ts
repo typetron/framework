@@ -1,6 +1,6 @@
 import { Container } from '../Container'
 import { Abstract, Constructor, Type } from '../Support'
-import { Request, Response } from '../Http'
+import { Request, Response } from '../Web'
 import { MiddlewareInterface } from './Middleware'
 import { ControllerMetadata } from './Metadata'
 import { Guard } from './Guard'

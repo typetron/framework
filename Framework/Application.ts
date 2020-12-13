@@ -7,7 +7,7 @@ import { FormResolver } from './Resolvers/FormResolver'
 import { EntityResolver } from './Resolvers/EntityResolver'
 import { RootDir } from './RootDir'
 import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware'
-import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Http'
+import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Web'
 import { Storage } from '../Storage'
 import { AuthResolver } from './Resolvers/AuthResolver'
 

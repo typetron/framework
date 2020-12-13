@@ -1,6 +1,6 @@
 import { Constructor } from '../../Support'
 import { Entity, EntityConstructor } from '../../Database'
-import { Request } from '../../Http'
+import { Request } from '../../Web'
 import { BaseResolver, Container, InjectableMetadata, Scope } from '../../Container'
 
 export class EntityResolver extends BaseResolver {

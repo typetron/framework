@@ -15,5 +15,6 @@ export * from './Entity'
 export * from './Decorators'
 export * from './Expression'
 export * from './Schema'
+export * from './Fields'
 export * from './Connection'
 

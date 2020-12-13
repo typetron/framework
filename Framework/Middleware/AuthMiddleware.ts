@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '../../Container'
 import { MiddlewareInterface, RequestHandler } from '../../Router'
-import { Http, HttpError, Request } from '../../Http'
+import { Http, HttpError, Request } from '@Typetron/Web'
 import * as jwt from 'jsonwebtoken'
 import { Auth } from '../Auth'
 

@@ -1,6 +1,5 @@
-// noinspection TypeScriptPreferShortImport
 import '../Support/Math'
-import { Handler, Http, Request } from '../Http'
+import { Handler, Http, Request } from '../Web'
 import { IncomingHttpHeaders } from 'http'
 import { Container } from '../Container'
 import { Application } from '../Framework'
@@ -9,9 +8,9 @@ import { Auth } from '../Framework/Auth'
 
 export abstract class TestCase {
     app: Container
-    userId: number
+    userId?: number
 
-    abstract async bootstrapApp(): Promise<void>;
+    abstract bootstrapApp(): Promise<void>;
 
     async before() {
         await this.bootstrapApp()

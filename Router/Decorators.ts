@@ -1,7 +1,7 @@
 import { App } from '../Framework'
 import { Router } from './Router'
 import { Abstract, Constructor, Type } from '../Support'
-import { Http, Request } from '../Http'
+import { Http, Request } from '../Web'
 import { MiddlewareInterface } from './Middleware'
 import { ControllerMetadata, RouteMetadata } from './Metadata'
 import { Guard } from './Guard'

@@ -7,7 +7,7 @@ import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseField } 
 import { Boolean as BooleanType, Direction, Operator, WhereFunction, WhereValue } from './Types'
 import { DotNotationProperties, EntityConstructor, EntityKeys, EntityObject } from './index'
 import { BaseRelationship } from './ORM/BaseRelationship'
-import { Query } from '@Typetron/Database'
+import { Query } from './Query'
 
 export abstract class Entity {
 

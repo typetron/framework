@@ -1,7 +1,7 @@
 import { BaseResolver, ClassResolver, Container, InjectableMetadata, Scope } from '../../Container'
 import { Constructor } from '../../Support'
 import { Form, FormFields } from '../../Forms'
-import { Http, HttpError, Request } from '../../Http'
+import { Http, HttpError, Request } from '../../Web'
 
 export class FormResolver extends BaseResolver {
 

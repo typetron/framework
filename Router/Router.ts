@@ -1,6 +1,6 @@
 import { Container, Inject } from '../Container'
 import { Storage } from '../Storage'
-import { Http, Request, Response } from '../Http'
+import { Http, Request, Response } from '../Web'
 import { Abstract, Constructor, Type } from '../Support'
 import { MiddlewareInterface, RequestHandler } from './Middleware'
 import { Route } from './Route'

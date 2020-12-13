@@ -74,7 +74,7 @@ export class Storage {
         })
     }
 
-    async makeDirectory(directory: string) {
+    async makeDirectory(directory: string): Promise<void> {
         return new Promise((resolve, reject) => {
             fileSystem.mkdir(directory, {recursive: true}, error => {
                 if (error) {
@@ -85,7 +85,7 @@ export class Storage {
         })
     }
 
-    async delete(filePath: string) {
+    async delete(filePath: string): Promise<void> {
         return new Promise(async (resolve, reject) => {
             if (!await this.exists(filePath)) {
                 resolve()

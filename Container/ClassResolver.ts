@@ -25,7 +25,7 @@ export class ClassResolver extends BaseResolver {
 
         const metadata = InjectableMetadata.get(abstract)
         let asyncDependencies = 0
-        let resolve: (value?: T | PromiseLike<T>) => void
+        let resolve: (value: T | PromiseLike<T>) => void
         let reject: (reason?: unknown) => void
         for (const dependency in metadata.dependencies) {
             if (!metadata.dependencies.hasOwnProperty(dependency)) {

@@ -13,7 +13,7 @@
 		"declarationMap": true,
 		//		"noUnusedLocals": true,
 		//		"noUnusedParameters": true,
-		//		"outDir": "./dist",
+		"outDir": "./dist",
 		"moduleResolution": "node",
 		"lib": [
 			"esnext"

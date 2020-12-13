@@ -80,9 +80,9 @@ export abstract class RelationshipField<T extends Entity, R extends Entity> exte
 
     abstract matchCounts(entities: T[], counts: T[]): T[];
 
-    abstract async getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void): Promise<R[]>;
+    abstract getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void): Promise<R[]>;
 
-    abstract async getRelatedCount(relatedEntities: R[]): Promise<T[]>;
+    abstract getRelatedCount(relatedEntities: R[]): Promise<T[]>;
 }
 
 export abstract class InverseRelationship<T extends Entity, R extends Entity> extends InverseField<T> {
@@ -105,9 +105,9 @@ export abstract class InverseRelationship<T extends Entity, R extends Entity> ex
 
     abstract matchCounts(entities: T[], counts: T[]): T[];
 
-    abstract async getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void): Promise<R[]>;
+    abstract getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void): Promise<R[]>;
 
-    abstract async getRelatedCount(relatedEntities: R[]): Promise<T[]>;
+    abstract getRelatedCount(relatedEntities: R[]): Promise<T[]>;
 
 }
 
