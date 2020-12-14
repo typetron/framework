@@ -56,7 +56,11 @@ export abstract class Entity {
         value: Query | WhereValue[] | T[K][],
         boolean?: BooleanType
     ): EntityQuery<T> {
-        return this.newQuery().whereIn(column, value, boolean)
+        const columnMetadata = {
+            ...this.metadata.columns,
+            ...this.metadata.relationships
+        }[column as string]
+        return this.newQuery().whereIn(columnMetadata.column, value, boolean)
     }
 
     static whereNotIn<T extends Entity, K extends EntityKeys<T>>(
@@ -64,7 +68,11 @@ export abstract class Entity {
         column: EntityKeys<T>,
         value: Query | WhereFunction | WhereValue[] | T[K][]
     ): EntityQuery<T> {
-        return this.newQuery().whereNotIn(column, value)
+        const columnMetadata = {
+            ...this.metadata.columns,
+            ...this.metadata.relationships
+        }[column as string]
+        return this.newQuery().whereNotIn(columnMetadata.column, value)
     }
 
     static whereLike<T extends Entity, K extends EntityKeys<T>>(
@@ -73,7 +81,11 @@ export abstract class Entity {
         value?: WhereValue | T[K],
         boolean?: BooleanType
     ): EntityQuery<T> {
-        return this.newQuery().whereLike(column, value as WhereValue, boolean)
+        const columnMetadata = {
+            ...this.metadata.columns,
+            ...this.metadata.relationships
+        }[column as string]
+        return this.newQuery().whereLike(columnMetadata.column, value as WhereValue, boolean)
     }
 
     static async first<T extends Entity, K extends EntityKeys<T>>(
