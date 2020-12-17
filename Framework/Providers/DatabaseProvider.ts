@@ -16,12 +16,12 @@ export class DatabaseProvider extends Provider {
         if (this.databaseConfig.database) {
             Query.connection = new Connection(this.databaseConfig.database)
             if (this.databaseConfig.synchronizeSchema) {
-                await this.getEntities(Query.connection)
+                await this.synchronize(Query.connection)
             }
         }
     }
 
-    private async getEntities(connection: Connection) {
+    private async synchronize(connection: Connection) {
         const entityFiles = await this.storage.files(this.databaseConfig.entities, true)
         const entitiesImports: Record<string, typeof Entity>[] = await Promise.all(
             entityFiles.map(file => import(file.path))
