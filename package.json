@@ -2,7 +2,7 @@
 	"name": "@typetron/framework",
 	"description": "Modern Node.js framework for modern apps written in Typescript",
 	"license": "MIT",
-	"version": "0.0.15",
+	"version": "0.0.16",
 	"author": {
 		"email": "ionel@typetron.org",
 		"name": "Ionel Lupu"
