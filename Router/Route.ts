@@ -100,7 +100,7 @@ export class Route {
         return parameters.mapAsync(async (parameter, index) => {
             const newValueFunction = overrides[index]
             if (newValueFunction) {
-                return newValueFunction.call(undefined, container.get(Request))
+                return await newValueFunction.call(undefined, container.get(Request), container)
             }
             if (parameter.name === 'String') {
                 return routeParameters[parameterIndex++]

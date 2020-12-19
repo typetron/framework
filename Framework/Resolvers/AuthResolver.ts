@@ -9,8 +9,7 @@ export class AuthResolver extends BaseResolver {
     // }
 
     async resolve<T>(abstract: Symbol, parameters: object[]): Promise<T> {
-        const auth = this.container.get(Auth)
-        return await auth.user() as unknown as T
+        return await this.container.get(Auth).user() as unknown as T
     }
 
     // // tslint:disable-next-line:no-any
