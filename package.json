@@ -8,10 +8,12 @@
 		"name": "Ionel Lupu"
 	},
 	"scripts": {
-		"build": "tsc --watch",
+		"build": "tsc",
 		"test": "mocha",
 		"lint": "eslint",
-		"test:watch": "mocha --watch"
+		"test:watch": "mocha --watch",
+		"preversion": "npm test",
+		"version": "npm run build"
 	},
 	"dependencies": {
 		"bcrypt": "^5.0.0",
