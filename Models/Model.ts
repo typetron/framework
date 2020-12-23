@@ -2,14 +2,23 @@ import { Constructor } from '../Support'
 import { ModelField, ModelMetadataKey, ModelTypeInterface } from './index'
 
 export class Model {
-    static from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Q): T {
+    static async from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Promise<Iterable<Q>>): Promise<T[]>;
+    static async from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Promise<Q>): Promise<T>;
+    static from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Iterable<Q>): T[];
+    static from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Q): T;
+    static from<T extends Model, Q extends object>(
+        this: Constructor<T> & typeof Model,
+        entity: Q | Iterable<Q> | Promise<Q | Iterable<Q>>
+    ): T | T[] | Promise<T | T[]> {
+        if (entity instanceof Promise) {
+            return entity.then(value => this.from(value))
+        }
+        if (Symbol.iterator in Object(entity)) {
+            return Array.from(entity as Iterable<Q>).map(item => this.from<T, Q>(item))
+        }
         const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, this) || {}
 
-        return this.transform<T, Q>(fields, entity)
-    }
-
-    static fromMany<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entities: Iterable<Q>): T[] {
-        return Array.from(entities).map(entity => this.from<T, Q>(entity))
+        return this.transform<T, Q>(fields, entity as Q)
     }
 
     protected static transform<T, Q extends object>(fields: Record<string, ModelField>, entity: Q): T {

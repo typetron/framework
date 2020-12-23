@@ -18,7 +18,7 @@ export class Request {
         public query: ParsedUrlQuery = {},
         public cookies: Parameters = {},
         public headers: IncomingHttpHeaders = {},
-        public content: string | object | undefined = {},
+        public body: string | object | undefined = {},
         public files: Record<string, File | File[]> = {},
     ) {}
 
@@ -111,12 +111,12 @@ export class Request {
 
         if (request.method !== Http.Method.GET) {
             if (this.isMultipartRequest(message)) {
-                [request.content, request.files] = await Request.loadMultipartContent(message)
+                [request.body, request.files] = await Request.loadMultipartContent(message)
             } else {
-                request.content = await Request.loadSimpleContent(message)
+                request.body = await Request.loadSimpleContent(message)
             }
 
-            const overwrittenMethod = (request.content as Record<string, string | undefined>)[Request.methodField] || ''
+            const overwrittenMethod = (request.body as Record<string, string | undefined>)[Request.methodField] || ''
             request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method
         }
 

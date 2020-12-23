@@ -68,8 +68,8 @@ export abstract class TestCase {
 
         const response = await this.app.get(Handler).handle(this.app as Application, request)
 
-        if (response.content instanceof Buffer) {
-            response.content = response.content.toString()
+        if (response.body instanceof Buffer) {
+            response.body = response.body.toString()
         }
 
         return response

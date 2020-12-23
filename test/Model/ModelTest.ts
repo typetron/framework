@@ -65,7 +65,7 @@ class ModelTest {
             id: 1,
             name: 'John'
         }
-        expect(UserModel.fromMany([user, user])).to.deep.equal([expectedUser, expectedUser])
+        expect(UserModel.from([user, user])).to.deep.equal([expectedUser, expectedUser])
     }
 
     @test
@@ -147,4 +147,37 @@ class ModelTest {
         expect(UserModel.from(user)).to.deep.equal(expectedUser)
     }
 
+    @test
+    async 'Handles a promise with an object'() {
+        class UserModel extends Model {
+            @Field()
+            name: string
+        }
+
+        const user = {
+            name: 'John',
+            age: 20
+        }
+        const expectedUser = {
+            name: 'John'
+        }
+        expect(await UserModel.from(Promise.resolve(user))).to.deep.equal(expectedUser)
+    }
+
+    @test
+    async 'Handles a promise with a list of objects'() {
+        class UserModel extends Model {
+            @Field()
+            name: string
+        }
+
+        const user = {
+            name: 'John',
+            age: 20
+        }
+        const expectedUser = {
+            name: 'John'
+        }
+        expect(await UserModel.from(Promise.resolve([user, user]))).to.deep.equal([expectedUser, expectedUser])
+    }
 }

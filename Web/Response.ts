@@ -5,7 +5,7 @@ export class Response<T = string | object | undefined> {
 
     constructor(
         public status: Http.Status = Http.Status.OK,
-        public content?: T,
+        public body?: T,
         public headers: OutgoingHttpHeaders = {
             'Content-Type': 'text/html'
         }
@@ -25,7 +25,7 @@ export class Response<T = string | object | undefined> {
     }
 
     static send(response: Response, serverResponse: ServerResponse) {
-        let content = response.content ?? ''
+        let content = response.body ?? ''
         let rawContent: String | Buffer | undefined
         if (!(content instanceof Buffer)) {
             if (content instanceof Object) {

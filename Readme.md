@@ -83,11 +83,11 @@ export class User extends Entity {
     @Column()
     name: string;
 
-    @HasMany(() => Post, 'author')
-    posts: Post[] = [];
+    @Relation(() => Post, 'author')
+    posts: HasMany<Post> = [];
 
-    @BelongsTo(() => Group, 'users')
-    group: Group;
+    @Relation(() => Group, 'users')
+    group: BelongsTo<Group>;
 }
 ```
 ##### Forms
@@ -112,12 +112,16 @@ export class UserForm extends Form {
 ``` 
 
 ##### Controllers
+
 ```ts
 @Controller('users')
 export class UserController {
 
     @Inject()
-    auth: Auth;
+    storage: Storage;
+    
+    @AuthUser()
+    user: User;
 
     @Get('me')
     async me() {
@@ -127,15 +131,15 @@ export class UserController {
     @Get()
     async browse() {
         const users = await User.get();
-        return UserModel.from(users);
+        return UserModel.fromMany(users);
     }
 
-    @Get('{user}')
+    @Get(':User')
     read(user: User) {
         return user;
     }
 
-    @Put('{user}')
+    @Put(':User')
     update(user: User, userForm: UserForm) {
         return user.fill(userForm).save();
     }

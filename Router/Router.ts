@@ -13,6 +13,7 @@ export class Router {
     app: Container
 
     routes: Route[] = []
+    cachedRoutes: Record<string, number> = {}
 
     middleware: Abstract<MiddlewareInterface>[] = []
 
@@ -27,6 +28,9 @@ export class Router {
     ): Route {
         uri = this.prepareUri(uri)
         const route = new Route(uri, method, controller, action, name, parametersTypes, middleware)
+        if (this.routes.find(item => item.uri === uri && item.method === method)) {
+            throw new Error(`There is already a route with the same url: '${uri}'`)
+        }
         this.routes.push(route)
         return route
     }
@@ -37,10 +41,11 @@ export class Router {
         container.forceSet('Request', request)
 
         let stack: RequestHandler = async () => {
-            const route = this.getRoute(request.uri || '', request.method)
-            if (!route) {
-                throw new RouteNotFoundError([request.method, request.uri].join(' '))
-            }
+            const routeIndex = this.cachedRoutes[`${request.method} ${request.uri}`]
+                || this.findRouteIndex(request.uri || '', request.method)
+
+            const route = this.routes[routeIndex]
+
             container.forceSet('Route', route)
             request.parameters = route.parameters
 
@@ -77,12 +82,20 @@ export class Router {
             .forEach(file => require(file.path))
     }
 
-    private getRoute(uri: string, method: string): Route | undefined {
+    private findRouteIndex(uri: string, method: string): number {
         uri = this.prepareUri(uri)
 
-        return this.routes.find(route => {
+        const index = this.routes.findIndex(route => {
             return route.method === method && route.matches(uri)
         })
+
+        if (index !== -1) {
+            this.cachedRoutes[`${method} ${uri}`] = index
+            return index
+        }
+
+        throw new RouteNotFoundError(`[${method}] ${uri}`)
+
         // return this.routes
         //     .where('uri', uri)
         //     .findWhere('method', method) || this.routeNotFound(uri);
