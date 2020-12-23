@@ -13,7 +13,7 @@ export class Router {
     app: Container
 
     routes: Route[] = []
-    cachedRoutes: Record<string, number> = {}
+    cachedRoutes = new Map<string, number>()
 
     middleware: Abstract<MiddlewareInterface>[] = []
 
@@ -41,7 +41,7 @@ export class Router {
         container.forceSet('Request', request)
 
         let stack: RequestHandler = async () => {
-            const routeIndex = this.cachedRoutes[`${request.method} ${request.uri}`]
+            const routeIndex = this.cachedRoutes.get(`${request.method} ${request.uri}`)
                 || this.findRouteIndex(request.uri || '', request.method)
 
             const route = this.routes[routeIndex]
@@ -90,7 +90,7 @@ export class Router {
         })
 
         if (index !== -1) {
-            this.cachedRoutes[`${method} ${uri}`] = index
+            this.cachedRoutes.set(`${method} ${uri}`, index)
             return index
         }
 
