@@ -42,7 +42,7 @@ export class Router {
 
         let stack: RequestHandler = async () => {
             const routeIndex = this.cachedRoutes.get(`${request.method} ${request.uri}`)
-                || this.findRouteIndex(request.uri || '', request.method)
+                ?? this.findRouteIndex(request.uri ?? '', request.method)
 
             const route = this.routes[routeIndex]
 
@@ -89,12 +89,13 @@ export class Router {
             return route.method === method && route.matches(uri)
         })
 
-        if (index !== -1) {
-            this.cachedRoutes.set(`${method} ${uri}`, index)
-            return index
+        if (index === -1) {
+            throw new RouteNotFoundError(`[${method}] ${uri}`)
         }
 
-        throw new RouteNotFoundError(`[${method}] ${uri}`)
+        this.cachedRoutes.set(`${method} ${uri}`, index)
+
+        return index
 
         // return this.routes
         //     .where('uri', uri)

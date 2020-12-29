@@ -23,7 +23,7 @@ export class DatabaseProvider extends Provider {
 
     private async synchronize(connection: Connection) {
         const entityFiles = await this.storage.files(this.databaseConfig.entities, true)
-        const entitiesImports: Record<string, typeof Entity>[] = await Promise.all(
+        const entitiesImports: (typeof Entity)[] = await Promise.all(
             entityFiles.map(file => import(file.path))
         )
         const entitiesMetadata = entitiesImports.flatMap(item => Object.values(item).pluck('metadata'))

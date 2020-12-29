@@ -266,6 +266,10 @@ export abstract class Entity {
         await this.newQuery().where(this.getPrimaryKey(), this[this.getPrimaryKey()]).delete()
     }
 
+    static async delete<T extends Entity>(this: EntityConstructor<T>, ...ids: ID[]) {
+        await this.newQuery().whereIn(this.getPrimaryKey(), ids).delete()
+    }
+
     getPrimaryKey<T extends Entity>(this: T): EntityKeys<T> {
         return this.static.getPrimaryKey()
     }
@@ -281,16 +285,22 @@ export abstract class Entity {
     }
 
     private updateTimestamps() {
-        if (this.metadata.createdAtColumn && !this[this.metadata.createdAtColumn as keyof this]) {
-            this.fill({
-                [this.metadata.createdAtColumn]: new Date(),
-            })
+        const metadata = this.metadata
+        const columnsToFill: Record<keyof this, unknown> = {} as Record<keyof this, unknown>
+
+        const createdAtValue = metadata.createdAtColumn ? this[metadata.createdAtColumn as keyof this] as unknown as Date : undefined
+        if (metadata.createdAtColumn && !createdAtValue) {
+            columnsToFill[metadata.createdAtColumn as keyof this] = new Date()
         }
-        if (this.metadata.updatedAtColumn) {
-            this.fill({
-                [this.metadata.updatedAtColumn]: new Date(),
-            })
+
+        const updatedAtValue = metadata.updatedAtColumn ? this[metadata.updatedAtColumn as keyof this] as unknown as Date : undefined
+        if (metadata.updatedAtColumn &&
+            (!updatedAtValue || updatedAtValue?.getTime() === new Date(this.original[metadata.updatedAtColumn]).getTime())
+        ) {
+            columnsToFill[metadata.updatedAtColumn as keyof this] = new Date()
         }
+
+        this.fill(columnsToFill)
     }
 
     private convertValueByType(value: unknown, property: ColumnField<Entity> | InverseField<Entity>) {
@@ -300,7 +310,7 @@ export abstract class Entity {
 }
 
 const types: Map<Function, Function> = new Map()
-types.set(Date, (value: number) => value ? new Date(value) : value)
+types.set(Date, (value: number | string) => value ? new Date(value) : value)
 types.set(String, (value: object) => value ? String(value) : value)
 types.set(Boolean, (value: string) => Boolean(value))
 

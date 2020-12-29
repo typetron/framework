@@ -44,7 +44,7 @@ export class Storage {
         })
     }
 
-    async put(file: File, directory: string = '', name?: string | number): Promise<File> {
+    async save(file: File, directory: string = '', name?: string | number): Promise<File> {
         const newPath = path.join(directory, file.name)
         if (!file.name) {
             file.name = String(name || this.generateFileName() + '.' + file.extension)

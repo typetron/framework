@@ -43,8 +43,9 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
                 directories = [directories]
             }
             for (const directory of directories) {
-                let realPath = directory + request.uri
-                let extension = this.getExtension(request.uri)
+                const uri = path ? request.uri.replace(`/${path}`, '') : request.uri
+                let realPath = directory + uri
+                let extension = this.getExtension(uri)
                 if (!extension) {
                     realPath += '/index.html'
                     extension = 'html'
