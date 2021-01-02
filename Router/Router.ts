@@ -41,8 +41,9 @@ export class Router {
         container.forceSet('Request', request)
 
         let stack: RequestHandler = async () => {
-            const routeIndex = this.cachedRoutes[`${request.method} ${request.uri}`]
-                ?? this.findRouteIndex(request.uri ?? '', request.method)
+            // const routeIndex = this.cachedRoutes[`${request.method} ${request.uri}`]
+            //     ?? this.findRouteIndex(request.uri ?? '', request.method)
+            const routeIndex = this.findRouteIndex(request.uri ?? '', request.method)
 
             const route = this.routes[routeIndex]
 

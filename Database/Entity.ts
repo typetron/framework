@@ -6,8 +6,8 @@ import { EntityNotFoundError } from './EntityNotFoundError'
 import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseField } from './Fields'
 import { Boolean as BooleanType, Direction, Operator, WhereFunction, WhereValue } from './Types'
 import { DotNotationProperties, EntityConstructor, EntityKeys, EntityObject } from './index'
-import { BaseRelationship } from './ORM/BaseRelationship'
 import { Query } from './Query'
+import { List } from './List'
 
 export abstract class Entity {
 
@@ -169,7 +169,7 @@ export abstract class Entity {
         return this.newQuery().with(...relations)
     }
 
-    static withCount<T extends Entity, K extends KeysOfType<T, BaseRelationship<Entity>>>(this: EntityConstructor<T>, ...relations: K[]) {
+    static withCount<T extends Entity, K extends KeysOfType<T, List<Entity>>>(this: EntityConstructor<T>, ...relations: K[]) {
         return this.newQuery().withCount(...relations)
     }
 
@@ -209,7 +209,7 @@ export abstract class Entity {
         return this
     }
 
-    async loadCount<K extends KeysOfType<this, BaseRelationship<Entity>>>(...relations: K[]) {
+    async loadCount<K extends KeysOfType<this, List<Entity>>>(...relations: K[]) {
         await this.newQuery().withCount<K>(...relations).eagerLoadRelationshipsCounts([this])
 
         return this

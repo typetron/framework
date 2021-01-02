@@ -3,7 +3,7 @@ import { Entity } from './Entity'
 import { DotNotationProperties, EntityConstructor, EntityObject, Expression } from './index'
 import { KeysOfType } from '../Support'
 import { BelongsTo, BelongsToMany, HasMany, HasOne } from './Fields'
-import { BaseRelationship } from './ORM/BaseRelationship'
+import { List } from './List'
 
 export class EntityQuery<T extends Entity> extends Query<T> {
 
@@ -107,7 +107,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         return this
     }
 
-    withCount<K extends KeysOfType<T, BaseRelationship<Entity>>>(...relations: K[]) {
+    withCount<K extends KeysOfType<T, List<Entity>>>(...relations: K[]) {
         this.eagerLoadCount = this.eagerLoadCount.concat(relations as string[])
 
         return this
