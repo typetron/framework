@@ -142,6 +142,17 @@ export abstract class Entity {
         return (new this).save(data)
     }
 
+    static async insert<T extends Entity>(this: EntityConstructor<T>, data: (ChildObject<T, Entity> | {})[]): Promise<void> {
+        const dataToSave = data.map(piece => {
+            const instance = new this()
+            return instance.getDataToSave(piece)
+        })
+
+        const query = this.newQuery()
+
+        await query.insert(dataToSave)
+    }
+
     static async get<T extends Entity>(this: EntityConstructor<T>, ...columns: EntityKeys<T> []): Promise<T[]> {
         return this.newQuery().get(...columns)
     }
@@ -209,17 +220,7 @@ export abstract class Entity {
     }
 
     async save(data: ChildObject<this, Entity> | {} = {}): Promise<this> {
-        this.fill(data)
-
-        this.updateTimestamps()
-
-        // tslint:disable-next-line:no-any
-        const dataToSave: Record<string, any> = {}
-
-        // TODO diff the values so we don't update every value from the entity
-        Object.values({...this.metadata.columns, ...this.metadata.relationships}).forEach(field => {
-            dataToSave[field.column] = field.value(this, field.property)
-        })
+        const dataToSave = this.getDataToSave(data)
 
         const query = this.newQuery()
 
@@ -234,6 +235,21 @@ export abstract class Entity {
         }
 
         return this
+    }
+
+    private getDataToSave(data: ChildObject<this, Entity> | {}) {
+        this.fill(data)
+
+        this.updateTimestamps()
+
+        // tslint:disable-next-line:no-any
+        const dataToSave: Record<string, any> = {}
+
+        // TODO diff the values so we don't update every value from the entity
+        Object.values({...this.metadata.columns, ...this.metadata.relationships}).forEach(field => {
+            dataToSave[field.column] = field.value(this, field.property)
+        })
+        return dataToSave
     }
 
     fill(data: ChildObject<this, Entity> | {}) {

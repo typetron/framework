@@ -29,7 +29,7 @@ export class Router {
         uri = this.prepareUri(uri)
         const route = new Route(uri, method, controller, action, name, parametersTypes, middleware)
         if (this.routes.find(item => item.uri === uri && item.method === method)) {
-            throw new Error(`There is already a route with the same url: '${uri}'`)
+            throw new Error(`There is already a route with the same url: [${method}] '${uri}'`)
         }
         this.routes.push(route)
         return route

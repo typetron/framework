@@ -99,7 +99,7 @@ class EntityTest {
     // }
     //
     @test
-    async insert() {
+    async save() {
         const data = {email: 'tester', name: 'Tester'}
         const user = new User().fill(data)
 
@@ -109,6 +109,16 @@ class EntityTest {
         expect(user.id).to.be.equal(1)
         expect(user.createdAt).to.be.an.instanceOf(Date)
         expect(user.updatedAt).to.be.an.instanceOf(Date)
+    }
+
+    @test
+    async insertMany() {
+        await User.insert([this.joe, this.doe])
+
+        const users = await User.get()
+        expect(users).to.have.length(2)
+        this.expectToContain(users[0], this.joe)
+        this.expectToContain(users[1], this.doe)
     }
 
     // @test

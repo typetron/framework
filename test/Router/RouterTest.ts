@@ -15,8 +15,8 @@ class RouterTest {
         const router = new Router()
         router.add('', Http.Method.GET, Controller, 'index', 'index')
 
-        expect(() => router.add('', Http.Method.POST, Controller, 'index', 'index')).to.not.throw(`There is already a route with the same url: ''`)
-        expect(() => router.add('', Http.Method.GET, Controller, 'index', 'index')).to.throw(`There is already a route with the same url: ''`)
+        expect(() => router.add('', Http.Method.POST, Controller, 'index', 'index')).to.not.throw(`There is already a route with the same url: [GET] ''`)
+        expect(() => router.add('', Http.Method.GET, Controller, 'index', 'index')).to.throw(`There is already a route with the same url: [GET] ''`)
     }
 
     // @test

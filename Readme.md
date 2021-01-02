@@ -9,7 +9,7 @@ Most of the core packages it uses were built from scratch in order to preserve t
 _(check [this tutorial](https://typetron.org/tutorials/blog) on how to get started with Typetron)_
 
 ### Prerequisites
-- [NodeJs >=10 LTS](https://nodejs.org)
+- [NodeJs >=12 LTS](https://nodejs.org)
 
 #### Features
 Typetron aims to have all the features necessary for building any web app without the need for you
@@ -130,8 +130,7 @@ export class UserController {
 
     @Get()
     async browse() {
-        const users = await User.get();
-        return UserModel.fromMany(users);
+        return UserModel.from(User.get());
     }
 
     @Get(':User')

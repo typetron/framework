@@ -1,5 +1,3 @@
-import * as path from 'path'
-
 export class File {
     directory?: string
     content?: string | Buffer
@@ -15,7 +13,7 @@ export class File {
     }
 
     get path() {
-        return path.join(this.directory || '', this.name)
+        return `${this.directory || ''}/${this.name}`
     }
 
     guessExtension() {
