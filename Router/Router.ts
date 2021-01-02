@@ -94,7 +94,7 @@ export class Router {
             throw new RouteNotFoundError(`[${method}] ${uri}`)
         }
 
-        this.cachedRoutes[`${method} ${uri}`] = index
+        // this.cachedRoutes[`${method} ${uri}`] = index
 
         return index
 
