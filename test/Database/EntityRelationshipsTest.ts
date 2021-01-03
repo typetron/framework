@@ -343,7 +343,7 @@ class EntityRelationshipsTest {
         const manager = await Role.create({name: 'manager'})
         await user.roles.attach(admin.id, manager.id)
 
-        await user.roles.sync(admin.id, developer.id)
+        await user.roles.sync(admin.id, developer)
         expect(user.roles).to.have.length(2)
         expect(user.roles[0]).to.have.property('id', admin.id)
         expect(user.roles[1]).to.have.property('id', developer.id)
@@ -396,7 +396,7 @@ class EntityRelationshipsTest {
         const developer = await Role.create(this.developer)
         await user.roles.attach(admin.id)
 
-        expect(await user.roles.has(admin.id)).to.be.equal(true)
+        expect(await user.roles.has(admin)).to.be.equal(true)
         expect(await user.roles.has(developer.id)).to.be.equal(false)
     }
 

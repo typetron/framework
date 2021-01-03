@@ -290,6 +290,10 @@ export abstract class Entity {
         return this.static.getPrimaryKey()
     }
 
+    getPrimaryKeyValue<T extends Entity>(this: T): ID {
+        return this[this.static.getPrimaryKey()]
+    }
+
     toJSON() {
         return Object.keys({...this.metadata.columns, ...this.metadata.allRelationships})
             .reduce((obj, key) => {

@@ -1,5 +1,5 @@
 import { Entity } from './Entity'
-import { EntityConstructor, EntityKeys, EntityMetadata, EntityObject, Expression, Query } from './index'
+import { EntityConstructor, EntityKeys, EntityMetadata, EntityObject, Expression, ID, Query } from './index'
 import { List } from './List'
 import { BaseRelationship } from './ORM/BaseRelationship'
 
@@ -449,14 +449,14 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         return value
     }
 
-    async attach(items: number[], parent: T) {
+    async attach(items: (R | number)[], parent: T) {
         const entities: R[] = []
         // tslint:disable-next-line:no-any
         const dataToInsert: Record<string, any>[] = []
         for await (const item of items) {
             dataToInsert.push({
-                [this.getRelatedForeignKey()]: item,
-                [this.getParentForeignKey()]: parent[parent.getPrimaryKey()],
+                [this.getRelatedForeignKey()]: item instanceof Entity ? item.getPrimaryKeyValue() : item,
+                [this.getParentForeignKey()]: parent.getPrimaryKeyValue(),
             })
             entities.push(this.related.new({[this.related.getPrimaryKey()]: item}))
         }
@@ -689,7 +689,10 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         return metadata
     }
 
-    async has(item: number) {
+    async has(item: T | ID) {
+        if (item instanceof Entity) {
+            item = item.getPrimaryKeyValue()
+        }
         const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`
         const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`
 
@@ -701,34 +704,43 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         )
     }
 
-    async attach(...items: number[]) {
+    async attach(...items: (T | ID)[]) {
+        const ids = items.map(item => item instanceof Entity ? item.getPrimaryKeyValue() : item)
         if (!this.parent.exists) {
             await this.parent.save()
         }
-        this.items = this.items.concat(await this.relationship.attach(items, this.parent))
+        for await (const id of ids) {
+            if (!(await this.has(id))) {
+                this.items = this.items.concat(await this.relationship.attach(items, this.parent))
+            }
+        }
 
         return this.items
     }
 
-    async detach(...items: number[]) {
+    async detach(...items: (T | ID)[]) {
+        const ids = items.map(item => item instanceof Entity ? item.getPrimaryKeyValue() : item)
+
         const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`
         const parentForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getParentForeignKey()}`
 
         await Query.table(this.relationship.getPivotTable())
             .where(parentForeignKey, this.parent[this.parent.getPrimaryKey()] as unknown as string)
-            .whereIn(relatedForeignKey, items)
+            .whereIn(relatedForeignKey, ids)
             .delete()
 
-        this.items = this.items.filter(item => !items.includes(item[item.getPrimaryKey()] as unknown as number))
+        this.items = this.items.filter(item => !ids.includes(item.getPrimaryKeyValue()))
     }
 
-    async toggle(...items: number[]) {
+    async toggle(...items: (T | ID)[]) {
+        const ids = items.map(item => item instanceof Entity ? item.getPrimaryKeyValue() : item)
+
         const attachedEntities = await this.relationship.getQuery(this.parent).get()
-        const entitiesToDetach = items.filter(item =>
-            attachedEntities.some(entity => entity[entity.getPrimaryKey()] as unknown as number === item)
+        const entitiesToDetach = ids.filter(item =>
+            attachedEntities.some(entity => entity.getPrimaryKeyValue() === item)
         )
-        const entitiesToAttach = items.filter(item =>
-            attachedEntities.some(entity => entity[entity.getPrimaryKey()] as unknown as number !== item)
+        const entitiesToAttach = ids.filter(item =>
+            attachedEntities.some(entity => entity.getPrimaryKeyValue() as unknown as number !== item)
         )
         await this.attach(...entitiesToAttach)
         await this.detach(...entitiesToDetach)
@@ -746,11 +758,13 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         this.items = []
     }
 
-    async sync(...items: number[]) {
+    async sync(...items: (T | ID)[]) {
+        const ids = items.map(item => item instanceof Entity ? item.getPrimaryKeyValue() : item)
+
         const existingItems = await this.get()
         const primaryKey = this.relationship.type().getPrimaryKey()
-        const itemsToRemove = existingItems.filter(item => !items.includes(item[primaryKey])).pluck(primaryKey)
-        const restOfItemsToAdd = items.filter(item => !existingItems.findWhere(primaryKey, item as unknown as T[keyof T]))
+        const itemsToRemove = existingItems.filter(item => !ids.includes(item[primaryKey])).pluck(primaryKey)
+        const restOfItemsToAdd = ids.filter(item => !existingItems.findWhere(primaryKey, item as unknown as T[keyof T]))
         await this.detach(...itemsToRemove)
         await this.attach(...restOfItemsToAdd)
     }

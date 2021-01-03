@@ -101,7 +101,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         relations = relations.filter(Boolean)
         if (relations.length) {
             // tslint:disable-next-line:no-any
-            this.eagerLoad = this.eagerLoad.concat(relations as string | [string, (query: EntityQuery<any>) => void])
+            this.eagerLoad = this.eagerLoad.concat(relations as string | [string, (query: EntityQuery<any>) => void]).unique()
         }
 
         return this
