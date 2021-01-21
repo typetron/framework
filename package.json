@@ -15,6 +15,9 @@
 		"preversion": "npm test",
 		"version": "npm run build"
 	},
+	"engines": {
+		"node": ">= 12.13.0"
+	},
 	"dependencies": {
 		"bcrypt": "^5.0.0",
 		"formidable": "^1.2.2",

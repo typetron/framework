@@ -1,10 +1,10 @@
-import { Column, Entity, PrimaryColumn } from '../../Database'
-import { Authenticable } from './Authenticable'
+import { Column, Entity, ID, PrimaryColumn } from '../../Database'
+import { Authenticatable } from './Authenticatable'
 
-export class User extends Entity implements Authenticable {
+export class User extends Entity implements Authenticatable {
 
     @PrimaryColumn()
-    id: number
+    id: ID
 
     @Column()
     email: string

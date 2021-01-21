@@ -4,7 +4,7 @@ import { Request } from '@Typetron/Web'
 
 export * from './Auth'
 export * from './User'
-export * from './Authenticable'
+export * from './Authenticatable'
 
 export const AuthUserIdentifier = Symbol('framework.auth:userIdentifier')
 

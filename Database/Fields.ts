@@ -449,7 +449,7 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         return value
     }
 
-    async attach(items: (R | number)[], parent: T) {
+    async add(items: (R | number)[], parent: T) {
         const entities: R[] = []
         // tslint:disable-next-line:no-any
         const dataToInsert: Record<string, any>[] = []
@@ -704,21 +704,21 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         )
     }
 
-    async attach(...items: (T | ID)[]) {
+    async add(...items: (T | ID)[]) {
         const ids = items.map(item => item instanceof Entity ? item.getPrimaryKeyValue() : item)
         if (!this.parent.exists) {
             await this.parent.save()
         }
         for await (const id of ids) {
             if (!(await this.has(id))) {
-                this.items = this.items.concat(await this.relationship.attach(items, this.parent))
+                this.items = this.items.concat(await this.relationship.add(items, this.parent))
             }
         }
 
         return this.items
     }
 
-    async detach(...items: (T | ID)[]) {
+    async remove(...items: (T | ID)[]) {
         const ids = items.map(item => item instanceof Entity ? item.getPrimaryKeyValue() : item)
 
         const relatedForeignKey = `${this.relationship.getPivotTable()}.${this.relationship.getRelatedForeignKey()}`
@@ -742,8 +742,8 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         const entitiesToAttach = ids.filter(item =>
             attachedEntities.some(entity => entity.getPrimaryKeyValue() as unknown as number !== item)
         )
-        await this.attach(...entitiesToAttach)
-        await this.detach(...entitiesToDetach)
+        await this.add(...entitiesToAttach)
+        await this.remove(...entitiesToDetach)
     }
 
     async clear() {
@@ -765,7 +765,7 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         const primaryKey = this.relationship.type().getPrimaryKey()
         const itemsToRemove = existingItems.filter(item => !ids.includes(item[primaryKey])).pluck(primaryKey)
         const restOfItemsToAdd = ids.filter(item => !existingItems.findWhere(primaryKey, item as unknown as T[keyof T]))
-        await this.detach(...itemsToRemove)
-        await this.attach(...restOfItemsToAdd)
+        await this.remove(...itemsToRemove)
+        await this.add(...restOfItemsToAdd)
     }
 }

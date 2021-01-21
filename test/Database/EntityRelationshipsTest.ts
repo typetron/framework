@@ -283,7 +283,7 @@ class EntityRelationshipsTest {
 
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
-        await user.roles.attach(admin.id, developer.id)
+        await user.roles.add(admin.id, developer.id)
 
         expect(user.roles).to.have.length(2)
         expect(user.roles[0].id).to.be.equal(admin.id)
@@ -296,7 +296,7 @@ class EntityRelationshipsTest {
 
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
-        await user.roles.attach(admin.id, developer.id)
+        await user.roles.add(admin.id, developer.id)
 
         const sameUser = await User.with('roles').where('id', user.id).first() as User
 
@@ -316,7 +316,7 @@ class EntityRelationshipsTest {
         const user = new User(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
-        await user.roles.attach(admin.id, developer.id)
+        await user.roles.add(admin.id, developer.id)
 
         expect(user.roles).to.have.length(2)
         await user.roles.clear()
@@ -324,14 +324,14 @@ class EntityRelationshipsTest {
     }
 
     @test
-    async belongsToManyDetach() {
+    async belongsToManyRemove() {
         const user = new User(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
-        await user.roles.attach(admin.id, developer.id)
+        await user.roles.add(admin.id, developer.id)
 
         expect(user.roles).to.have.length(2)
-        await user.roles.detach(admin.id)
+        await user.roles.remove(admin.id)
         expect(user.roles).to.have.length(1)
     }
 
@@ -341,7 +341,7 @@ class EntityRelationshipsTest {
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
         const manager = await Role.create({name: 'manager'})
-        await user.roles.attach(admin.id, manager.id)
+        await user.roles.add(admin.id, manager.id)
 
         await user.roles.sync(admin.id, developer)
         expect(user.roles).to.have.length(2)
@@ -353,7 +353,7 @@ class EntityRelationshipsTest {
     async belongsToManyToggle() {
         const user = new User(this.joe)
         const admin = await Role.create(this.admin)
-        await user.roles.attach(admin.id)
+        await user.roles.add(admin.id)
 
         expect(user.roles).to.have.length(1)
         expect(user.roles[0]).to.have.property('id', admin.id)
@@ -369,7 +369,7 @@ class EntityRelationshipsTest {
     async belongsToManyLoad() {
         const user = new User(this.joe)
         const admin = await Role.create(this.admin)
-        await user.roles.attach(admin.id)
+        await user.roles.add(admin.id)
 
         const sameUser = await User.first() as User
         await sameUser.load('roles')
@@ -381,7 +381,7 @@ class EntityRelationshipsTest {
         const user = new User(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
-        await user.roles.attach(admin.id, developer.id)
+        await user.roles.add(admin.id, developer.id)
 
         expect(user.roles).to.have.length(2)
         const roles = await user.roles.where('name', developer.name).get()
@@ -394,7 +394,7 @@ class EntityRelationshipsTest {
         const user = new User(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
-        await user.roles.attach(admin.id)
+        await user.roles.add(admin.id)
 
         expect(await user.roles.has(admin)).to.be.equal(true)
         expect(await user.roles.has(developer.id)).to.be.equal(false)
