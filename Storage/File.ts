@@ -2,7 +2,7 @@ import * as path from 'path'
 
 export class File {
     directory?: string
-    content?: string | Buffer
+    // content?: string | Buffer
     originalName?: string
 
     saved = false

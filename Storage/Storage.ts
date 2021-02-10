@@ -53,24 +53,24 @@ export class Storage {
             await this.makeDirectory(directory)
         }
         return new Promise(async (resolve, reject) => {
-            if (file.content) {
-                fileSystem.writeFile(newPath, file.content, error => {
-                    if (error) {
-                        return reject(error)
-                    }
-                    resolve(file)
-                })
+            // if (file.content) {
+            //     fileSystem.writeFile(newPath, file.content, error => {
+            //         if (error) {
+            //             return reject(error)
+            //         }
+            //         resolve(file)
+            //     })
+            // } else {
+            if (file.saved) {
+                fileSystem.createReadStream(file.path)
+                    .pipe(fileSystem.createWriteStream(newPath))
+                    .on('finish', () => {
+                        resolve(file)
+                    })
             } else {
-                if (file.saved) {
-                    fileSystem.createReadStream(file.path)
-                        .pipe(fileSystem.createWriteStream(newPath))
-                        .on('finish', () => {
-                            resolve(file)
-                        })
-                } else {
-                    reject(new Error('Could not save file'))
-                }
+                reject(new Error('Could not save file'))
             }
+            // }
         })
     }
 
