@@ -1,11 +1,11 @@
-import {Database} from 'sqlite3';
-import {Query} from './Query';
+import { Database } from 'sqlite3'
+import { Query } from './Query'
 
 export class Connection {
-    db: Database;
+    db: Database
 
     constructor(databaseFilePath: string) {
-        this.db = new Database(databaseFilePath);
+        this.db = new Database(databaseFilePath)
 
         // const con = mysql.createConnection({
         //     host: 'localhost',
@@ -27,91 +27,91 @@ export class Connection {
 
     async run(query: Query): Promise<void> {
         return new Promise((resolve, reject) => {
-            const stack = Error('SQLite').stack;
+            const stack = Error('SQLite').stack
             this.db.run(query.toSql(), query.getBindings(), error => {
                 if (error) {
-                    const e = new Error(`${error} in '${query.toSql()}' `);
-                    e.stack = stack;
-                    return reject(e);
+                    const e = new Error(`${error} in '${query.toSql()}' `)
+                    e.stack = stack
+                    return reject(e)
                 }
 
-                resolve();
-            });
-        });
+                resolve()
+            })
+        })
     }
 
     async lastInsertedId(): Promise<number | string> {
         return new Promise<number | string>(((resolve, reject) => {
-            const stack = Error('SQLite').stack;
+            const stack = Error('SQLite').stack
             this.db.get('SELECT last_insert_rowid() as id;', [], (error, lastInsert) => {
                 if (error) {
-                    const e = new Error(`${error} when trying to get the last inserted id`);
-                    e.stack = stack;
-                    return reject(e);
+                    const e = new Error(`${error} when trying to get the last inserted id`)
+                    e.stack = stack
+                    return reject(e)
                 }
-                resolve(lastInsert.id);
-            });
-        }));
+                resolve(lastInsert.id)
+            })
+        }))
     }
 
     async get<T>(query: Query<T>): Promise<T[]> {
         return new Promise<T[]>((resolve, reject) => {
-            const stack = Error('SQLite').stack;
+            const stack = Error('SQLite').stack
             this.db.all(query.toSql(), query.getBindings(), (error, rows) => {
                 if (error) {
-                    const e = new Error(`${error} in '${query.toSql()}' `);
-                    e.stack = stack;
-                    return reject(e);
+                    const e = new Error(`${error} in '${query.toSql()}' `)
+                    e.stack = stack
+                    return reject(e)
                 }
-                resolve(rows);
-            });
-        });
+                resolve(rows)
+            })
+        })
     }
 
     async first<T>(query: Query<T>): Promise<T> {
         return new Promise<T>((resolve, reject) => {
-            const stack = Error('SQLite').stack;
+            const stack = Error('SQLite').stack
             this.db.get(query.toSql(), query.getBindings(), (error, row) => {
                 if (error) {
-                    const e = new Error(`${error} in '${query.toSql()}' `);
-                    e.stack = stack;
-                    return reject(e);
+                    const e = new Error(`${error} in '${query.toSql()}' `)
+                    e.stack = stack
+                    return reject(e)
                 }
-                resolve(row);
-            });
-        });
+                resolve(row)
+            })
+        })
     }
 
     async getRaw(rawQuery: string) {
         return new Promise((resolve, reject) => {
             this.db.all(rawQuery, (error, rows) => {
                 if (error) {
-                    return reject(error);
+                    return reject(error)
                 }
-                resolve(rows);
-            });
-        });
+                resolve(rows)
+            })
+        })
     }
 
     async firstRaw(rawQuery: string) {
         return new Promise((resolve, reject) => {
             this.db.get(rawQuery, (error, rows) => {
                 if (error) {
-                    return reject(error);
+                    return reject(error)
                 }
-                resolve(rows);
-            });
-        });
+                resolve(rows)
+            })
+        })
     }
 
     async runRaw(rawQuery: string) {
         return new Promise((resolve, reject) => {
             this.db.run(rawQuery, error => {
                 if (error) {
-                    return reject(error);
+                    return reject(error)
                 }
-                resolve();
-            });
-        });
+                resolve(undefined)
+            })
+        })
     }
 }

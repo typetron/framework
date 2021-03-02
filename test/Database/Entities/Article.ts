@@ -1,20 +1,21 @@
-import { Column, Entity, BelongsTo, PrimaryColumn } from '../../../Database';
-import { User } from './User';
+import { Column, Entity, PrimaryColumn, Relation } from '../../../Database'
+import { User } from './User'
+import { BelongsTo } from '../../../Database/Fields'
 
 export class Article extends Entity {
 
     @PrimaryColumn()
-    id: number;
+    id: number
 
     @Column()
-    title: string;
+    title: string
 
     @Column()
-    content: string;
+    content: string
 
     @Column()
-    published = false;
+    published: boolean = false
 
-    @BelongsTo(() => User, 'articles')
-    author: User;
+    @Relation(() => User, 'articles')
+    author: BelongsTo<User>
 }

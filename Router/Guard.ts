@@ -1,10 +1,10 @@
-import { Http, HttpError } from '../Http';
+import { Http, HttpError } from '../Web'
 
 export abstract class Guard {
     // tslint:disable-next-line:no-any
-    abstract async condition(...args: any[]): Promise<boolean>;
+    abstract condition(...args: any[]): Promise<boolean>;
 
     onFail(): void {
-        throw new HttpError('Unauthorized', Http.Status.UNAUTHORIZED);
+        throw new HttpError('Unauthorized', Http.Status.UNAUTHORIZED)
     }
 }

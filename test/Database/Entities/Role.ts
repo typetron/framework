@@ -1,15 +1,15 @@
-import { BelongToMany, Column, Entity, PrimaryColumn } from '../../../Database';
-import { User } from './User';
-import { List } from '../../../Database/List';
+import { Column, Entity, PrimaryColumn, Relation } from '../../../Database'
+import { User } from './User'
+import { BelongsToMany } from '../../../Database/Fields'
 
 export class Role extends Entity {
 
     @PrimaryColumn()
-    id: number;
+    id: number
 
     @Column()
-    name: string;
+    name: string
 
-    @BelongToMany(() => User, 'roles')
-    users: List<User>;
+    @Relation(() => User, 'roles')
+    users: BelongsToMany<User>
 }

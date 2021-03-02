@@ -1,6 +1,6 @@
-import { suite, test } from '@testdeck/mocha';
-import { Email } from '../../Validation/Rules/Email';
-import { expect } from 'chai';
+import { suite, test } from '@testdeck/mocha'
+import { Email } from '../../Validation'
+import { expect } from 'chai'
 
 @suite
 class RulesTest {
@@ -21,7 +21,7 @@ class RulesTest {
             'email@example.museum',
             'email@example.co.jp',
             'firstname-lastname@example.com',
-        ];
+        ]
         const invalidEmails = [
             'plainaddress',
             '#@%^%#$@#$@#.com',
@@ -38,17 +38,17 @@ class RulesTest {
             'email@-example.com',
             'email@example..com',
             'Abc..123@example.com',
-        ];
+        ]
 
-        const rule = new Email();
+        const rule = new Email()
 
         validEmails.forEach(email => {
-            expect(rule.passes('', email), email).to.be.true;
-        });
+            expect(rule.passes('', email), email).to.be.equal(true)
+        })
 
         invalidEmails.forEach(email => {
-            expect(rule.passes('', email), email).to.be.false;
-        });
+            expect(rule.passes('', email), email).to.be.equal(false)
+        })
     }
 
 }

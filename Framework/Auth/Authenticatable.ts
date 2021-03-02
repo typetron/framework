@@ -1,4 +1,4 @@
-export interface Authenticable {
+export interface Authenticatable {
     getId(): number | string;
 
     getUsername(): string;

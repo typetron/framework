@@ -1,27 +1,41 @@
-import { Constructor } from '../Support';
-import { ModelField, ModelMetadataKey, ModelTypeInterface } from './index';
+import { Constructor } from '../Support'
+import { ModelField, ModelMetadataKey, ModelTypeInterface } from './index'
 
 export class Model {
-    static from<T extends Model, Q extends T>(this: Constructor<T> & typeof Model, entities: Q): T {
-        const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, this) || {};
+    static async from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Promise<Iterable<Q>>): Promise<T[]>;
+    static async from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Promise<Q>): Promise<T>;
+    static from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Iterable<Q>): T[];
+    static from<T extends Model, Q extends object>(this: Constructor<T> & typeof Model, entity: Q): T;
+    static from<T extends Model, Q extends object>(
+        this: Constructor<T> & typeof Model,
+        entity: Q | Iterable<Q> | Promise<Q | Iterable<Q>>
+    ): T | T[] | Promise<T | T[]> {
+        if (entity instanceof Promise) {
+            return entity.then(value => this.from(value))
+        }
+        if (Symbol.iterator in Object(entity)) {
+            return Array.from(entity as Iterable<Q>).map(item => this.from<T, Q>(item))
+        }
+        const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, this) || {}
 
-        return Model.transform<T, Q>(fields, entities);
+        return this.transform<T, Q>(fields, entity as Q)
     }
 
-    static fromMany<T extends Model, Q extends T>(this: Constructor<T> & typeof Model, entities: Q[]): T[] {
-        return entities.map(entity => this.from<T, Q>(entity));
-    }
-
-    private static transform<T, Q extends Model>(fields: Record<string, ModelField>, entity: T): Q {
-        const data: Partial<Record<keyof Q, T[keyof T]>> = {};
+    protected static transform<T, Q extends object>(fields: Record<string, ModelField>, entity: Q): T {
+        const data: Partial<Record<keyof T, Q[keyof Q]>> = new this
         Object.values(fields).forEach(field => {
-            const value = entity[field.name as keyof T];
-            if (field.type instanceof ModelTypeInterface && value) {
-                data[field.name as keyof Q] = field.type.transform(value) as T[keyof T];
-            } else {
-                data[field.name as keyof Q] = value;
+            if (!entity || !entity.hasOwnProperty(field.name)) {
+                return
             }
-        });
-        return data as Q;
+            const value = entity[field.name as keyof Q]
+            if (field.type instanceof ModelTypeInterface && value) {
+                // @ts-ignore
+                const jsonValue = value['toJSON' as keyof object] ? value?.toJSON() : value
+                data[field.name as keyof T] = jsonValue ? field.type.transform(jsonValue) as Q[keyof Q] : undefined
+            } else {
+                data[field.name as keyof T] = value
+            }
+        })
+        return data as T
     }
 }

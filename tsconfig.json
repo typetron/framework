@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "es2018",
+		"target": "es2017",
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
 		"sourceMap": true,
@@ -9,10 +9,11 @@
 		"strict": true,
 		"strictPropertyInitialization": false,
 		"forceConsistentCasingInFileNames": true,
+		//		"useDefineForClassFields": true, // TODO some tests fail when using this flag
 		"declarationMap": true,
 		//		"noUnusedLocals": true,
 		//		"noUnusedParameters": true,
-		//		"outDir": "./dist",
+		"outDir": "./dist",
 		"moduleResolution": "node",
 		"lib": [
 			"esnext"
@@ -20,7 +21,13 @@
 		"types": [
 			"reflect-metadata",
 			"@types/node"
-		]
+		],
+		"baseUrl": ".",
+		"paths": {
+			"@Typetron/*": [
+				"*"
+			]
+		}
 	},
 	"include": [
 		"./**/*.ts"

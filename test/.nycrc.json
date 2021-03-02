@@ -8,7 +8,8 @@
 		"./**/*.ts"
 	],
 	"exclude": [
-		"./test/**/*.ts"
+		"./test/**/*.ts",
+		"./dist/**"
 	],
 	"reporter": [
 		"lcov",

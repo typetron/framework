@@ -1,13 +1,13 @@
-import { Statement } from './Statement';
+import { Statement } from './Statement'
 
 export class Delete extends Statement {
 
     get wheres() {
         if (!this.components.wheres.length) {
-            return '';
+            return ''
         }
 
-        return `WHERE ` + super.wheres;
+        return `WHERE ` + super.wheres
     }
 
     toSql() {
@@ -16,7 +16,7 @@ export class Delete extends Statement {
             ${this.wheres}
             ${this.orders}
             ${this.limit}
-        `;
+        `
     }
 
 }

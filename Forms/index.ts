@@ -1,3 +1,3 @@
-export * from './Form';
-export * from './Decorators';
-export * from './FormFields';
+export * from './Form'
+export * from './Decorators'
+export * from './FormFields'

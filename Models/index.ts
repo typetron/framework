@@ -1,7 +1,7 @@
-import { Model } from './Model';
-import { Constructor } from '../Support';
+import { Model } from './Model'
+import { Constructor } from '../Support'
 
-export const ModelMetadataKey = 'model:fields';
+export const ModelMetadataKey = 'model:fields'
 
 export interface ModelField {
     name: string;
@@ -10,14 +10,14 @@ export interface ModelField {
 
 export function Field(name?: string) {
     return function (target: Object, property: string) {
-        const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, target.constructor) || {};
-        let type = Reflect.getMetadata('design:type', target, property);
+        const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, target.constructor) || {}
+        let type = Reflect.getMetadata('design:type', target, property)
         if (type.prototype instanceof Model) {
-            type = new ModelType(type);
+            type = new ModelType(type)
         }
-        fields[property] = fields[property] || {name: name || property, type} as ModelField;
-        Reflect.defineMetadata(ModelMetadataKey, fields, target.constructor);
-    };
+        fields[property] = fields[property] || {name: name || property, type} as ModelField
+        Reflect.defineMetadata(ModelMetadataKey, fields, target.constructor)
+    }
 }
 
 export abstract class ModelTypeInterface<T extends Model, Q = T> {
@@ -29,26 +29,26 @@ export abstract class ModelTypeInterface<T extends Model, Q = T> {
 export class ModelType<T extends Model> extends ModelTypeInterface<T> {
 
     transform(value: T) {
-        return this.model.from(value);
+        return this.model.from(value)
     }
 }
 
 export class ArrayType<T extends Model> extends ModelTypeInterface<T, T[]> {
     transform(value: T[]) {
-        return value.map(item => {
-            return this.model.from(item);
-        });
+        return Array.from(value).map(item => {
+            return this.model.from(item)
+        })
     }
 }
 
-export function FieldTypeMany(type: typeof Model) {
+export function FieldMany(type: typeof Model) {
     return function (target: Object, property: string) {
-        const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, target.constructor) || {};
-        const field = fields[property] || {name: property, type: new ArrayType(type)} as ModelField;
-        field.type = new ArrayType(type);
-        fields[property] = field;
-        Reflect.defineMetadata(ModelMetadataKey, fields, target.constructor);
-    };
+        const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, target.constructor) || {}
+        const field = fields[property] || {name: property, type: new ArrayType(type)} as ModelField
+        field.type = new ArrayType(type)
+        fields[property] = field
+        Reflect.defineMetadata(ModelMetadataKey, fields, target.constructor)
+    }
 }
 
-export * from './Model';
+export * from './Model'

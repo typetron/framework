@@ -77,9 +77,9 @@ export namespace Http {
     }
 }
 
-export * from './ErrorHandler';
-export * from './ErrorHandlerInterface';
-export * from './Handler';
-export * from './Request';
-export * from './Response';
-export * from './Errors/HttpError';
+export * from './ErrorHandler'
+export * from './ErrorHandlerInterface'
+export * from './Handler'
+export * from './Request'
+export * from './Response'
+export * from './Errors/HttpError'

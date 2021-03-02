@@ -1,35 +1,35 @@
-import { Column, CreatedAt, Entity, BelongToMany, Meta, HasMany, HasOne, UpdatedAt, PrimaryColumn } from '../../../Database';
-import { Article } from './Article';
-import { Role } from './Role';
-import { Profile } from './Profile';
-import { List } from '../../../Database/List';
+import { Column, CreatedAt, Entity, Options, PrimaryColumn, Relation, UpdatedAt } from '../../../Database'
+import { Article } from './Article'
+import { Role } from './Role'
+import { Profile } from './Profile'
+import { BelongsToMany, HasMany, HasOne } from '../../../Database/Fields'
 
-@Meta({
+@Options({
     table: 'users'
 })
 export class User extends Entity {
 
     @PrimaryColumn()
-    id: number;
+    id: number
 
     @Column()
-    name: string;
+    name: string
 
     @Column()
-    email: string;
+    email: string
 
-    @HasOne(() => Profile, 'user')
-    profile: Profile;
+    @Relation(() => Profile, 'user')
+    profile: HasOne<Profile>
 
-    @HasMany(() => Article, 'author')
-    articles: List<Article>;
+    @Relation(() => Article, 'author')
+    articles: HasMany<Article>
 
-    @BelongToMany(() => Role, 'users')
-    roles: List<Role>;
+    @Relation(() => Role, 'users')
+    roles: BelongsToMany<Role>
 
     @CreatedAt()
-    createdAt: Date;
+    createdAt: Date
 
     @UpdatedAt()
-    updatedAt: Date;
+    updatedAt: Date
 }

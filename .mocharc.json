@@ -1,10 +1,13 @@
 {
-    "extension": ["ts"],
-    "require": [
-        "ts-node/register",
-        "source-map-support/register",
-        "reflect-metadata",
-        "./Support"
-    ],
-    "spec": "test/**/*Test.ts"
+	"extension": [
+		"ts"
+	],
+	"require": [
+		"tsconfig-paths/register",
+		"ts-node/register",
+		"source-map-support/register",
+		"reflect-metadata",
+		"./Support"
+	],
+	"spec": "test/**/*Test.ts"
 }

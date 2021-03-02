@@ -1,17 +1,17 @@
-import { Inject, Injectable } from '../../Container';
-import { MiddlewareInterface, RequestHandler, RouteNotFoundError } from '../../Router';
-import { Storage } from '../../Storage';
-import { Http, Request, Response } from '../../Http';
-import { AppConfig } from '../Config';
+import { Inject, Injectable } from '../../Container'
+import { MiddlewareInterface, RequestHandler, RouteNotFoundError } from '../../Router'
+import { Storage } from '../../Storage'
+import { Http, Request, Response } from '../../Web'
+import { AppConfig } from '../Config'
 
 @Injectable()
 export class StaticAssetsMiddleware implements MiddlewareInterface {
 
     @Inject()
-    appConfig: AppConfig;
+    appConfig: AppConfig
 
     @Inject()
-    storage: Storage;
+    storage: Storage
 
     mimeTypes: {[key: string]: string} = {
         'txt': 'text/plain',
@@ -22,55 +22,53 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
         'png': 'image/png',
         'webp': 'image/webp',
         'gif': 'image/gif',
-    };
+    }
 
     async handle(request: Request, next: RequestHandler) {
-        // if (request.headers.accept?.includes('application/json')) {
-        //     return next(request);
-        // }
         try {
-            return await next(request);
+            return await next(request)
         } catch (error) {
             if (request.method === Http.Method.GET && error instanceof RouteNotFoundError) {
-                return this.loadStaticAsset(error, request);
+                return this.loadStaticAsset(error, request)
             }
-            throw error;
+            throw error
         }
     }
 
     async loadStaticAsset(error: RouteNotFoundError, request: Request): Promise<Response> {
-        const assetsDirectories = this.appConfig.staticAssets;
+        const assetsDirectories = this.appConfig.staticAssets
         for (const path in assetsDirectories) {
-            let directories = assetsDirectories[path];
+            let directories = assetsDirectories[path]
             if (typeof directories === 'string') {
-                directories = [directories];
+                directories = [directories]
             }
             for (const directory of directories) {
-                let realPath = directory + request.uri;
-                let extension = this.getExtension(request.uri);
+                const uri = path ? request.uri.replace(`/${path}`, '') : request.uri
+                let realPath = directory + uri
+                let extension = this.getExtension(uri)
                 if (!extension) {
-                    realPath += '/index.html';
-                    extension = 'html';
+                    realPath += '/index.html'
+                    extension = 'html'
                 }
 
                 if (!await this.storage.exists(realPath)) {
-                    continue;
+                    continue
                 }
-                const file = await this.storage.read(realPath);
-                const contentType = this.mimeTypes[extension || 'application/octet-stream'] || this.mimeTypes.txt;
-                return new Response(Http.Status.OK, file, {'Content-type': contentType});
+                const file = await this.storage.read(realPath)
+                const contentType = this.mimeTypes[extension || 'application/octet-stream'] || this.mimeTypes.txt
+                return new Response(Http.Status.OK, file, {'Content-type': contentType})
             }
         }
 
-        throw error;
+        throw error
     }
 
     getExtension(string: string): string | undefined {
-        const parts = string.split('.');
+        const parts = string.split('.')
         if (parts.length === 1) {
-            return undefined;
+            return undefined
         }
-        return parts.pop();
+        return parts.pop()
     }
 }
 

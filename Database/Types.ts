@@ -1,5 +1,5 @@
-import { Query } from './Query';
-import { Expression } from './Expression';
+import { Query } from './Query'
+import { Expression } from './Expression'
 
 export enum Operators {
     '=' = '=',
@@ -12,6 +12,7 @@ export enum Operators {
     'OR' = 'OR',
     'IS' = 'IS',
     'IN' = 'IN',
+    'NOT IN' = 'NOT IN',
     'LIKE' = 'LIKE',
     'IS NOT' = 'IS NOT',
 }
@@ -28,11 +29,11 @@ export type SqlValue = string | number | Date | undefined;
 export type SqlValueMap = {[key: string]: SqlValue};
 
 class JoinClause {
-    type: keyof typeof JoinType;
-    table: string;
-    first: string;
-    operator: Operator;
-    second: string;
+    type: keyof typeof JoinType
+    table: string
+    first: string
+    operator: Operator
+    second: string
 }
 
 export interface BaseComponents {
@@ -80,14 +81,7 @@ export type WhereCondition = {[key: string]: string | number};
 // export type WhereValue = SqlValue | WhereFunction | WhereCondition;
 export type WhereValue = SqlValue;
 
-export class WhereBasic {
-}
-
-export class WhereSubSelect {
-}
-
-export class WhereNested {
-}
+export type Direction = 'ASC' | 'DESC';
 
 interface SqlClause {
     toSql(): string;
@@ -95,70 +89,60 @@ interface SqlClause {
     getValues(): SqlValue[];
 }
 
-export class Where implements SqlClause {
-    constructor(public column: string, public operator: Operator, public value: SqlValue, public boolean: Boolean) {
-    }
+class SqlExpression implements SqlClause {
+    constructor(private sql: string, private values: SqlValue[] = []) {}
 
     toSql() {
-        return `${this.boolean} ${this.column} ${this.operator} ?`;
+        return this.sql
     }
 
     getValues() {
-        return [this.value];
+        return this.values
     }
 }
 
-export class WhereBetween implements SqlClause {
-    constructor(public column: string, public values: [SqlValue, SqlValue], public boolean: Boolean, public not = false) {
-    }
-
-    toSql() {
-        return `${this.boolean} ${this.column} ${this.not ? 'NOT ' : ''}BETWEEN ? AND ?`;
-    }
-
-    getValues() {
-        return this.values;
+export class WhereExpression extends SqlExpression {
+    constructor(public column: string, public expression: SqlExpression, public boolean: Boolean) {
+        super(`${boolean} ${column} ${expression.toSql()}`, expression.getValues())
     }
 }
 
-export class WhereLike implements SqlClause {
-    constructor(public column: string, public value: SqlValue, public boolean: Boolean, public not = false) {
-    }
-
-    toSql() {
-        return `${this.boolean} ${this.column} ${this.not ? 'NOT ' : ''}LIKE ?`;
-    }
-
-    getValues() {
-        return [this.value];
+export class Where extends WhereExpression {
+    constructor(column: string, operator: Operator, value: SqlValue, boolean: Boolean) {
+        super(column, new SqlExpression(`${operator} ?`, [value]), boolean)
     }
 }
 
-export class WhereIn implements SqlClause {
-    constructor(public column: string, public values: SqlValue[], public boolean: Boolean, public not = false) {
-    }
+export class WhereNested {
+}
 
-    toSql() {
-        const values = this.values.map(() => '?').join(', ');
-        return `${this.boolean} ${this.column} ${this.not ? 'NOT ' : ''}IN (${values})`;
-    }
-
-    getValues() {
-        return this.values;
+export class WhereBetween extends WhereExpression {
+    constructor(column: string, values: [SqlValue, SqlValue], boolean: Boolean, not = false) {
+        super(column, new SqlExpression(`${not ? 'NOT ' : ''}BETWEEN ? AND ?`, values), boolean)
     }
 }
 
-export class WhereNull implements SqlClause {
-    constructor(public column: string, public boolean: Boolean, public not = false) {
-    }
-
-    toSql() {
-        return `${this.boolean} ${this.column} IS ${this.not ? 'NOT ' : ''}NULL`;
-    }
-
-    getValues() {
-        return [];
+export class WhereLike extends WhereExpression {
+    constructor(column: string, value: SqlValue, boolean: Boolean, not = false) {
+        super(column, new SqlExpression(`${not ? 'NOT ' : ''}LIKE ?`, [value]), boolean)
     }
 }
 
-export type Direction = 'ASC' | 'DESC';
+export class WhereIn extends WhereExpression {
+    constructor(column: string, values: WhereValue[], boolean: Boolean, not = false) {
+        const value = values.map(() => '?').join(', ')
+        super(column, new SqlExpression(`${not ? 'NOT ' : ''}IN (${value})`, values), boolean)
+    }
+}
+
+export class WhereNull extends WhereExpression {
+    constructor(column: string, boolean: Boolean, not = false) {
+        super(column, new SqlExpression(`IS ${not ? 'NOT ' : ''}NULL`), boolean)
+    }
+}
+
+export class WhereSubSelect extends WhereExpression {
+    constructor(column: string, operator: Operator, public query: Query, boolean: Boolean) {
+        super(column, new SqlExpression(`${operator} (${query.toSql()})`, query.getBindings()), boolean)
+    }
+}

@@ -1,11 +1,11 @@
-import { ChildObject } from '../../Support';
+import { ChildObject } from '../../Support'
 
-export const CONFIG_FILE = 'CONFIG_FILE';
+export const CONFIG_FILE = 'CONFIG_FILE'
 
 export class BaseConfig<T> {
-    constructor(private newValues: ChildObject<T, BaseConfig<T>>) {}
+    constructor(private newValues: Partial<ChildObject<T, BaseConfig<T>>>) {}
 
     applyNewValues() {
-        Object.assign(this, this.newValues);
+        Object.assign(this, this.newValues)
     }
 }

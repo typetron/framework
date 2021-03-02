@@ -1,166 +1,141 @@
-import { KeysOfType } from '../Support';
-import { Entity } from './Entity';
+import { ChildObject, Constructor, KeysOfType } from '../Support'
+import { Entity } from './Entity'
 import {
-    BelongsToField,
+    BelongsTo,
+    BelongsToMany,
     BelongsToManyField,
+    BelongsToManyFieldOptions,
     ColumnField,
+    HasMany,
     HasManyField,
+    HasOne,
     HasOneField,
-    InverseRelationship,
+    JSONField,
     PrimaryField,
-    Relationship
-} from './Fields';
-import { EntityConstructor } from './index';
-import { List } from './List';
+    RelationshipField
+} from './Fields'
+import { EntityConstructor } from './index'
+import { List } from './List'
+import { BaseRelationship } from './ORM/BaseRelationship'
 
-export const EntityMetadataKey = 'framework:entity';
-
-export class EntityOptions<T> {
-    table?: string;
-    touch?: KeysOfType<T, Entity | List<Entity>>[];
-}
-
-export class EntityMetadata<T extends Entity> extends EntityOptions<T> {
-    columns: Record<string, ColumnField<T>> = {};
-    relationships: Record<string, Relationship<T, Entity>> = {};
-    inverseRelationships: Record<string, InverseRelationship<T, Entity>> = {};
-    createdAtColumn?: string;
-    updatedAtColumn?: string;
-
-    get allRelationships() {
-        return {...this.relationships, ...this.inverseRelationships};
-    }
-
-    static get(entity: Entity) {
-        const metadata: EntityMetadata<Entity> = Reflect.getMetadata(EntityMetadataKey, entity) || new this();
-        metadata.table = metadata?.table || entity.constructor.name.toLowerCase();
-        return metadata;
-    }
-}
-
-export function Meta<T extends Entity>(options: EntityOptions<T> = {}) {
-    return (entity: typeof Entity) => {
-        const metadata = EntityMetadata.get(entity.prototype);
-        options.table = options.table || entity.name.toLowerCase();
-        Object.assign(metadata, options);
-        Reflect.defineMetadata(EntityMetadataKey, metadata, entity.prototype);
-    };
-}
-
-function setField(parent: Entity, field: ColumnField<Entity>) {
-    const entityMetadata = EntityMetadata.get(parent);
-    entityMetadata.columns[field.property] = field;
-    Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
-}
-
-function setRelationshipField(parent: Entity, field: Relationship<Entity, Entity>) {
-    const entityMetadata = EntityMetadata.get(parent);
-    entityMetadata.relationships[field.property] = field;
-    Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
-}
-
-function setInverseRelationshipField(parent: Entity, field: InverseRelationship<Entity, Entity>) {
-    const entityMetadata = EntityMetadata.get(parent);
-    entityMetadata.inverseRelationships[field.property] = field;
-    Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
-}
-
-export function Column<T extends Entity>(column?: string) {
-    return function (parent: T, name: string) {
-        const type = Reflect.getMetadata('design:type', parent, name);
-        const field = new ColumnField(parent.constructor as EntityConstructor<T>, name, () => type, column || name);
-        setField(parent, field);
-    };
-}
-
-export function PrimaryColumn<T extends Entity>(column?: string) {
-    return function (parent: T, name: string) {
-        const type = Reflect.getMetadata('design:type', parent, name);
-        const field = new PrimaryField(parent.constructor as EntityConstructor<T>, name, () => type, column || name);
-        setField(parent, field);
-    };
-}
-
-export function CreatedAt<T extends Entity>(column?: string) {
-    return function (parent: T, name: string) {
-        Column(column)(parent, name);
-        const entityMetadata = EntityMetadata.get(parent);
-        entityMetadata.createdAtColumn = column || name;
-        Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
-    };
-}
-
-export function UpdatedAt<T extends Entity>(column?: string) {
-    return function (parent: T, name: string) {
-        Column(column)(parent, name);
-        const entityMetadata = EntityMetadata.get(parent);
-        entityMetadata.updatedAtColumn = column || name;
-        Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
-    };
-}
+export const EntityMetadataKey = 'framework:entity'
 
 export type ID = number;
 
-export function HasOne<T extends Entity, R extends Entity>(
-    type: () => EntityConstructor<R>,
-    inverseBy: KeysOfType<R, Entity>
-) {
-    return function (parent: T, property: string) {
-        const field = new HasOneField(parent.constructor as EntityConstructor<Entity>, property, type, inverseBy as string);
-        setInverseRelationshipField(parent, field);
-    };
+export class EntityOptions<T extends Entity> {
+    table?: string
+    touch?: KeysOfType<T, Entity | List<T, Entity>>[]
 }
 
-export function HasMany<T extends Entity, R extends Entity>(
-    type: () => EntityConstructor<R>,
-    inverseBy: KeysOfType<R, Entity>,
-    column?: string
-) {
-    return function (parent: T, property: string) {
-        const field = new HasManyField(parent.constructor as EntityConstructor<Entity>, property, type, inverseBy as string);
-        setInverseRelationshipField(parent, field);
-    };
+export class EntityMetadata<T extends Entity> extends EntityOptions<T> {
+    columns: Record<string, ColumnField<T>> = {}
+    relationships: Record<string, RelationshipField<T, Entity>> = {}
+    inverseRelationships: Record<string, BelongsToManyField<T, Entity> | HasManyField<T, Entity> | HasOneField<T, Entity>> = {}
+    createdAtColumn?: string
+    updatedAtColumn?: string
+
+    get allRelationships() {
+        return {...this.relationships, ...this.inverseRelationships}
+    }
+
+    static get<T extends Entity>(entity: T) {
+        const metadata: EntityMetadata<T> = Reflect.getMetadata(EntityMetadataKey, entity) || new this()
+        metadata.table = metadata?.table || entity.constructor.name.toLowerCase()
+        return metadata
+    }
 }
 
-export function BelongsTo<T extends Entity, R extends Entity>(
-    type: () => EntityConstructor<R>,
+export function Options<T extends Entity>(options: EntityOptions<T> = {}) {
+    return (entity: object) => {
+        const entityClass = entity as unknown as EntityConstructor<T>
+        const metadata = EntityMetadata.get(entityClass.prototype)
+        options.table = options.table || entityClass.name.toLowerCase()
+        Object.assign(metadata, options)
+        Reflect.defineMetadata(EntityMetadataKey, metadata, entityClass.prototype)
+    }
+}
+
+function setField<T extends Entity>(entity: T, field: ColumnField<T>) {
+    const entityMetadata = EntityMetadata.get(entity)
+    entityMetadata.columns[field.property] = field
+    Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
+}
+
+export function Column<T extends Entity>(column?: string) {
+    return function (entity: object, name: string) {
+        const type = Reflect.getMetadata('design:type', entity, name)
+        const field = new ColumnField(entity.constructor as EntityConstructor<T>, name, () => type, column || name)
+        setField(entity as T, field)
+    }
+}
+
+export function JSONColumn<T extends Entity>(column?: string) {
+    return function (entity: object, name: string) {
+        const field = new JSONField(entity.constructor as EntityConstructor<T>, name, () => String, column || name)
+        setField(entity as T, field)
+    }
+}
+
+export function Enum<T extends Entity>(...values: string[]) {
+    return function (entity: object, name: string) {
+    }
+}
+
+export function PrimaryColumn<T extends Entity>(column?: string) {
+    return function (entity: object, name: string) {
+        const type = Reflect.getMetadata('design:type', entity, name)
+        const field = new PrimaryField(entity.constructor as EntityConstructor<T>, name, () => type, column || name)
+        setField(entity as T, field)
+    }
+}
+
+export function CreatedAt<T extends Entity>(column?: string) {
+    return function (entity: object, name: string) {
+        Column(column)(entity as T, name)
+        const entityMetadata = EntityMetadata.get(entity as T)
+        entityMetadata.createdAtColumn = column || name
+        Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
+    }
+}
+
+export function UpdatedAt<T extends Entity>(column?: string) {
+    return function (entity: object, name: string) {
+        Column(column)(entity as T, name)
+        const entityMetadata = EntityMetadata.get(entity as T)
+        entityMetadata.updatedAtColumn = column || name
+        Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
+    }
+}
+
+type RelationshipsList = typeof BelongsTo | typeof HasOne | typeof HasMany | typeof BelongsToMany;
+const entityOptionsCache = new Map<Entity, Record<string, object>>()
+
+export function Relation<T extends Entity, R extends Entity>(
+    type: () => Constructor<R>,
     // tslint:disable-next-line:no-any
-    inverseBy: KeysOfType<R, Entity | List<any>>,
-    column?: string
-) {
-    return function (parent: T, property: string) {
-        const parentConstructor = parent.constructor as EntityConstructor<T>;
-        column = column || property + (parentConstructor.getPrimaryKey() as string).capitalize();
-        const field = new BelongsToField(parentConstructor, property, type, inverseBy as string, column);
-        setRelationshipField(parent, field);
-        // TODO refactor needed. This is used when setting the value of the relation to an entity instance. It will get
-        // only the foreign key value instead of passing the entire object, which cannot be save in the database.
-        // const entityMetadata = EntityMetadata.get(parent);
-        // entityMetadata.columns[column] = field;
-        // Reflect.defineMetadata(EntityMetadataKey, entityMetadata, parent);
-    };
-}
-
-export function BelongToMany<T extends Entity, R extends Entity>(
-    type: () => EntityConstructor<R>,
+    // inverseBy: KeysOfType<Omit<R, keyof Entity>, Entity | HasOne<any> | BelongsTo<any> | HasMany<any> | BelongsToMany<any>>,
     // tslint:disable-next-line:no-any
-    inverseBy: KeysOfType<R, List<any>>,
-    joinTable?: string,
-    tableColumn?: string,
-    foreignColumn?: string
+    // inverseBy: KeysOfType<R, Entity | HasOne<any> | BelongsTo<any> | HasMany<any> | BelongsToMany<any>>,
+    // tslint:disable-next-line:no-any
+    inverseBy: KeysOfType<ChildObject<R, Entity>, BaseRelationship<T>>,
+    // options: Partial<RelationshipOptions> = {}
 ) {
-    return function (parent: T, name: string) {
-        const parentConstructor = parent.constructor as EntityConstructor<T>;
-        const field = new BelongsToManyField<T, R>(
-            parentConstructor,
-            name,
-            type,
-            inverseBy as string,
-            joinTable,
-            tableColumn,
-            foreignColumn
-        );
-        setInverseRelationshipField(parent, field);
-    };
+    return function (entity: object, property: string) {
+        let entityMetadata = EntityMetadata.get(entity as T)
+        const fieldClass = Reflect.getMetadata('design:type', entity, property) as RelationshipsList
+        const entityClass = entity.constructor as EntityConstructor<T>
+
+        const options = entityOptionsCache.get(entity as T) || {}
+        // @ts-ignore
+        entityMetadata = fieldClass.relationship(entityMetadata, entityClass, property, type, inverseBy as string, options[property])
+        Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
+    }
 }
 
+export function BelongsToManyOptions<T extends Entity>(options: BelongsToManyFieldOptions) {
+    return function (entity: object, property: string) {
+        const entityOptions = entityOptionsCache.get(entity as T) || {}
+        entityOptions[property] = options
+        entityOptionsCache.set(entity as T, entityOptions)
+    }
+}
