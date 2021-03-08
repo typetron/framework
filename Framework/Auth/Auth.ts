@@ -1,9 +1,9 @@
 import * as jwt from 'jsonwebtoken'
 import { Inject, Injectable, Scope } from '../../Container'
 import { User } from './User'
-import * as Bcrypt from 'bcrypt'
 import { AuthConfig } from '../Config'
 import { EntityKeys, ID } from '../../Database'
+import { Crypt } from '@Typetron/Encryption'
 
 @Injectable(Scope.REQUEST)
 export class Auth {
@@ -33,7 +33,7 @@ export class Auth {
 
     async login(username: string, password: string): Promise<string> {
         const user = await this.authenticable.where((new this.authenticable).getUsername() as EntityKeys<User>, username).first()
-        if (!user || !await Bcrypt.compare(password, user.password)) {
+        if (!user || !await Crypt.compare(password, user.password)) {
             throw new Error('Invalid credentials')
         }
 
@@ -49,7 +49,7 @@ export class Auth {
     async register(username: string, password: string): Promise<User> {
         return await this.authenticable.create({
             [(new this.authenticable).getUsername() as EntityKeys<User>]: username,
-            password: await Bcrypt.hash(password, this.authConfig.saltRounds),
+            password: await Crypt.hash(password, this.authConfig.saltRounds),
         })
     }
 

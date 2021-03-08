@@ -99,7 +99,7 @@ export class Storage {
         })
     }
 
-    private generateFileName() {
+    private generateFileName(): string {
         const stringDomain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
         return String.random(13, stringDomain) + '-' + new Date().getTime().toString()
     }

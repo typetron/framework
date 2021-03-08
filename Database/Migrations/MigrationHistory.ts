@@ -1,6 +1,9 @@
-import { Column, CreatedAt, ID, PrimaryColumn } from '../Decorators'
+import { Column, CreatedAt, ID, Options, PrimaryColumn } from '../Decorators'
 import { Entity } from '../Entity'
 
+@Options({
+    table: 'migration_history'
+})
 export class MigrationHistory extends Entity {
 
     @PrimaryColumn()

@@ -4,4 +4,5 @@ export class DatabaseConfig extends BaseConfig<DatabaseConfig> {
     database?: string
     synchronizeSchema = false
     entities: string
+    migrationsDirectory = 'migrations'
 }

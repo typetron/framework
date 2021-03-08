@@ -50,23 +50,29 @@ export class Migrator {
         const files = await this.files()
         const migrates = await MigrationHistory.whereIn('name', files.pluck('name')).get()
 
-        for (const file of files) {
-            if (!migrates.findWhere('name', file.name)) {
-                const migration = this.getMigration(file.path)
+        const fileToMigrate = files.filter(file => !migrates.findWhere('name', file.name))
 
-                console.log(`INFO: Migrating '${file.name}'`)
-                try {
-                    await migration.up()
-                    await MigrationHistory.create({
-                        name: file,
-                        batch: lastBatch + 1,
-                        time: new Date()
-                    })
-                    console.log(`INFO: Migrated '${file.name}'`)
-                } catch (err) {
-                    console.log(`ERROR: Failed to run the migration from '${file.name}'`)
-                    return false
-                }
+        if (!fileToMigrate.length) {
+            console.log('Nothing to migrate')
+            return true
+        }
+
+        for (const file of fileToMigrate) {
+            const migration = this.getMigration(file.path)
+            const migrationName = migration.constructor.name
+
+            console.log(`Migrating '${migrationName}'`)
+            try {
+                await migration.up()
+                await MigrationHistory.create({
+                    name: file,
+                    batch: lastBatch + 1,
+                    time: new Date()
+                })
+                console.log(`Migrated '${migrationName}'`)
+            } catch (error) {
+                console.error(`Failed to run the migration from '${migrationName}'`, error)
+                return false
             }
         }
         return true
@@ -96,16 +102,16 @@ export class Migrator {
         }
 
         for (const migrationEntity of migrations) {
-            const name = migrationEntity.name
-            const migration = this.getMigration(path.join(this.directory, name))
+            const migration = this.getMigration(path.join(this.directory, migrationEntity.name))
+            const migrationName = migration.constructor.name
 
-            console.log(`INFO: Rolling back the '${name}' migration.`)
+            console.log(`Rolling back the '${migrationName}' migration.`)
             try {
                 await migration.down()
-                console.log(`INFO: Reverted '${name}' migration.`)
+                console.log(`Reverted '${migrationName}' migration.`)
                 await migrationEntity.delete()
-            } catch (err) {
-                console.log(`ERROR: Failed to run the migration '${name}'`)
+            } catch (error) {
+                console.error(`Failed to run the migration '${migrationName}'`, error)
                 return false
             }
         }

@@ -1,8 +1,8 @@
 import { suite, test } from '@testdeck/mocha'
 import { expect } from 'chai'
-import { Connection, Query } from '../../Database'
-import { Storage } from '../../Storage'
-import { Migrator } from '../../Database/Migrations/Migrator'
+import { Storage } from '../../../Storage'
+import { Connection, Query } from '../../../Database'
+import { Migrator } from '../../../Database/Migrations'
 
 @suite
 class RunnerTest {

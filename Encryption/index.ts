@@ -1,4 +1,4 @@
-import { compare, hash } from 'bcrypt'
+import { compare, hash } from 'bcryptjs'
 
 export class Crypt {
     static hash(value: string, saltRounds: number): Promise<string> {

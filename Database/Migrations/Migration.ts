@@ -2,13 +2,9 @@ import { Connection } from '../Connection'
 
 export abstract class Migration {
 
-    protected connection: Connection
+    constructor(protected connection: Connection) {}
 
-    constructor(connection: Connection) {
-        this.connection = connection
-    }
+    abstract up(): void | Promise<void>;
 
-    abstract up(): Promise<unknown>;
-
-    abstract down(): Promise<unknown>;
+    abstract down(): void | Promise<void>;
 }
