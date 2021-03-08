@@ -9,12 +9,12 @@ export class EntityProxyHandler<T extends Entity> {
     constructor() {
     }
 
-    set<K extends keyof T>(target: T, property: K, value: T[K]) {
-        target[property] = value
+    set<K extends keyof T>(target: T, property: string, value: T[K]) {
+        target[property as keyof T] = value
         return true
     }
 
-    get(target: T, property: keyof T) {
+    get(target: T, property: string) {
         if (!(property in target)) {
             const targetConstructor = target.constructor as EntityConstructor<T>
             const query = new EntityQuery(targetConstructor)
@@ -28,7 +28,7 @@ export class EntityProxyHandler<T extends Entity> {
             }
         }
 
-        return target[property]
+        return target[property as keyof T]
         // if (typeof value === 'function') {
         //     return value.bind(target);
         // }
