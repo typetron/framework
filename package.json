@@ -23,14 +23,12 @@
 		"formidable": "^1.2.2",
 		"jsonwebtoken": "^8.5.1",
 		"sqlite3": "^5.0.0",
-		"glob": "^7.1.6"
 	},
 	"devDependencies": {
 		"@testdeck/mocha": "^0.1.2",
 		"@types/bcrypt": "^3.0.0",
 		"@types/chai": "^4.2.14",
 		"@types/formidable": "^1.0.31",
-		"@types/glob": "^7.1.2",
 		"@types/jsonwebtoken": "^8.5.0",
 		"@types/mocha": "^8.0.4",
 		"@types/node": "^14.14.10",
