@@ -9,16 +9,12 @@ interface MigrateOptions {
     fresh?: boolean;
 }
 
-interface RollbackOptions {
-    all?: boolean;
-}
-
 export class Migrator {
 
     constructor(
-        protected storage: Storage,
-        protected connection: Connection,
-        protected directory: string
+        public storage: Storage,
+        public connection: Connection,
+        public directory: string
     ) {}
 
     async files(): Promise<File[]> {
@@ -84,22 +80,17 @@ export class Migrator {
         return new MigrationClass(this.connection)
     }
 
-    public async rollback(options?: RollbackOptions) {
+    public async rollback(steps = 0) {
         await this.createMigrationTable()
 
-        let migrations: MigrationHistory[] = []
-
-        if (options?.all) {
-            migrations = await MigrationHistory.orderBy('time', 'DESC').get()
-        } else {
-            const lastMigration = await MigrationHistory.newQuery().orderBy('time', 'DESC').first()
-
-            if (!lastMigration) {
-                throw new Error('Can not find any migration to rollback.')
-            }
-
-            migrations = await MigrationHistory.where('batch', lastMigration.batch).orderBy('time', 'DESC').get()
+        const lastMigration = await MigrationHistory.newQuery().orderBy('time', 'DESC').first()
+        if (!lastMigration) {
+            throw new Error('Can not find any migration to rollback.')
         }
+        const migrations = await MigrationHistory
+            .where('batch', '>=', Math.max(0, lastMigration.batch - steps))
+            .orderBy('time', 'DESC')
+            .get()
 
         for (const migrationEntity of migrations) {
             const migration = this.getMigration(path.join(this.directory, migrationEntity.name))
@@ -117,5 +108,17 @@ export class Migrator {
         }
 
         return true
+    }
+
+    public async reset() {
+        await this.createMigrationTable()
+
+        const lastMigration = await MigrationHistory.newQuery().orderBy('time', 'DESC').first()
+
+        if (!lastMigration) {
+            throw new Error('Can not find any migration to rollback.')
+        }
+
+        return this.rollback(lastMigration?.batch)
     }
 }

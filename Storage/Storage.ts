@@ -22,24 +22,18 @@ export class Storage {
             }, [] as File[])
     }
 
-    async read(file: string): Promise<Buffer> {
+    async read(filePath: string): Promise<Buffer> {
         return new Promise((resolve, reject) => {
-            fileSystem.readFile(file, (error, data) => {
-                if (error) {
-                    return reject(error)
-                }
-                resolve(data)
+            fileSystem.readFile(filePath, (error, data) => {
+                error ? reject(error) : resolve(data)
             })
         })
     }
 
-    exists(file: string): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            fileSystem.access(file, error => {
-                if (error) {
-                    return resolve(false)
-                }
-                resolve(true)
+    exists(filePath: string): Promise<boolean> {
+        return new Promise((resolve) => {
+            fileSystem.access(filePath, error => {
+                error ? resolve(false) : resolve(true)
             })
         })
     }
@@ -52,35 +46,34 @@ export class Storage {
         if (directory && !await this.exists(directory)) {
             await this.makeDirectory(directory)
         }
+        return new Promise(async (resolve) => {
+            fileSystem.createReadStream(file.path)
+                .pipe(fileSystem.createWriteStream(newPath))
+                .on('finish', () => {
+                    resolve(file)
+                })
+        })
+    }
+
+    async put(filePath: string, content: string): Promise<File> {
+        const file = new File(path.basename(filePath))
+        file.directory = path.dirname(filePath).split(path.sep).pop()
+
+        if (file.directory && !await this.exists(file.directory)) {
+            await this.makeDirectory(file.directory)
+        }
+
         return new Promise(async (resolve, reject) => {
-            // if (file.content) {
-            //     fileSystem.writeFile(newPath, file.content, error => {
-            //         if (error) {
-            //             return reject(error)
-            //         }
-            //         resolve(file)
-            //     })
-            // } else {
-            if (file.saved) {
-                fileSystem.createReadStream(file.path)
-                    .pipe(fileSystem.createWriteStream(newPath))
-                    .on('finish', () => {
-                        resolve(file)
-                    })
-            } else {
-                reject(new Error('Could not save file'))
-            }
-            // }
+            fileSystem.writeFile(filePath, content, error => {
+                error ? reject(error) : resolve(file)
+            })
         })
     }
 
     async makeDirectory(directory: string): Promise<void> {
         return new Promise((resolve, reject) => {
             fileSystem.mkdir(directory, {recursive: true}, error => {
-                if (error) {
-                    return reject(error)
-                }
-                resolve()
+                error ? reject(error) : resolve()
             })
         })
     }
@@ -91,10 +84,7 @@ export class Storage {
                 resolve()
             }
             fileSystem.unlink(filePath, error => {
-                if (error) {
-                    return reject(error)
-                }
-                resolve()
+                error ? reject(error) : resolve()
             })
         })
     }

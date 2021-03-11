@@ -108,7 +108,7 @@ export class Query<T = {}> {
         //     column(query);
         //     return this;
         // }
-        if (!value) {
+        if (value === undefined) {
             value = operator
             operator = '=' as Operator
         }

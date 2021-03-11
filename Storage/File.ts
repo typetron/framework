@@ -1,13 +1,12 @@
 import * as path from 'path'
 
 export class File {
-    directory?: string
     // content?: string | Buffer
     originalName?: string
 
     saved = false
 
-    constructor(public name: string) {
+    constructor(public name: string, public directory?: string) {
     }
 
     get extension() {
