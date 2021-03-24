@@ -5,15 +5,17 @@ import { Parameters } from './Contracts'
 import * as querystring from 'querystring'
 import { ParsedUrlQuery } from 'querystring'
 import { File } from '../Storage'
-import * as formidable from 'formidable'
-import { File as FormidableFile, IncomingForm } from 'formidable'
+import Busboy from 'busboy'
+import * as os from 'os'
+import * as fs from 'fs'
 
 export class Request {
-    static methodField = '_method'
+    // static methodField = '_method'
 
     public parameters: {[key: string]: string} = {}
 
-    constructor(public uri: string,
+    constructor(
+        public uri: string,
         public method: Http.Method,
         public query: ParsedUrlQuery = {},
         public cookies: Parameters = {},
@@ -47,29 +49,41 @@ export class Request {
     // }
 
     static async loadMultipartContent(incomingMessage: IncomingMessage): Promise<[string | object, Record<string, File | File[]>]> {
-        return new Promise((resolve, reject) => {
-            // @ts-ignore
-            const form: IncomingForm = formidable({multiples: true, keepExtensions: true})
-            form.parse(incomingMessage, (error, content, formidableFiles) => {
-                if (error) {
-                    return reject(error)
-                }
-                const files: Record<string, File | File[]> = {}
 
-                Object.keys(formidableFiles).forEach(key => {
-                    let formidableFile = formidableFiles[key] as FormidableFile | FormidableFile[]
-                    const fieldName = key.replace('[', '').replace(']', '') // this is a 'formidable' bug
-                    if (key.includes('[') && !(formidableFile instanceof Array)) {
-                        formidableFile = [formidableFile]
-                    }
-                    if (formidableFile instanceof Array) {
-                        files[fieldName] = formidableFile.map(item => this.formidableToFile(item, form.uploadDir))
-                    } else {
-                        files[fieldName] = this.formidableToFile(formidableFile, form.uploadDir)
-                    }
+        return new Promise((resolve, reject) => {
+            const busboy = new Busboy({headers: incomingMessage.headers})
+            const files: Record<string, File | File[]> = {}
+            const content: Record<string, string> = {}
+
+            busboy.on('file', function(fieldName, file, fileName, encoding, mimetype) {
+                const extension = fileName.split('.').pop()
+                const fileInstance = new File(`upload_${new Date().getTime().toString()}_${String.randomAlphaNum(9)}.${extension}`)
+
+                fileInstance.originalName = fileName
+                fileInstance.directory = os.tmpdir()
+                fileInstance.saved = true
+
+                const stream = fs.createWriteStream(fileInstance.path)
+                stream.on('error', reject)
+
+                file.on('data', function(data) {
+                    stream.write(data)
                 })
+                file.on('end', function() {
+                    stream.end()
+
+                    const field = files[fieldName]
+                    files[fieldName] = field instanceof Array ? [...field, fileInstance] : field ? [field, fileInstance] : fileInstance
+                })
+            })
+            busboy.on('field', function(fieldName, value) {
+                content[fieldName] = value
+            })
+            busboy.on('finish', function() {
                 resolve([content, files])
             })
+
+            incomingMessage.pipe(busboy)
         })
     }
 
@@ -116,20 +130,11 @@ export class Request {
                 request.body = await Request.loadSimpleContent(message)
             }
 
-            const overwrittenMethod = (request.body as Record<string, string | undefined>)[Request.methodField] || ''
-            request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method
+            // const overwrittenMethod = (request.body as Record<string, string | undefined>)[Request.methodField] || ''
+            // request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method
         }
 
         return request
-    }
-
-    private static formidableToFile(item: FormidableFile, directory: string) {
-        const fileInstance = new File(item.path.replace(directory, '').slice(1))
-
-        fileInstance.originalName = item.name
-        fileInstance.directory = directory
-        fileInstance.saved = true
-        return fileInstance
     }
 
     private static isJSONRequest(incomingMessage: IncomingMessage) {

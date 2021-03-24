@@ -139,7 +139,7 @@ export abstract class Entity {
     }
 
     static create<T extends Entity>(this: EntityConstructor<T>, data: ChildObject<T, Entity> | {}): Promise<T> {
-        return (new this).save(data)
+        return (new this()).save(data)
     }
 
     static async insert<T extends Entity>(this: EntityConstructor<T>, data: (ChildObject<T, Entity> | {})[]): Promise<void> {
@@ -219,22 +219,8 @@ export abstract class Entity {
         return this.static.newQuery()
     }
 
-    async save(data: ChildObject<this, Entity> | {} = {}): Promise<this> {
-        const dataToSave = this.getDataToSave(data)
-
-        const query = this.newQuery()
-
-        if (this.exists) {
-            delete dataToSave[this.getPrimaryKey() as string]
-            await query.where(this.getPrimaryKey(), this[this.getPrimaryKey()]).update(dataToSave)
-        } else {
-            await query.insert(dataToSave)
-            const id = await EntityQuery.lastInsertedId()
-            this.exists = true
-            this.fill({id})
-        }
-
-        return this
+    static async delete<T extends Entity>(this: EntityConstructor<T>, ...ids: [ID, ...ID[]]) {
+        await this.newQuery().whereIn(this.getPrimaryKey(), ids).delete()
     }
 
     private getDataToSave(data: ChildObject<this, Entity> | {}) {
@@ -282,8 +268,25 @@ export abstract class Entity {
         await this.newQuery().where(this.getPrimaryKey(), this[this.getPrimaryKey()]).delete()
     }
 
-    static async delete<T extends Entity>(this: EntityConstructor<T>, ...ids: ID[]) {
-        await this.newQuery().whereIn(this.getPrimaryKey(), ids).delete()
+    static async truncate<T extends Entity>(this: EntityConstructor<T>) {
+        await this.newQuery().truncate()
+    }
+
+    async save(data: ChildObject<this, Entity> | {} = {}): Promise<this> {
+        const dataToSave = this.getDataToSave(data)
+
+        const query = this.newQuery()
+
+        if (this.exists) {
+            delete dataToSave[this.getPrimaryKey() as string]
+            await query.where(this.getPrimaryKey(), this[this.getPrimaryKey()]).update(dataToSave)
+        } else {
+            const id = await query.insertOne(dataToSave)
+            this.exists = true
+            this.fill({id})
+        }
+
+        return this
     }
 
     getPrimaryKey<T extends Entity>(this: T): EntityKeys<T> {
@@ -301,7 +304,7 @@ export abstract class Entity {
                     obj[key as keyof this] = this[key as keyof this]
                 }
                 return obj
-            }, <{ [K in keyof this]: this[K] }>{})
+            }, {} as { [K in keyof this]: this[K] })
     }
 
     private updateTimestamps() {

@@ -1,6 +1,6 @@
-import { Statement } from './Statement'
+import { BaseStatement } from './BaseStatement'
 
-export class Update extends Statement {
+export class Update extends BaseStatement {
 
     get wheres() {
         if (!this.components.wheres.length) {

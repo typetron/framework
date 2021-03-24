@@ -2,7 +2,7 @@ import { MigrationHistory } from './MigrationHistory'
 import { Migration } from './Migration'
 import * as path from 'path'
 import { File, Storage } from '@Typetron/Storage'
-import { Connection, Schema } from '@Typetron/Database'
+import { Connection } from '@Typetron/Database'
 import { Constructor } from '@Typetron/Support'
 
 interface MigrateOptions {
@@ -21,20 +21,6 @@ export class Migrator {
         return this.storage.files(this.directory, true)
     }
 
-    protected async createMigrationTable(): Promise<void> {
-        await Schema.synchronize(this.connection, [MigrationHistory].pluck('metadata'))
-    }
-
-    protected async clearTable(): Promise<unknown> {
-        // return MigrationHistory.truncate();
-        return MigrationHistory.delete()
-    }
-
-    protected async getLastBatchId(): Promise<number> {
-        const lastMigration = await MigrationHistory.orderBy('batch', 'DESC').first()
-        return lastMigration?.batch ?? 0
-    }
-
     public async migrate(options?: MigrateOptions): Promise<boolean> {
         await this.createMigrationTable()
 
@@ -42,7 +28,6 @@ export class Migrator {
             await this.clearTable()
         }
 
-        const lastBatch = await this.getLastBatchId()
         const files = await this.files()
         const migrates = await MigrationHistory.whereIn('name', files.pluck('name')).get()
 
@@ -53,7 +38,8 @@ export class Migrator {
             return true
         }
 
-        for (const file of fileToMigrate) {
+        const lastBatch = await this.getLastBatchId()
+        for await(const file of fileToMigrate) {
             const migration = this.getMigration(file.path)
             const migrationName = migration.constructor.name
 
@@ -63,7 +49,7 @@ export class Migrator {
                 await MigrationHistory.create({
                     name: file,
                     batch: lastBatch + 1,
-                    time: new Date()
+                    createdAt: new Date()
                 })
                 console.log(`Migrated '${migrationName}'`)
             } catch (error) {
@@ -74,22 +60,16 @@ export class Migrator {
         return true
     }
 
-    private getMigration(migrationFilePath: string): Migration {
-        const migrationModule: Record<string, Constructor<Migration>> = require(migrationFilePath)
-        const MigrationClass = Object.values(migrationModule)[0]
-        return new MigrationClass(this.connection)
-    }
-
     public async rollback(steps = 0) {
         await this.createMigrationTable()
 
-        const lastMigration = await MigrationHistory.newQuery().orderBy('time', 'DESC').first()
+        const lastMigration = await MigrationHistory.newQuery().orderBy('batch', 'DESC').first()
         if (!lastMigration) {
             throw new Error('Can not find any migration to rollback.')
         }
         const migrations = await MigrationHistory
             .where('batch', '>=', Math.max(0, lastMigration.batch - steps))
-            .orderBy('time', 'DESC')
+            .orderBy('batch', 'DESC')
             .get()
 
         for (const migrationEntity of migrations) {
@@ -110,15 +90,34 @@ export class Migrator {
         return true
     }
 
+    protected async getLastBatchId(): Promise<number> {
+        const lastMigration = await MigrationHistory.orderBy('batch', 'DESC').first()
+        return lastMigration?.batch ?? 0
+    }
+
     public async reset() {
         await this.createMigrationTable()
 
-        const lastMigration = await MigrationHistory.newQuery().orderBy('time', 'DESC').first()
+        const lastMigration = await MigrationHistory.newQuery().orderBy('batch', 'DESC').first()
 
         if (!lastMigration) {
-            throw new Error('Can not find any migration to rollback.')
+            return true
         }
 
         return this.rollback(lastMigration?.batch)
+    }
+
+    private getMigration(migrationFilePath: string): Migration {
+        const migrationModule: Record<string, Constructor<Migration>> = require(migrationFilePath)
+        const MigrationClass = Object.values(migrationModule)[0]
+        return new MigrationClass(this.connection)
+    }
+
+    protected async createMigrationTable(): Promise<void> {
+        await this.connection.driver.schema.synchronize([MigrationHistory].pluck('metadata'))
+    }
+
+    protected async clearTable(): Promise<unknown> {
+        return MigrationHistory.truncate()
     }
 }

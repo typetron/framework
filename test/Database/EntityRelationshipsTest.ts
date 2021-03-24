@@ -1,5 +1,5 @@
 import { suite, test } from '@testdeck/mocha'
-import { Connection, Query, Schema } from '../../Database'
+import { Connection, Entity, EntityConstructor, Query, SqliteDriver } from '../../Database'
 import { User } from './Entities/User'
 import { Article } from './Entities/Article'
 import { Role } from './Entities/Role'
@@ -27,8 +27,19 @@ class EntityRelationshipsTest {
     }
 
     async before() {
-        Query.connection = new Connection(':memory:')
-        await Schema.synchronize(Query.connection, [User, Profile, Article, Role].pluck('metadata'))
+        Query.connection = new Connection(new SqliteDriver(':memory:'))
+        // Query.connection = new Connection(new MysqlDriver({
+        //     host: 'localhost', user: 'root', password: 'root', database: 'typetron_test'
+        // }))
+        await Query.connection.driver.schema.synchronize([User, Profile, Article, Role].pluck('metadata'))
+    }
+
+    async after() {
+        for await (const entity of [User, Profile, Article, Role]) {
+            await (entity as EntityConstructor<Entity>).truncate()
+        }
+
+        await Query.table('role_users').truncate()
     }
 
     @test

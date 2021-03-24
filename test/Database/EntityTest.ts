@@ -1,6 +1,6 @@
 import { suite, test } from '@testdeck/mocha'
 import { expect } from 'chai'
-import { Connection, Query, Schema } from '../../Database'
+import { Connection, Entity, EntityConstructor, Query, SqliteDriver } from '../../Database'
 import { User } from './Entities/User'
 import { EntityQuery } from '../../Database/EntityQuery'
 import { Article } from './Entities/Article'
@@ -35,8 +35,17 @@ class EntityTest {
     }
 
     async before() {
-        Query.connection = new Connection(':memory:')
-        await Schema.synchronize(Query.connection, [User, Article, Role].pluck('metadata'))
+        Query.connection = new Connection(new SqliteDriver(':memory:'))
+        // Query.connection = new Connection(new MysqlDriver({
+        //     host: 'localhost', user: 'root', password: 'root', database: 'typetron_test'
+        // }))
+        await Query.connection.driver.schema.synchronize([User, Article, Role].pluck('metadata'))
+    }
+
+    async after() {
+        for await (const entity of [User, Article, Role]) {
+            await (entity as EntityConstructor<Entity>).truncate()
+        }
     }
 
     expectToContain(actual: User, expected: {[key: string]: string | number | Date}) {
@@ -54,13 +63,13 @@ class EntityTest {
     @test
     getEntityTable() {
         expect(User.getTable()).to.equal('users')
-        expect((new User).getTable()).to.equal('users')
+        expect((new User()).getTable()).to.equal('users')
     }
 
     @test
     async createsNewQuery() {
         expect(User.newQuery()).to.be.an.instanceof(EntityQuery)
-        const user = new User
+        const user = new User()
         expect(user.newQuery()).to.be.an.instanceof(EntityQuery)
     }
 

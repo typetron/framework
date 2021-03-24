@@ -1,7 +1,7 @@
 import { Provider } from '../Provider'
 import { DatabaseConfig } from '../Config'
 import { Inject } from '../../Container'
-import { Connection, Entity, Query, Schema } from '../../Database'
+import { Connection, Entity, Query } from '../../Database'
 import { Storage } from '../../Storage'
 
 export class DatabaseProvider extends Provider {
@@ -13,11 +13,9 @@ export class DatabaseProvider extends Provider {
     storage: Storage
 
     async register() {
-        if (this.databaseConfig.database) {
-            Query.connection = new Connection(this.databaseConfig.database)
-            if (this.databaseConfig.synchronizeSchema) {
-                await this.synchronize(Query.connection)
-            }
+        Query.connection = new Connection(this.databaseConfig.driver)
+        if (this.databaseConfig.synchronizeSchema) {
+            await this.synchronize(Query.connection)
         }
     }
 
@@ -28,7 +26,7 @@ export class DatabaseProvider extends Provider {
         )
         const entitiesMetadata = entitiesImports.flatMap(item => Object.values(item).pluck('metadata'))
 
-        await Schema.synchronize(connection, entitiesMetadata)
+        await connection.driver.schema.synchronize(entitiesMetadata)
     }
 
 }

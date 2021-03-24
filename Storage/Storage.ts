@@ -46,16 +46,18 @@ export class Storage {
         if (directory && !await this.exists(directory)) {
             await this.makeDirectory(directory)
         }
-        return new Promise(async (resolve) => {
+        return new Promise(async (resolve, reject) => {
             fileSystem.createReadStream(file.path)
+                .on('error', reject)
                 .pipe(fileSystem.createWriteStream(newPath))
                 .on('finish', () => {
                     resolve(file)
                 })
+                .on('error', reject)
         })
     }
 
-    async put(filePath: string, content: string): Promise<File> {
+    async put(filePath: string, content: string | Buffer): Promise<File> {
         const file = new File(path.basename(filePath))
         file.directory = path.dirname(filePath).split(path.sep).pop()
 

@@ -1,8 +1,8 @@
-import { Statement } from './Statement'
-import { wrap } from '../Helpers'
-import { Expression } from '../Expression'
+import { BaseStatement } from './BaseStatement'
+import { Expression } from '@Typetron/Database'
+import { wrap } from '../../../Helpers'
 
-export class Select extends Statement {
+export class Select extends BaseStatement {
     get distinct() {
         return this.components.distinct ? 'DISTINCT ' : ''
     }

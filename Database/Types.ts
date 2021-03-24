@@ -131,7 +131,11 @@ export class WhereLike extends WhereExpression {
 export class WhereIn extends WhereExpression {
     constructor(column: string, values: WhereValue[], boolean: Boolean, not = false) {
         const value = values.map(() => '?').join(', ')
-        super(column, new SqlExpression(`${not ? 'NOT ' : ''}IN (${value})`, values), boolean)
+        if (values.length) {
+            super(column, new SqlExpression(`${not ? 'NOT ' : ''}IN (${value})`, values), boolean)
+        } else {
+            super('', new SqlExpression('1 = 0', values), boolean)
+        }
     }
 }
 

@@ -15,17 +15,15 @@ import {
     WhereSubSelect,
     WhereValue
 } from './Types'
-import { Select } from './Statements/Select'
-import { Insert } from './Statements/Insert'
-import { Statement } from './Statements/Statement'
-import { Delete } from './Statements/Delete'
-import { Update } from './Statements/Update'
 import { Connection } from './Connection'
 import { Expression } from './Expression'
+import { Statement } from '@Typetron/Database/Drivers/Statement'
+import { Constructor } from '@Typetron/Support'
 
 export class Query<T = {}> {
     static connection: Connection
-    private statementType: new(c: Components) => Statement = Select
+
+    private statementType: Constructor<Statement> = Query.connection.driver.statements.select
 
     private useDistinct = false
 
@@ -45,15 +43,19 @@ export class Query<T = {}> {
     }
 
     static table<T = {}>(table: string): Query<T> {
-        return (new this as Query<T>).table(table)
+        return (new this() as Query<T>).table(table)
     }
 
     static from<T = {}>(table: string) {
         return Query.table<T>(table)
     }
 
-    static async lastInsertedId(): Promise<number | string> {
-        return await Query.connection.lastInsertedId()
+    static truncate(table: string) {
+        return Query.connection.truncate(table)
+    }
+
+    truncate() {
+        return Query.truncate(this.components.table)
     }
 
     getBindings() {
@@ -63,9 +65,7 @@ export class Query<T = {}> {
     }
 
     toSql() {
-        const statement = this.statement
-        const sql = statement.toSql()
-        return sql.replace(/\s{2,}/g, ' ').trim()
+        return this.statement.toSql().replace(/\s{2,}/g, ' ').trim()
     }
 
     async get<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T[]> {
@@ -320,7 +320,7 @@ export class Query<T = {}> {
     }
 
     async insert(data: SqlValueMap | SqlValueMap[]) {
-        this.statementType = Insert
+        this.statementType = Query.connection.driver.statements.insert
 
         if (!Array.isArray(data)) {
             data = [data]
@@ -331,14 +331,22 @@ export class Query<T = {}> {
         await this.run()
     }
 
+    async insertOne(data: SqlValueMap): Promise<number> {
+        this.statementType = Query.connection.driver.statements.insert
+
+        this.components.insert = [data]
+
+        return await Query.connection.insertOne(this)
+    }
+
     async delete() {
-        this.statementType = Delete
+        this.statementType = Query.connection.driver.statements.delete
 
         await this.run()
     }
 
     async update(name: string | keyof T | Record<keyof T, SqlValue> | SqlValueMap, value?: SqlValue) {
-        this.statementType = Update
+        this.statementType = Query.connection.driver.statements.update
 
         let data: SqlValueMap
         if (typeof name === 'string') {

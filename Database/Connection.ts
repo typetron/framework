@@ -1,117 +1,52 @@
-import { Database } from 'sqlite3'
 import { Query } from './Query'
+import { DatabaseDriver } from './Drivers/DatabaseDriver'
+import { SqlValue } from '@Typetron/Database/Types'
 
 export class Connection {
-    db: Database
 
-    constructor(databaseFilePath: string) {
-        this.db = new Database(databaseFilePath)
-
-        // const con = mysql.createConnection({
-        //     host: 'localhost',
-        //     user: 'root',
-        //     password: 'root',
-        //     database: 'carreo_api'
-        // });
-        //
-        // con.connect();
-        // this.db = con;
-
-        // this.db.run("INSERT INTO users values(1,'u1')");
-        // this.db.run("INSERT INTO users values(2,'u2')");
-        // this.db.run("INSERT INTO users values(3,'u3')");
-        // this.db.run("INSERT INTO users values(4,'u4')");
-        // this.db.run("INSERT INTO users values(5,'u5')");
-        // this.execute();
-    }
+    constructor(public driver: DatabaseDriver) {}
 
     async run(query: Query): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const stack = Error('SQLite').stack
-            this.db.run(query.toSql(), query.getBindings(), error => {
-                if (error) {
-                    const e = new Error(`${error} in '${query.toSql()}' `)
-                    e.stack = stack
-                    return reject(e)
-                }
-
-                resolve()
-            })
-        })
+        return this.driver.run(query.toSql(), query.getBindings())
     }
 
-    async lastInsertedId(): Promise<number | string> {
-        return new Promise<number | string>(((resolve, reject) => {
-            const stack = Error('SQLite').stack
-            this.db.get('SELECT last_insert_rowid() as id;', [], (error, lastInsert) => {
-                if (error) {
-                    const e = new Error(`${error} when trying to get the last inserted id`)
-                    e.stack = stack
-                    return reject(e)
-                }
-                resolve(lastInsert.id)
-            })
-        }))
+    async insertOne(query: Query): Promise<number> {
+        return this.driver.insertOne(query.toSql(), query.getBindings())
+    }
+
+    truncate(table: string) {
+        return this.driver.truncate(table)
     }
 
     async get<T>(query: Query<T>): Promise<T[]> {
-        return new Promise<T[]>((resolve, reject) => {
-            const stack = Error('SQLite').stack
-            this.db.all(query.toSql(), query.getBindings(), (error, rows) => {
-                if (error) {
-                    const e = new Error(`${error} in '${query.toSql()}' `)
-                    e.stack = stack
-                    return reject(e)
-                }
-                resolve(rows)
-            })
-        })
+        return await this.driver.get<T>(query.toSql(), query.getBindings()) as T[]
     }
 
-    async first<T>(query: Query<T>): Promise<T> {
-        return new Promise<T>((resolve, reject) => {
-            const stack = Error('SQLite').stack
-            this.db.get(query.toSql(), query.getBindings(), (error, row) => {
-                if (error) {
-                    const e = new Error(`${error} in '${query.toSql()}' `)
-                    e.stack = stack
-                    return reject(e)
-                }
-                resolve(row)
-            })
-        })
+    async first<T>(query: Query<T>): Promise<T | undefined> {
+        return await this.driver.first(query.toSql(), query.getBindings()) as T
     }
 
-    async getRaw(rawQuery: string) {
-        return new Promise((resolve, reject) => {
-            this.db.all(rawQuery, (error, rows) => {
-                if (error) {
-                    return reject(error)
-                }
-                resolve(rows)
-            })
-        })
+    async getRaw<T>(rawQuery: string, params: SqlValue[] = []): Promise<T[]> {
+        return await this.driver.get(rawQuery, params) as T[]
     }
 
-    async firstRaw(rawQuery: string) {
-        return new Promise((resolve, reject) => {
-            this.db.get(rawQuery, (error, rows) => {
-                if (error) {
-                    return reject(error)
-                }
-                resolve(rows)
-            })
-        })
+    async firstRaw<T>(rawQuery: string, params: SqlValue[] = []): Promise<T> {
+        return await this.driver.first(rawQuery, params) as T
     }
 
-    async runRaw(rawQuery: string) {
-        return new Promise((resolve, reject) => {
-            this.db.run(rawQuery, error => {
-                if (error) {
-                    return reject(error)
-                }
-                resolve(undefined)
-            })
-        })
+    async runRaw(rawQuery: string, params: SqlValue[] = []): Promise<void> {
+        return this.driver.run(rawQuery, params)
+    }
+
+    async tables() {
+        return this.driver.tables()
+    }
+
+    async tableExists(table: string) {
+        return this.driver.tableExists(table)
+    }
+
+    async tableColumns(table: string) {
+        return this.driver.tableColumns(table)
     }
 }

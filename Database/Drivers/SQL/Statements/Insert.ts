@@ -1,7 +1,7 @@
-import { Statement } from './Statement'
-import { wrap } from '../Helpers'
+import { BaseStatement } from './BaseStatement'
+import { wrap } from '../../../Helpers'
 
-export class Insert extends Statement {
+export class Insert extends BaseStatement {
 
     get columns() {
         const values = this.components.insert || []

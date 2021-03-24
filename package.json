@@ -20,17 +20,19 @@
 	},
 	"dependencies": {
 		"bcryptjs": "^2.4.3",
-		"formidable": "^1.2.2",
+		"busboy": "^0.3.1",
 		"jsonwebtoken": "^8.5.1",
-		"sqlite3": "^5.0.0"
+		"mysql": "^2.18.1",
+		"sqlite3": "^5.0.2"
 	},
 	"devDependencies": {
 		"@testdeck/mocha": "^0.1.2",
 		"@types/bcryptjs": "^2.4.2",
 		"@types/chai": "^4.2.14",
-		"@types/formidable": "^1.0.31",
+		"@types/busboy": "^0.2.3",
 		"@types/jsonwebtoken": "^8.5.0",
 		"@types/mocha": "^8.0.4",
+		"@types/mysql": "^2.15.18",
 		"@types/node": "^14.14.10",
 		"@types/sqlite3": "^3.1.6",
 		"chai": "^4.2.0",

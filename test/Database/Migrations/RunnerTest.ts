@@ -1,8 +1,8 @@
 import { suite, test } from '@testdeck/mocha'
 import { expect } from 'chai'
 import { File, Storage } from '../../../Storage'
-import { Connection, Query } from '../../../Database'
-import { Migrator } from '../../../Database/Migrations'
+import { Connection, Query, SqliteDriver } from '../../../Database'
+import { MigrationHistory, Migrator } from '../../../Database/Migrations'
 import { anything, instance, mock, when } from 'ts-mockito'
 
 @suite
@@ -10,10 +10,21 @@ class RunnerTest {
     private runner: Migrator
     private migrationsPath = './test/Database/Migrations/migrations'
     private migrationFiles = ['1.createUserTable.ts', '2.createArticlesTable.ts']
-    private tableNames = ['migrationTestUsers', 'migrationTestArticles']
+    private tableNames = ['migration_test_users', 'migration_test_articles']
 
     async before() {
-        this.runner = new Migrator(new Storage(), Query.connection = new Connection(':memory:'), this.migrationsPath)
+        Query.connection = new Connection(new SqliteDriver(':memory:'))
+        // Query.connection = new Connection(new MysqlDriver({
+        //     host: 'localhost', user: 'root', password: 'root', database: 'typetron_test'
+        // }))
+        this.runner = new Migrator(new Storage(), Query.connection, this.migrationsPath)
+    }
+
+    async after() {
+        if (await Query.connection.tableExists(MigrationHistory.getTable())) {
+            await this.runner.reset()
+            await Query.connection.runRaw(`DROP TABLE IF EXISTS ${MigrationHistory.getTable()}`)
+        }
     }
 
     @test
@@ -29,10 +40,7 @@ class RunnerTest {
 
         expect(migrated).equals(true)
 
-        const tables = await Query.connection
-            .getRaw(`SELECT name
-                     FROM sqlite_master
-                     WHERE type = 'table'`) as {name: string}[]
+        const tables = await Query.connection.tables()
 
         expect(tables.pluck('name')).to.include.members(this.tableNames)
     }
@@ -45,10 +53,7 @@ class RunnerTest {
 
         expect(rollback).equals(true)
 
-        const tables = await Query.connection
-            .getRaw(`SELECT name
-                     FROM sqlite_master
-                     WHERE type = 'table'`) as {name: string}[]
+        const tables = await Query.connection.tables()
 
         expect(tables.pluck('name')).to.include(this.tableNames[0])
         expect(tables.pluck('name')).to.not.include(this.tableNames[1])
@@ -61,10 +66,7 @@ class RunnerTest {
 
         expect(rollback).equals(true)
 
-        const tables = await Query.connection
-            .getRaw(`SELECT name
-                     FROM sqlite_master
-                     WHERE type = 'table'`) as {name: string}[]
+        const tables = await Query.connection.tables()
 
         expect(tables.pluck('name')).to.not.include.members(this.tableNames)
     }
@@ -76,10 +78,7 @@ class RunnerTest {
 
         expect(rollback).equals(true)
 
-        const tables = await Query.connection
-            .getRaw(`SELECT name
-                     FROM sqlite_master
-                     WHERE type = 'table'`) as {name: string}[]
+        const tables = await Query.connection.tables()
 
         expect(tables.pluck('name')).to.not.include.members(this.tableNames)
     }

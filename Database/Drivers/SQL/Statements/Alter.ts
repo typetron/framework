@@ -1,12 +1,9 @@
-import { ColumnField } from '../Fields'
-import { Entity } from '../Entity'
+import { BaseStatement } from './BaseStatement'
+import { ColumnField, Entity } from '@Typetron/Database'
 
-export class Create {
+export class Alter extends BaseStatement {
 
-    table: string
     columns: ColumnField<Entity>[] = []
-
-    constructor() {}
 
     getColumns() {
         return ''
@@ -14,7 +11,7 @@ export class Create {
 
     toSql() {
         return `
-            CREATE
+            ALTER
             TABLE
             ${this.table}
             (

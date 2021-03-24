@@ -2,6 +2,8 @@ export {}
 declare global {
     interface StringConstructor {
         random(length?: number, stringDomain?: string): string;
+
+        randomAlphaNum(length?: number): string;
     }
 
     interface String {
@@ -12,13 +14,16 @@ declare global {
 }
 
 const string = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~'
-String.random = function (length = Math.randomInt(1, 15), stringDomain = string) {
+String.random = function(length = Math.randomInt(1, 15), stringDomain = string) {
     const characters = stringDomain.split('')
     let word = ''
     for (let i = 0; i < length; i++) {
         word += characters.random()
     }
     return word
+}
+String.randomAlphaNum = function(length: number) {
+    return this.random(length, 'abcdefghijklmnopqrstuvwxyz1234567890')
 }
 
 String.prototype.capitalize = function () {

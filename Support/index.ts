@@ -14,4 +14,4 @@ export interface Abstract<T> {
 }
 
 // tslint:disable-next-line:no-any
-export type Constructor<T = {}> = new(...args: any[]) => T;
+export type Constructor<T = object> = new(...args: any[]) => T;

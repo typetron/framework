@@ -7,6 +7,7 @@
 		"sourceMap": true,
 		"declaration": true,
 		"strict": true,
+		"esModuleInterop": true,
 		"strictPropertyInitialization": false,
 		"forceConsistentCasingInFileNames": true,
 		//		"useDefineForClassFields": true, // TODO some tests fail when using this flag

@@ -16,5 +16,5 @@ export class MigrationHistory extends Entity {
     batch: number
 
     @CreatedAt()
-    time: Date
+    createdAt: Date
 }

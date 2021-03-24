@@ -1,11 +1,7 @@
-import { Components, SqlValue } from '../Types'
-import { wrap } from '../Helpers'
+import { wrap } from '@Typetron/Database/Helpers'
+import { Statement } from '../../Statement'
 
-export abstract class Statement {
-    bindings: SqlValue[] = []
-
-    constructor(public components: Components) {
-    }
+export abstract class BaseStatement extends Statement {
 
     get table() {
         return wrap(this.components.table || '')

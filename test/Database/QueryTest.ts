@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import { suite, test } from '@testdeck/mocha'
 import { Connection, Query } from '../../Database'
 import { anyOfClass, instance, mock, when } from 'ts-mockito'
+import { SqliteDriver } from '@Typetron/Database/Drivers'
 
 @suite
 class QueryTest {
@@ -11,10 +12,11 @@ class QueryTest {
     before() {
         this.connection = mock(Connection)
         Query.connection = instance(this.connection)
+        Query.connection.driver = new SqliteDriver(':memory:')
         when(this.connection.get(anyOfClass(Query))).thenCall((query: Query) => {
             return query.toSql()
         })
-        this.query = new Query
+        this.query = new Query()
     }
 
     async expect() {
