@@ -1,0 +1,37 @@
+{
+	"name": "@typetron/angular",
+	"description": "Frontend tools for Angular from Typetron",
+	"license": "MIT",
+	"version": "0.0.1",
+	"author": {
+		"email": "ionel@typetron.org",
+		"name": "Ionel Lupu"
+	},
+	"scripts": {
+		"build": "tsc",
+		"test": "mocha",
+		"lint": "eslint",
+		"test:watch": "mocha --watch",
+		"preversion": "npm test",
+		"version": "npm run build"
+	},
+	"engines": {
+		"node": ">= 12.13.0"
+	},
+	"dependencies": {
+		"@angular/core": "^11.2.7",
+		"@angular/forms": "^11.2.7",
+		"@typetron/framework": "^0.1.4",
+		"rxjs": "^6.6.7"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/typetron/angular.git"
+	},
+	"files": [
+		"**/*.ts",
+		"**/*.js",
+		"**/*.ts.map",
+		"**/*.js.map"
+	]
+}

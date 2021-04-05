@@ -16,8 +16,8 @@ export function Field<T extends Form>(name?: string) {
     }
 }
 
-export function Rules(...rules: (Type<RuleInterface> | RuleInterface)[]) {
-    return function (target: Object, property: string) {
+export function Rules(...rules: (Type<RuleInterface> | ((...args: unknown[]) => Type<RuleInterface>))[]) {
+    return function(target: Object, property: string) {
         const fields: {[key: string]: FormField} = Reflect.getMetadata(FormMetadataKey, target.constructor) || {}
         const type = Reflect.getMetadata('design:type', target, property)
         const field = fields[property] || new FormField(property, type)

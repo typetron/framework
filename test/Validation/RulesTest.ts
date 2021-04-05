@@ -40,7 +40,7 @@ class RulesTest {
             'Abc..123@example.com',
         ]
 
-        const rule = new Email()
+        const rule = new (Email())
 
         validEmails.forEach(email => {
             expect(rule.passes('', email), email).to.be.equal(true)

@@ -20,39 +20,7 @@ Also, every package can be tuned for performance or updated in no time if needed
 
 ##### Features List
 
-* [x] Routing
-* [x] Controllers (class based)
-* [x] IoC Container
-* [x] SQL Query builder
-* [x] ORM (Active Record)
-* [x] Services
-* [x] Providers
-* [x] Websocket
-* [ ] GraphQL
-* [ ] Documentation generation for REST, Websocket and GraphQL (automatic)
-* [ ] CLI
-* [ ] HTTP2
-* [x] Persistence (SQL, NoSQL)
-* [ ] Migrations
-* [x] Intuitive directory structure
-* [ ] Deployment(aws, azure, GCP, DO etc or custom server)
-* [x] Models
-* [x] Forms
-* [x] Validations
-* [ ] I18n
-* [ ] I18n routing
-* [ ] Mailing
-* [ ] Multi-threading / Worker threads
-* [x] Custom error handling
-* [ ] Logging
-* [ ] Monitoring
-* [ ] Instant error alerts
-* [x] Authentication
-* [ ] Authorization
-* [x] Utilities
-* [x] Debugging
-* [x] Tests(and code coverage)
-* [x] Clean and easy to read
+[typetron.org](https://typetron.org/docs/)
 
 ##### Performance
 Being built with packages created from scratch using the latest features of the language, Typetron comes with

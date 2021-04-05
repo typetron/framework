@@ -97,7 +97,11 @@ export class Request {
             incomingMessage.on('end', async () => {
                 try {
                     if (this.isJSONRequest(incomingMessage)) {
-                        return resolve(JSON.parse(rawData))
+                        try {
+                            return resolve(JSON.parse(rawData))
+                        } catch (error) {
+                            resolve({})
+                        }
                     }
 
                     resolve(rawData)

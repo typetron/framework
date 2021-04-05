@@ -2,7 +2,7 @@ import { RuleInterface, RuleValue } from '..'
 import { Rule } from '../Rule'
 import { Type } from '../../Support'
 
-export function MaxLength(max: number): Type<RuleInterface> {
+export function MaxLength(max: number, message?: string): Type<RuleInterface> {
     return class extends Rule {
         identifier = 'maxLength'
 
@@ -11,7 +11,7 @@ export function MaxLength(max: number): Type<RuleInterface> {
         }
 
         message(attribute: string): string {
-            return `The ${attribute} must have at most ${max} characters`
+            return message ?? `The ${attribute} must have at most ${max} characters`
         }
     }
 }

@@ -1,22 +1,28 @@
 import { Constructor, Type } from '../Support'
 import { RuleInterface } from '../Validation'
-import { Rule } from '../Validation/Rule'
 
 export class FormField {
-    // tslint:disable-next-line:no-any
-    constructor(public name: string, public type: any, public rules: (Type<RuleInterface> | RuleInterface) [] = []) {}
+    constructor(
+        public name: string,
+        // tslint:disable-next-line:no-any
+        public type: any,
+        // tslint:disable-next-line:no-any
+        public rules: (Type<RuleInterface> | ((...args: any[]) => Type<RuleInterface>)) [] = []
+    ) {
+    }
 
     // tslint:disable-next-line:no-any
     validate(value: any): Record<string, string> | undefined {
         const errors: Record<string, string> = {}
         let hasErrors = false
         this.rules.forEach(rule => {
-            if (!(rule instanceof Rule)) {
-                rule = new (rule as Constructor<RuleInterface>)
+            if (!rule.prototype.passes) {
+                rule = (rule as Function)()
             }
-            if (!rule.passes(this.name, value)) {
+            const instance = new (rule as Constructor<RuleInterface>)
+            if (!instance.passes(this.name, value)) {
                 hasErrors = true
-                errors[rule.identifier] = rule.message(this.name, value)
+                errors[instance.identifier] = instance.message(this.name, value)
             }
         })
 

@@ -4,6 +4,7 @@ import { User } from './User'
 import { AuthConfig } from '../Config'
 import { EntityKeys, ID } from '../../Database'
 import { Crypt } from '@Typetron/Encryption'
+import { Authenticatable } from './Authenticatable'
 
 @Injectable(Scope.REQUEST)
 export class Auth {
@@ -46,11 +47,11 @@ export class Auth {
         return jwt.sign({sub: this.id = id}, this.authConfig.signature, {expiresIn: this.authConfig.duration})
     }
 
-    async register(username: string, password: string): Promise<User> {
+    async register<T extends Authenticatable = User>(username: string, password: string): Promise<T> {
         return await this.authenticable.create({
             [(new this.authenticable).getUsername() as EntityKeys<User>]: username,
             password: await Crypt.hash(password, this.authConfig.saltRounds),
-        })
+        }) as unknown as T
     }
 
     async verify(token: string): Promise<{sub: number}> {

@@ -3,7 +3,7 @@ import { RuleValue } from '..'
 import { Type } from '../../Support'
 import { Rule } from '../Rule'
 
-export function MinLength(min: number): Type<RuleInterface> {
+export function MinLength(min: number, message?: string): Type<RuleInterface> {
     return class extends Rule {
         identifier = 'minLength'
 
@@ -12,7 +12,7 @@ export function MinLength(min: number): Type<RuleInterface> {
         }
 
         message(attribute: string): string {
-            return `The ${attribute} must have at least ${min} characters`
+            return message ?? `The ${attribute} must have at least ${min} characters`
         }
     }
 }
