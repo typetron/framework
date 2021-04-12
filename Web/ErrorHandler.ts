@@ -14,9 +14,9 @@ export class ErrorHandler implements ErrorHandlerInterface {
     handle(error: Error, request?: Request) {
         if (this.appConfig.environment === 'production') {
             if (error instanceof HttpError) {
-                return new Response(error.status, error.content)
+                return new Response(error.content, error.status)
             }
-            return new Response(Http.Status.BAD_REQUEST, error.message)
+            return new Response(error.message, Http.Status.BAD_REQUEST)
         }
 
         return this.handleDevelopmentError(error, request)
@@ -40,6 +40,6 @@ export class ErrorHandler implements ErrorHandlerInterface {
             message, stack
         }
 
-        return new Response(code, errorInfo)
+        return new Response(errorInfo, code)
     }
 }

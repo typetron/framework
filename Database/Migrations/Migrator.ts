@@ -31,15 +31,15 @@ export class Migrator {
         const files = await this.files()
         const migrates = await MigrationHistory.whereIn('name', files.pluck('name')).get()
 
-        const fileToMigrate = files.filter(file => !migrates.findWhere('name', file.name))
+        const filesToMigrate = files.filter(file => !migrates.findWhere('name', file.name))
 
-        if (!fileToMigrate.length) {
+        if (!filesToMigrate.length) {
             console.log('Nothing to migrate')
             return true
         }
 
         const lastBatch = await this.getLastBatchId()
-        for await(const file of fileToMigrate) {
+        for await(const file of filesToMigrate) {
             const migration = this.getMigration(file.path)
             const migrationName = migration.constructor.name
 
@@ -53,7 +53,7 @@ export class Migrator {
                 })
                 console.log(`Migrated '${migrationName}'`)
             } catch (error) {
-                console.error(`Failed to run the migration from '${migrationName}'`, error)
+                console.error(`Failed to run the migration from '${migrationName}'`, error.message)
                 return false
             }
         }

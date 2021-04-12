@@ -56,7 +56,7 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
                 }
                 const file = await this.storage.read(realPath)
                 const contentType = this.mimeTypes[extension || 'application/octet-stream'] || this.mimeTypes.txt
-                return new Response(Http.Status.OK, file, {'Content-type': contentType})
+                return new Response(file, Http.Status.OK, {'Content-type': contentType})
             }
         }
 

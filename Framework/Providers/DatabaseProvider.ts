@@ -13,7 +13,11 @@ export class DatabaseProvider extends Provider {
     storage: Storage
 
     async register() {
-        Query.connection = new Connection(this.databaseConfig.driver)
+        const driver = this.databaseConfig.drivers[this.databaseConfig.driver]
+        if (!driver) {
+            throw new Error(`Driver '${this.databaseConfig.driver}' is not defined in the 'database.drivers' config`)
+        }
+        Query.connection = new Connection(driver())
         if (this.databaseConfig.synchronizeSchema) {
             await this.synchronize(Query.connection)
         }

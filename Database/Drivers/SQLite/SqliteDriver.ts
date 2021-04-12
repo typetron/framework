@@ -30,12 +30,10 @@ export class SqliteDriver implements DatabaseDriver {
 
     async run(query: string, params: SqlValue[] = []): Promise<void> {
         return new Promise((resolve, reject) => {
-            const stack = Error('SQLite').stack
+            const appError = new Error()
             this.database.run(query, params, error => {
                 if (error) {
-                    const e = new Error(`${error} in '${query}' `)
-                    e.stack = stack
-                    return reject(e)
+                    return reject(this.buildError(appError, error, query))
                 }
 
                 resolve()
@@ -54,12 +52,11 @@ export class SqliteDriver implements DatabaseDriver {
 
     async lastInsertedId(): Promise<number> {
         return new Promise<number>(((resolve, reject) => {
-            const stack = Error('SQLite').stack
-            this.database.get('SELECT last_insert_rowid() as id;', [], (error, lastInsert) => {
+            const appError = new Error()
+            const query = 'SELECT last_insert_rowid() as id;'
+            this.database.get(query, [], (error, lastInsert) => {
                 if (error) {
-                    const e = new Error(`${error} when trying to get the last inserted id`)
-                    e.stack = stack
-                    return reject(e)
+                    return reject(this.buildError(appError, error, query))
                 }
                 resolve(lastInsert.id)
             })
@@ -68,12 +65,10 @@ export class SqliteDriver implements DatabaseDriver {
 
     async get<T>(query: string, params: SqlValue[] = []): Promise<T[]> {
         return new Promise<T[]>((resolve, reject) => {
-            const stack = Error('SQLite').stack
+            const appError = new Error()
             this.database.all(query, params, (error, rows) => {
                 if (error) {
-                    const e = new Error(`${error} in '${query}' `)
-                    e.stack = stack
-                    return reject(e)
+                    return reject(this.buildError(appError, error, query))
                 }
                 resolve(rows)
             })
@@ -82,16 +77,20 @@ export class SqliteDriver implements DatabaseDriver {
 
     async first<T>(query: string, params: SqlValue[] = []): Promise<T> {
         return new Promise<T>((resolve, reject) => {
-            const stack = Error('SQLite').stack
+            const appError = new Error()
             this.database.get(query, params, (error, row) => {
                 if (error) {
-                    const e = new Error(`${error} in '${query}' `)
-                    e.stack = stack
-                    return reject(e)
+                    return reject(this.buildError(appError, error, query))
                 }
                 resolve(row)
             })
         })
+    }
+
+    buildError(appError: Error, databaseError: Error, query?: string) {
+        appError.message = `${databaseError} in '${query}' `
+        // appError.stack = appError.stack?.replace('Error:', `${appError.message}`)
+        return appError
     }
 
     tables() {

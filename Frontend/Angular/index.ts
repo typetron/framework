@@ -6,8 +6,9 @@ export class FormBuilder {
     static build(form: typeof Form & Constructor<Form>): FormGroup {
         const controls: Record<string, AbstractControl> = {}
         const formFields = Object.values(form.fields()) as FormField[]
+        const instance = new form()
         Object.values(formFields).forEach(field => {
-            controls[field.name] = new FormControl(undefined, {validators: this.getValidators(field)})
+            controls[field.name] = new FormControl(instance[field.name as keyof Form], {validators: this.getValidators(field)})
         })
         return new FormGroup(controls)
     }

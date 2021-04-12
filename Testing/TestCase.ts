@@ -1,19 +1,28 @@
 import '../Support/Math'
-import { Handler, Http, Request } from '../Web'
+import { Handler, Http, Request, Response } from '../Web'
 import { IncomingHttpHeaders } from 'http'
-import { Container } from '../Container'
-import { Application } from '../Framework'
+import { Application, DatabaseProvider } from '../Framework'
 import { Router } from '../Router'
-import { Auth } from '../Framework/Auth'
+import { Auth, User } from '../Framework/Auth'
 
 export abstract class TestCase {
-    app: Container
+    static app: Application
+    app: Application
     userId?: number
 
-    abstract bootstrapApp(): Promise<void>;
+    providersNeedingReboot = [
+        DatabaseProvider
+    ]
+
+    abstract bootstrapApp(): Promise<Application>;
 
     async before() {
-        await this.bootstrapApp()
+        if (!TestCase.app) {
+            TestCase.app = this.app = await this.bootstrapApp()
+            return
+        }
+        this.app = TestCase.app
+        await this.app.registerProviders(this.providersNeedingReboot)
         delete this.userId
     }
 
@@ -21,24 +30,44 @@ export abstract class TestCase {
         this.userId = id
     }
 
-    get(routeName: string, content = {}, headers: IncomingHttpHeaders = {}) {
-        return this.request(Http.Method.GET, routeName, content, headers)
+    login(user: User) {
+        this.loginById(user.id)
     }
 
-    post(route: string | [string, Record<string, string | number>], content = {}, headers: IncomingHttpHeaders = {}) {
-        return this.request(Http.Method.POST, route, content, headers)
+    get<T extends string | object | undefined>(routeName: string, content = {}, headers: IncomingHttpHeaders = {}): Promise<Response<T>> {
+        return this.request(Http.Method.GET, routeName, content, headers) as Promise<Response<T>>
     }
 
-    patch(route: string | [string, Record<string, string | number>], content = {}, headers: IncomingHttpHeaders = {}) {
-        return this.request(Http.Method.PATCH, route, content, headers)
+    post<T extends string | object | undefined>(
+        route: string | [string, Record<string, string | number>],
+        content = {},
+        headers: IncomingHttpHeaders = {}
+    ): Promise<Response<T>> {
+        return this.request(Http.Method.POST, route, content, headers) as Promise<Response<T>>
     }
 
-    put(route: string | [string, Record<string, string | number>], content = {}, headers: IncomingHttpHeaders = {}) {
-        return this.request(Http.Method.PUT, route, content, headers)
+    patch<T extends string | object | undefined>(
+        route: string | [string, Record<string, string | number>],
+        content = {},
+        headers: IncomingHttpHeaders = {}
+    ): Promise<Response<T>> {
+        return this.request(Http.Method.PATCH, route, content, headers) as Promise<Response<T>>
     }
 
-    delete(route: string | [string, Record<string, string | number>], content = {}, headers: IncomingHttpHeaders = {}) {
-        return this.request(Http.Method.DELETE, route, content, headers)
+    put<T extends string | object | undefined>(
+        route: string | [string, Record<string, string | number>],
+        content = {},
+        headers: IncomingHttpHeaders = {}
+    ): Promise<Response<T>> {
+        return this.request(Http.Method.PUT, route, content, headers) as Promise<Response<T>>
+    }
+
+    delete<T extends string | object | undefined>(
+        route: string | [string, Record<string, string | number>],
+        content = {},
+        headers: IncomingHttpHeaders = {}
+    ): Promise<Response<T>> {
+        return this.request(Http.Method.DELETE, route, content, headers) as Promise<Response<T>>
     }
 
     private async request(
@@ -61,6 +90,7 @@ export abstract class TestCase {
 
         if (this.userId) {
             const token = this.app.get(Auth).loginById(this.userId)
+            this.app.set(Auth, undefined)
             headers.authorization = `Bearer ${token}`
         }
 

@@ -1,11 +1,12 @@
 import { OutgoingHttpHeaders, ServerResponse } from 'http'
 import { Http } from '.'
+import { Buffer } from 'buffer'
 
 export class Response<T = string | object | undefined> {
 
     constructor(
+        public body: T,
         public status: Http.Status = Http.Status.OK,
-        public body?: T,
         public headers: OutgoingHttpHeaders = {
             'Content-Type': 'text/html'
         }
@@ -13,18 +14,18 @@ export class Response<T = string | object | undefined> {
     }
 
     static ok(content: string | object) {
-        return new Response(Http.Status.OK, content)
+        return new Response(content, Http.Status.OK)
     }
 
     static notFound(content: string | object) {
-        return new Response(Http.Status.NOT_FOUND, content)
+        return new Response(content, Http.Status.NOT_FOUND)
     }
 
     static badRequest(content: string | object) {
-        return new Response(Http.Status.BAD_REQUEST, content)
+        return new Response(content, Http.Status.BAD_REQUEST)
     }
 
-    static send(response: Response, serverResponse: ServerResponse) {
+    static send(response: Response<undefined | number | string | object | Buffer>, serverResponse: ServerResponse) {
         let content = response.body ?? ''
         let rawContent: String | Buffer | undefined
         if (!(content instanceof Buffer)) {

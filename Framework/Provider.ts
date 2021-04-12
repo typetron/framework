@@ -1,16 +1,10 @@
 import { Application } from './Application'
-import { Constructor } from '../Support'
+import { Inject } from '@Typetron/Container'
 
 export abstract class Provider {
-    protected app: Application
+
+    @Inject()
+    public app: Application
 
     abstract register(): void | Promise<void>;
-
-    get(service: Constructor) {
-        this.app.get(service)
-    }
-
-    setApplication(application: Application) {
-        this.app = application
-    }
 }

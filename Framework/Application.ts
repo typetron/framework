@@ -19,8 +19,7 @@ export class Application extends Container {
     private constructor(public directory: string, public configDirectory = Application.defaultConfigDirectory) {
         super()
         Application.setInstance(this)
-        this.set(Container, App.instance = this)
-        this.set(Application, App.instance)
+        this.set(Application, App.instance = this)
         this.set(RootDir, directory)
     }
 
@@ -40,11 +39,10 @@ export class Application extends Container {
         return httpHandler.startServer(this)
     }
 
-    private async registerProviders(providers: Type<Provider>[]) {
+    public async registerProviders(providers: Type<Provider>[]) {
         await Promise.all(
             providers.map(provider => {
                 const instance = this.get(provider)
-                instance.setApplication(this)
                 return instance.register()
             })
         )
