@@ -2,7 +2,7 @@ import { Container } from '../Container'
 import { Type } from '../Support'
 import { App } from './App'
 import { Provider } from './Provider'
-import { AppConfig, BaseConfig } from './Config'
+import { AppConfig, AuthConfig, BaseConfig } from './Config'
 import { FormResolver } from './Resolvers/FormResolver'
 import { EntityResolver } from './Resolvers/EntityResolver'
 import { RootDir } from './RootDir'
@@ -89,5 +89,13 @@ export class Application extends Container {
 
         this.registerResolvers()
         await this.registerProviders(appConfig.providers || [])
+        await this.checkAppSecret()
+    }
+
+    private async checkAppSecret() {
+        const authConfig = this.get(AuthConfig)
+        if (!authConfig.signature) {
+            throw new Error(`APP_SECRET is not setup in your '.env' file.`)
+        }
     }
 }
