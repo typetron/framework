@@ -201,8 +201,12 @@ export abstract class Entity {
     }
 
     async load(
-        // tslint:disable-next-line:no-any
-        ...relations: (KeysOfType<this, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this>)[]
+        ...relations: (
+            // tslint:disable-next-line:no-any
+            KeysOfType<this, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this> |
+            // tslint:disable-next-line:no-any max-line-length
+            [KeysOfType<this, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this>, (Query: EntityQuery<any>) => void]
+            )[]
     ) {
         await this.newQuery().with(...relations).eagerLoadRelationships([this])
 

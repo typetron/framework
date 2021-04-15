@@ -2,7 +2,7 @@
 	"name": "@typetron/angular",
 	"description": "Frontend tools for Angular from Typetron",
 	"license": "MIT",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"author": {
 		"email": "ionel@typetron.org",
 		"name": "Ionel Lupu"
@@ -18,15 +18,14 @@
 	"engines": {
 		"node": ">= 12.13.0"
 	},
-	"dependencies": {
-		"rxjs": "^6.6.7"
-	},
 	"peerDependencies": {
+		"rxjs": "^6.6.7",
 		"@angular/core": "~10.0.9",
 		"@angular/forms": "~10.0.9",
 		"@typetron/framework": "^0.2.0"
 	},
 	"devDependencies": {
+		"rxjs": "^6.6.7",
 		"@angular/core": "~10.0.9",
 		"@angular/forms": "~10.0.9",
 		"@typetron/framework": "^0.2.0"
