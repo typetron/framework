@@ -2,7 +2,7 @@ import { FormMetadataKey } from './Decorators'
 import { RuleValue } from '../Validation'
 import { ChildKeys, ChildObject, Constructor } from '../Support'
 import { FormField } from './FormFields'
-import { Injectable, Scope } from '@Typetron/Container'
+import { Injectable, Scope } from '../Container'
 
 export type FormFields<T> = ChildObject<T, Form>;
 

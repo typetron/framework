@@ -1,6 +1,6 @@
 import { Observable, of, ReplaySubject, Subject, throwError } from 'rxjs'
 import { filter, map, switchMap, take } from 'rxjs/operators'
-import { EventRequest, EventResponse, WebsocketMessageStatus } from '../../Router/Websockets/types'
+import { EventRequest, EventResponse, WebsocketMessageStatus } from '@typetron/framework/Router/Websockets'
 
 export class Websocket {
     socket?: WebSocket

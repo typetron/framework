@@ -2,7 +2,7 @@
 	"name": "@typetron/websockets",
 	"description": "Typetron Websockets library",
 	"license": "MIT",
-	"version": "0.0.2",
+	"version": "0.3.0",
 	"author": {
 		"email": "ionel@typetron.org",
 		"name": "Ionel Lupu"
@@ -14,10 +14,11 @@
 		"node": ">= 12.13.0"
 	},
 	"dependencies": {
-		"rxjs": "^6.6.7"
+		"rxjs": "^6.6.7",
+		"@typetron/framework": "^0.3.3"
 	},
 	"devDependencies": {
-		"typescript": "^4.3.5"
+		"typescript": "4.1.6"
 	},
 	"repository": {
 		"type": "git",

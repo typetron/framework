@@ -2,6 +2,12 @@
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
 		"outDir": "dist",
+		"baseUrl": ".",
+		"paths": {
+			"@Typetron/*": [
+				"node_modules/@typetron/framework/*"
+			]
+		},
 		"lib": [
 			"dom"
 		]
