@@ -4,7 +4,7 @@ import { Column, Connection, Entity, ID, Query, SqliteDriver } from '@Typetron/D
 import { Handler } from '@Typetron/Router/Websockets'
 import { Type } from '@Typetron/Support'
 import { Http, Request, Response } from '@Typetron/Router/Http'
-import { anyOfClass, instance, mock, when } from '@Typetron/node_modules/ts-mockito'
+import { anyOfClass, instance, mock, when } from 'ts-mockito'
 import { EntityResolver } from '@Typetron/Framework/Resolvers/EntityResolver'
 import { expect } from 'chai'
 

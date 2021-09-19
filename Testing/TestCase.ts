@@ -8,8 +8,7 @@ import { EventRequest } from '../Router/Websockets/types'
 import { Handler as WebsocketsHandler, WebSocket } from '../Router/Websockets'
 import { Container } from '../Container'
 import { ID } from '@Typetron/Database'
-import { mock } from '@Typetron/node_modules/ts-mockito'
-import { anything, instance, when } from 'ts-mockito'
+import { anything, instance, mock, when } from 'ts-mockito'
 import { Crypt } from '@Typetron/Encryption'
 
 export abstract class TestCase {
