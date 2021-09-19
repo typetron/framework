@@ -1,17 +1,17 @@
 import { Container } from '../Container'
 import { Abstract, Constructor, Type } from '../Support'
-import { Request, Response } from '../Web'
 import { MiddlewareInterface } from './Middleware'
 import { ControllerMetadata } from './Metadata'
 import { Guard } from './Guard'
 
 export class Route {
-    parameters: {[key: string]: string} = {}
+    parameters: Record<string, string> = {}
     guards: (typeof Guard)[] = []
 
     private readonly uriParts: {name: string, type: 'part' | 'parameter'}[] = []
 
-    constructor(public uri: string,
+    constructor(
+        public uri: string,
         public method: string,
         public controller: Constructor,
         public action: string,
@@ -22,7 +22,7 @@ export class Route {
         this.splitUriParts()
     }
 
-    async run(request: Request, container: Container): Promise<object | string | Response> {
+    async run(container: Container): Promise<object | string> {
         const controller = await container.get(this.controller)
 
         try {
@@ -100,7 +100,7 @@ export class Route {
         return parameters.mapAsync(async (parameter, index) => {
             const newValueFunction = overrides[index]
             if (newValueFunction) {
-                return await newValueFunction.call(undefined, container.get(Request), container)
+                return await newValueFunction.call(undefined, container)
             }
             if (parameter.name === 'String') {
                 return routeParameters[parameterIndex++]

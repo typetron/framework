@@ -1,14 +1,23 @@
 import '../Support/Math'
-import { Handler, Http, Request, Response } from '../Web'
+import { ErrorHandlerInterface, Handler as HTTPHandler, Http, HttpError, Request, Response } from '../Router/Http'
 import { IncomingHttpHeaders } from 'http'
 import { Application, DatabaseProvider } from '../Framework'
 import { Router } from '../Router'
 import { Auth, User } from '../Framework/Auth'
+import { EventRequest } from '../Router/Websockets/types'
+import { Handler as WebsocketsHandler, WebSocket } from '../Router/Websockets'
+import { Container } from '../Container'
+import { ID } from '@Typetron/Database'
+import { mock } from '@Typetron/node_modules/ts-mockito'
+import { anything, instance, when } from 'ts-mockito'
+import { Crypt } from '@Typetron/Encryption'
 
 export abstract class TestCase {
     static app: Application
-    app: Application
-    userId?: number
+    app: Container
+
+    // tslint:disable-next-line:no-any
+    eventListeners = new Map<string, (response: any) => void>()
 
     providersNeedingReboot = [
         DatabaseProvider
@@ -18,20 +27,31 @@ export abstract class TestCase {
 
     async before() {
         if (!TestCase.app) {
-            TestCase.app = this.app = await this.bootstrapApp()
-            return
+            TestCase.app = await this.bootstrapApp()
         }
-        this.app = TestCase.app
-        await this.app.registerProviders(this.providersNeedingReboot)
-        delete this.userId
+        await TestCase.app.registerProviders(this.providersNeedingReboot)
+        this.app = TestCase.app.createChildContainer()
+
+        const crypt = mock(Crypt)
+        when(crypt.hash(anything(), anything())).thenCall(value => `testing-${value}`)
+        when(crypt.compare(anything(), anything())).thenCall((first, second) => Promise.resolve(`testing-${first}` === second))
+
+        this.app.set(Crypt, instance(crypt))
     }
 
-    loginById(id: number) {
-        this.userId = id
+    async loginById(id: ID) {
+        await this.app.get(Auth).loginById(id)
     }
 
-    login(user: User) {
-        this.loginById(user.id)
+    /**
+     * @deprecated
+     */
+    async login(user: User) {
+        await this.loginById(user.id)
+    }
+
+    async actingAs(user: User) {
+        await this.app.get(Auth).loginUser(user)
     }
 
     get<T extends string | object | undefined>(routeName: string, content = {}, headers: IncomingHttpHeaders = {}): Promise<Response<T>> {
@@ -70,6 +90,41 @@ export abstract class TestCase {
         return this.request(Http.Method.DELETE, route, content, headers) as Promise<Response<T>>
     }
 
+    event<T extends string | object | undefined>(event: string, content?: EventRequest['message']): Promise<Response<T>> {
+        const socketMock = mock(WebSocket)
+
+        when(socketMock.publishAndSend(anything(), anything(), anything())).thenCall((topic, calledEvent, message) => {
+            const callback = this.eventListeners.get(calledEvent)
+            callback?.(message)
+        })
+
+        when(socketMock.send(anything(), anything())).thenCall((calledEvent, message) => {
+            const callback = this.eventListeners.get(calledEvent)
+            callback?.(message)
+        })
+
+        const container = this.app.createChildContainer()
+        container.set(WebSocket, instance(socketMock))
+
+        const request = new Request(event, Http.Method.GET,
+            {},
+            {},
+            {},
+            content?.body ?? {}
+        )
+
+        // TODO find a way to save parameters so they can be retrieved easily in the Resolvers (check EntityResolver for example)
+        content?.parameters?.forEach(parameter => {
+            request.parameters[String.random(15)] = parameter
+        })
+
+        return this.app.get(WebsocketsHandler).handle(container, request) as Promise<Response<T>>
+    }
+
+    on<T>(event: string, callback: (response: T) => void) {
+        this.eventListeners.set(event, callback)
+    }
+
     private async request(
         method: Http.Method,
         routeName: string | [string, Record<string, string | number>],
@@ -88,21 +143,30 @@ export abstract class TestCase {
         }
         route.parameters = this.convertRouteParametersToString(routeParameters) || {}
 
-        if (this.userId) {
-            const token = this.app.get(Auth).loginById(this.userId)
-            this.app.set(Auth, undefined)
+        const auth = this.app.get(Auth)
+        if (auth.id) {
+            const token = await auth.sign(auth.id)
             headers.authorization = `Bearer ${token}`
         }
 
         const request = new Request(route.getUrl(), method, {}, {}, headers, content)
 
-        const response = await this.app.get(Handler).handle(this.app as Application, request)
+        let response: Response
+        try {
+            response = await this.app.get(HTTPHandler).handle(this.app as Application, request)
 
-        if (response.body instanceof Buffer) {
-            response.body = response.body.toString()
+            if (response.body instanceof Buffer) {
+                response.body = response.body.toString()
+            }
+
+            return response
+
+        } catch (error) {
+            if (error instanceof HttpError) {
+                return this.app.get(ErrorHandlerInterface).handle(error)
+            }
+            throw error
         }
-
-        return response
     }
 
     private convertRouteParametersToString(routeParameters: Record<string, string | number>) {

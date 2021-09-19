@@ -1,5 +1,6 @@
 import { Query } from './Query'
 import { Expression } from './Expression'
+import { EntityQuery } from './EntityQuery'
 
 export enum Operators {
     '=' = '=',
@@ -7,7 +8,7 @@ export enum Operators {
     '<=' = '<=',
     '>' = '>',
     '>=' = '>=',
-    '!' = '!',
+    '!=' = '!=',
     'AND' = 'AND',
     'OR' = 'OR',
     'IS' = 'IS',
@@ -40,6 +41,11 @@ export interface BaseComponents {
     table: string;
 }
 
+export interface CreateComponents {
+    table: string;
+    columns: (string | Expression)[];
+}
+
 export interface SelectComponents extends BaseComponents {
     distinct?: boolean;
     columns: (string | Expression)[];
@@ -63,7 +69,7 @@ export interface UpdateComponents extends BaseComponents {
     update?: SqlValueMap;
 }
 
-export interface Components extends BaseComponents, SelectComponents, InsertComponents, UpdateComponents {
+export interface Components extends BaseComponents, SelectComponents, InsertComponents, UpdateComponents, CreateComponents {
 }
 
 // export interface SelectComponents extends Components {
@@ -83,7 +89,7 @@ export type WhereValue = SqlValue;
 
 export type Direction = 'ASC' | 'DESC';
 
-interface SqlClause {
+export interface SqlClause {
     toSql(): string;
 
     getValues(): SqlValue[];
@@ -149,4 +155,9 @@ export class WhereSubSelect extends WhereExpression {
     constructor(column: string, operator: Operator, public query: Query, boolean: Boolean) {
         super(column, new SqlExpression(`${operator} (${query.toSql()})`, query.getBindings()), boolean)
     }
+}
+
+export interface RelationsTree {
+    // tslint:disable-next-line:no-any
+    [key: string]: RelationsTree | ((query: EntityQuery<any>) => void)
 }

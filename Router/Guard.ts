@@ -1,4 +1,4 @@
-import { Http, HttpError } from '../Web'
+import { Http, HttpError } from './Http'
 
 export abstract class Guard {
     // tslint:disable-next-line:no-any

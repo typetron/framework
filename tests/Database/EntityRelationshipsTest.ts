@@ -77,7 +77,7 @@ class EntityRelationshipsTest {
         })
         await user.profile.save(profile)
 
-        const sameUser = await User.find(user.id)
+        const sameUser = await User.findOrFail(user.id)
         expect(sameUser.profile).to.be.instanceOf(HasOne)
         expect(sameUser.profile.get()).to.be.equal(undefined)
         await sameUser.load('profile')
@@ -205,7 +205,7 @@ class EntityRelationshipsTest {
     @test
     async hasManyQuery() {
         const user = await User.create(this.joe)
-        await user.articles.save(
+        await user.articles.saveMany(
             {
                 title: 'title',
                 content: `joe's content`,
@@ -252,7 +252,7 @@ class EntityRelationshipsTest {
     }
 
     @test
-    async belongsToEagerLoadCustom() {
+    async belongsToEagerLoadWithCustomQuery() {
         const joe = await User.create(this.joe)
         await joe.articles.save(Article.new({title: 'article1'}))
         await joe.articles.save(Article.new({title: 'article2'}))
@@ -351,13 +351,28 @@ class EntityRelationshipsTest {
         const user = new User(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
-        const manager = await Role.create({name: 'manager'})
+        const manager = await Role.create({name: 'Manager'})
         await user.roles.add(admin.id, manager.id)
 
         await user.roles.sync(admin.id, developer)
         expect(user.roles).to.have.length(2)
         expect(user.roles[0]).to.have.property('id', admin.id)
         expect(user.roles[1]).to.have.property('id', developer.id)
+    }
+
+    @test
+    async belongsToManySyncWithoutDetaching() {
+        const user = new User(this.joe)
+        const admin = await Role.create(this.admin)
+        const developer = await Role.create(this.developer)
+        const manager = await Role.create({name: 'manager'})
+        await user.roles.add(admin.id, manager.id)
+
+        await user.roles.syncWithoutDetaching(admin.id, developer)
+        expect(user.roles).to.have.length(3)
+        expect(user.roles[0]).to.have.property('id', admin.id)
+        expect(user.roles[1]).to.have.property('id', manager.id)
+        expect(user.roles[2]).to.have.property('id', developer.id)
     }
 
     @test
@@ -420,5 +435,22 @@ class EntityRelationshipsTest {
         await user.load('articles.author')
 
         expect(user.articles[0].author.get()?.name).to.be.equal(user.name)
+    }
+
+    @test
+    async multipleNestedEagerLoading() {
+        let adminRole = await Role.create({name: 'Admin'})
+        const joe = await User.create(this.joe)
+        await adminRole.users.add(joe)
+        await joe.articles.save(new Article({title: 'title'}))
+        await joe.profile.save(new Profile({address: 'address'}))
+
+        adminRole = await Role.find(adminRole.id) as Role
+        await adminRole.load('users.articles.author', 'users.profile.user')
+
+        expect(adminRole.users[0].articles[0].title).to.be.equal('title')
+        expect(adminRole.users[0].profile.get()?.address).to.be.equal('address')
+        expect(adminRole.users[0].articles[0].author.get()?.name).to.be.equal(joe.name)
+        expect(adminRole.users[0].profile.get()?.user.get()?.name).to.be.equal(joe.name)
     }
 }

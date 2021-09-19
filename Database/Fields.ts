@@ -2,6 +2,8 @@ import { Entity } from './Entity'
 import { EntityConstructor, EntityKeys, EntityMetadata, EntityObject, Expression, ID, Query } from './index'
 import { List } from './List'
 import { BaseRelationship } from './ORM/BaseRelationship'
+import { wrap } from './Helpers'
+import { EntityQuery } from './EntityQuery'
 
 export interface EntityField<T extends Entity> {
 
@@ -80,9 +82,13 @@ export abstract class RelationshipField<T extends Entity, R extends Entity> exte
 
     abstract matchCounts(entities: T[], counts: T[]): T[];
 
-    abstract getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void): Promise<R[]>;
+    abstract getRelatedValue(
+        relatedEntities: R[],
+        eagerLoad: EntityQuery<T>['eagerLoad'],
+        customQuery?: (query: Query) => void
+    ): Promise<R[]>;
 
-    abstract getRelatedCount(relatedEntities: R[]): Promise<T[]>;
+    abstract getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void): Promise<T[]>;
 }
 
 export abstract class InverseRelationship<T extends Entity, R extends Entity> extends InverseField<T> {
@@ -105,9 +111,13 @@ export abstract class InverseRelationship<T extends Entity, R extends Entity> ex
 
     abstract matchCounts(entities: T[], counts: T[]): T[];
 
-    abstract getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void): Promise<R[]>;
+    abstract getRelatedValue(
+        relatedEntities: R[],
+        eagerLoad: EntityQuery<T>['eagerLoad'],
+        customQuery?: (query: Query) => void
+    ): Promise<R[]>;
 
-    abstract getRelatedCount(relatedEntities: R[]): Promise<T[]>;
+    abstract getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void): Promise<T[]>;
 
 }
 
@@ -127,23 +137,27 @@ export class HasOneField<T extends Entity, R extends Entity> extends InverseRela
         (target[this.property as keyof T] as InstanceType<this['relationClass']>).set(value as unknown as R)
     }
 
-    async getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void) {
+    async getRelatedValue(relatedEntities: R[], eagerLoad: EntityQuery<T>['eagerLoad'], customQuery?: (query: Query) => void) {
         const parentIds = relatedEntities.pluck(this.entity.getPrimaryKey()) as number[]
         const inverseByField = this.related.metadata.relationships[this.inverseBy]
-        const query = this.related.with(eagerLoad).whereIn(inverseByField.column as EntityKeys<R>, parentIds)
+        const query = this.related.with(...eagerLoad).whereIn(inverseByField.column as EntityKeys<R>, parentIds)
 
         customQuery?.(query)
 
         return await query.get()
     }
 
-    async getRelatedCount(relatedEntities: R[]) {
+    async getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void) {
         const relatedField = this.related.metadata.relationships[this.inverseBy]
 
-        return await this.related.newQuery()
+        const query = this.related.newQuery()
             .whereIn(relatedField.column, relatedEntities.pluck(this.entity.getPrimaryKey()))
             .select(relatedField.column)
             .groupBy(relatedField.column)
+
+        customQuery?.(query)
+
+        return await query
             .selectCount()
             .get() as unknown as T[]
     }
@@ -182,23 +196,27 @@ export class HasManyField<T extends Entity, R extends Entity> extends InverseRel
 
     }
 
-    async getRelatedValue(relatedEntities: R[], eagerLoad: string, customQuery?: (query: Query) => void) {
+    async getRelatedValue(relatedEntities: R[], eagerLoad: EntityQuery<T>['eagerLoad'], customQuery?: (query: Query) => void) {
         const parentIds = relatedEntities.pluck(this.entity.getPrimaryKey()) as number[]
         const inverseByField = this.related.metadata.relationships[this.inverseBy]
-        const query = this.related.with(eagerLoad).whereIn(inverseByField.column as EntityKeys<R>, parentIds)
+        const query = this.related.with(...eagerLoad).whereIn(inverseByField.column as EntityKeys<R>, parentIds)
 
         customQuery?.(query)
 
         return await query.get()
     }
 
-    async getRelatedCount(relatedEntities: R[]) {
+    async getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void) {
         const relatedField = this.related.metadata.relationships[this.inverseBy]
 
-        return await this.related.newQuery()
+        const query = this.related.newQuery()
             .whereIn(relatedField.column, relatedEntities.pluck(this.entity.getPrimaryKey()))
             .select(relatedField.column)
             .groupBy(relatedField.column)
+
+        customQuery?.(query)
+
+        return await query
             .selectCount()
             .get() as unknown as T[]
     }
@@ -279,7 +297,7 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
         // return entity[this.property as keyof T] as unknown as T[K];
     }
 
-    async getRelatedValue(parents: R[], eagerLoad: string, customQuery?: (query: Query) => void) {
+    async getRelatedValue(parents: R[], eagerLoad: EntityQuery<T>['eagerLoad'], customQuery?: (query: Query) => void) {
         const relationIds = parents
             .map(parent => {
                 const relation = (parent[this.property as keyof R] as unknown as BelongsTo<R>).get()
@@ -287,7 +305,7 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
             })
             .filter(Boolean) as unknown as number[]
         if (relationIds.length) {
-            const query = this.related.with(eagerLoad).whereIn(this.related.getPrimaryKey() as EntityKeys<R>, relationIds)
+            const query = this.related.with(...eagerLoad).whereIn(this.related.getPrimaryKey() as EntityKeys<R>, relationIds)
 
             if (customQuery) {
                 customQuery(query)
@@ -298,7 +316,7 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
         return []
     }
 
-    async getRelatedCount(relatedEntities: R[]) {
+    async getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void) {
         return []
     }
 
@@ -358,16 +376,16 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
     set(target: T, value: T[keyof T]) {
     }
 
-    async getRelatedValue(parents: R[], eagerLoad: string, customQuery?: (query: Query) => void) {
+    async getRelatedValue(parents: R[], eagerLoad: EntityQuery<T>['eagerLoad'], customQuery?: (query: Query) => void) {
         const parentIds = parents.pluck(this.entity.getPrimaryKey()) as number[]
-        const relatedForeignKey = `${this.getPivotTable()}.${this.getRelatedForeignKey()}`
-        const parentForeignKey = `${this.getPivotTable()}.${this.getParentForeignKey()}`
-        const relatedKey = `${this.related.getTable()}.${this.related.getPrimaryKey()}`
+        const relatedForeignKey = `${wrap(this.getPivotTable())}.${this.getRelatedForeignKey()}`
+        const parentForeignKey = `${wrap(this.getPivotTable())}.${this.getParentForeignKey()}`
+        const relatedKey = `${wrap(this.related.getTable())}.${this.related.getPrimaryKey()}`
 
         const query = this.related
-            .with(eagerLoad)
+            .with(...eagerLoad)
             .addSelect(
-                new Expression(`${this.related.getTable()}.*`),
+                new Expression(`${wrap(this.related.getTable())}.*`),
                 new Expression(relatedForeignKey),
                 new Expression(parentForeignKey)
             )
@@ -398,11 +416,14 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         return this.relatedColumn || `${this.related.name.toLocaleLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`
     }
 
-    async getRelatedCount(relatedEntities: R[]) {
+    async getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void) {
         const query = Query.table(this.getPivotTable())
             .select(this.getParentForeignKey())
             .groupBy(this.getParentForeignKey())
             .whereIn(this.getParentForeignKey(), relatedEntities.pluck(this.related.getPrimaryKey()) as unknown as number[])
+
+        customQuery?.(query)
+
         return await query.selectCount().get() as unknown as T[]
 
     }
@@ -449,7 +470,7 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         return value
     }
 
-    async add(items: (R | number)[], parent: T) {
+    async add(items: (R | ID)[], parent: T) {
         const entities: R[] = []
         // tslint:disable-next-line:no-any
         const dataToInsert: Record<string, any>[] = []
@@ -639,7 +660,12 @@ export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T
         return metadata
     }
 
-    async save(...items: Partial<EntityObject<T> | T>[]) {
+    async save(item: Partial<EntityObject<T> | T>): Promise<T> {
+        const instances = await this.saveMany(item)
+        return instances.first() as T
+    }
+
+    async saveMany(...items: Partial<EntityObject<T> | T>[]): Promise<T[]> {
         if (!this.parent.exists) {
             await this.parent.save()
         }
@@ -647,7 +673,7 @@ export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T
 
         this.items.push(...instances)
 
-        return this
+        return instances
     }
 
     async clear() {
@@ -768,4 +794,14 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
         await this.remove(...itemsToRemove)
         await this.add(...restOfItemsToAdd)
     }
+
+    async syncWithoutDetaching(...items: (T | ID)[]) {
+        const ids = items.map(item => item instanceof Entity ? item.getPrimaryKeyValue() : item)
+
+        const existingItems = await this.get()
+        const primaryKey = this.relationship.type().getPrimaryKey()
+        const restOfItemsToAdd = ids.filter(item => !existingItems.findWhere(primaryKey, item as unknown as T[keyof T]))
+        await this.add(...restOfItemsToAdd)
+    }
+
 }

@@ -17,8 +17,8 @@ import {
 } from './Types'
 import { Connection } from './Connection'
 import { Expression } from './Expression'
-import { Statement } from '@Typetron/Database/Drivers/Statement'
-import { Constructor } from '@Typetron/Support'
+import { Statement } from './Drivers/Statement'
+import { Constructor } from '../Support'
 
 export class Query<T = {}> {
     static connection: Connection
@@ -173,6 +173,10 @@ export class Query<T = {}> {
 
     andWhereIn<K extends keyof T>(column: K | string, values: SqlValue[]): this {
         return this.whereIn(column, values)
+    }
+
+    andWhereNotIn<K extends keyof T>(column: K | string, values: SqlValue[]): this {
+        return this.whereIn(column, values, 'AND', true)
     }
 
     whereLike<K extends keyof T>(column: K | string, value: SqlValue, boolean: Boolean = 'AND', not = false): this {

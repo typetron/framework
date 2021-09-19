@@ -1,7 +1,7 @@
-import { BaseResolver, ClassResolver, Container, InjectableMetadata, Scope } from '../../Container'
+import { BaseResolver, ClassResolver, Container } from '../../Container'
 import { Constructor } from '../../Support'
 import { Form, FormFields } from '../../Forms'
-import { Http, HttpError, Request } from '../../Web'
+import { Http, HttpError, Request } from '../../Router/Http'
 
 export class FormResolver extends BaseResolver {
 
@@ -28,9 +28,9 @@ export class FormResolver extends BaseResolver {
     }
 
     private setFormScopeToRequest() {
-        const metadata = InjectableMetadata.get(Form)
-
-        metadata.scope = Scope.REQUEST
-        InjectableMetadata.set(metadata, Form)
+        //     const metadata = InjectableMetadata.get(Form)
+        //
+        //     metadata.scope = Scope.TRANSIENT
+        //     InjectableMetadata.set(metadata, Form)
     }
 }

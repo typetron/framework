@@ -2,9 +2,11 @@ import { FormMetadataKey } from './Decorators'
 import { RuleValue } from '../Validation'
 import { ChildKeys, ChildObject, Constructor } from '../Support'
 import { FormField } from './FormFields'
+import { Injectable, Scope } from '@Typetron/Container'
 
 export type FormFields<T> = ChildObject<T, Form>;
 
+@Injectable(Scope.TRANSIENT)
 export abstract class Form {
 
     readonly errors: {[key: string]: Record<string, string>} = {}

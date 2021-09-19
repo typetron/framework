@@ -74,8 +74,8 @@ class ContainerTest {
         const container = new Container()
         const childContainer = container.createChildContainer()
         const request = childContainer.get(Request)
-        expect(Object.values(container.getInstances())).to.have.length(0)
-        expect(Object.values(childContainer.getInstances())).to.have.length(1)
+        expect(container.getInstances().size).to.be.equal(0)
+        expect(childContainer.getInstances().size).to.be.equal(2)
         expect(request).to.be.instanceof(Request)
     }
 
@@ -148,7 +148,7 @@ class ContainerTest {
     @test
     throwsExceptionIfCannotResolve() {
         const container = new Container
-        expect(() => container.get('DoesNotExist')).to.throw(`Resolver not found for 'DoesNotExist'`)
+        expect(() => container.get('DoesNotExist')).to.throw(`No instance found for 'DoesNotExist'`)
     }
 
     @test
@@ -280,6 +280,22 @@ class ContainerTest {
         expect(request).to.be.instanceof(Promise)
         const resolvedRequest = await container.get(Request)
         expect(resolvedRequest).to.be.instanceof(Request)
+    }
+
+    @test
+    async injectsDependencyUsingStringAlias() {
+        class SomeClass {
+            @Inject('theCode')
+            code: number
+        }
+
+        const container = new Container()
+        container.set('theCode', 123)
+
+        const instance = container.get(SomeClass)
+
+        expect(instance.code).to.be.equal(123)
+
     }
 
     // @test

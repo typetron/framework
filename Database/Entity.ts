@@ -1,6 +1,6 @@
 import { EntityProxyHandler } from './EntityProxyHandler'
 import { EntityQuery } from './EntityQuery'
-import { ChildObject, KeysOfType } from '@Typetron/Support'
+import { ChildObject, KeysOfType } from '../Support'
 import { EntityMetadata, EntityMetadataKey, ID } from './Decorators'
 import { EntityNotFoundError } from './EntityNotFoundError'
 import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseField } from './Fields'
@@ -138,7 +138,7 @@ export abstract class Entity {
         return instance
     }
 
-    static create<T extends Entity>(this: EntityConstructor<T>, data: ChildObject<T, Entity> | {}): Promise<T> {
+    static create<T extends Entity>(this: EntityConstructor<T>, data?: ChildObject<T, Entity> | {}): Promise<T> {
         return (new this()).save(data)
     }
 
@@ -169,11 +169,23 @@ export abstract class Entity {
         return this.newQuery().with(...relations)
     }
 
-    static withCount<T extends Entity, K extends KeysOfType<T, List<Entity>>>(this: EntityConstructor<T>, ...relations: K[]) {
+    static withCount<T extends Entity, K extends KeysOfType<T, List<Entity>>>(
+        this: EntityConstructor<T>,
+        ...relations: (
+            // tslint:disable-next-line:no-any
+            KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<T> |
+            // tslint:disable-next-line:no-any max-line-length
+            [KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<T>, (Query: EntityQuery<any>) => void]
+            )[]
+    ) {
         return this.newQuery().withCount(...relations)
     }
 
-    static async find<T extends Entity>(this: EntityConstructor<T>, id: string | number | ID): Promise<T> {
+    static async find<T extends Entity>(this: EntityConstructor<T>, id: string | number | ID): Promise<T | undefined> {
+        return this.newQuery().where('id' as keyof T, id as number).first()
+    }
+
+    static async findOrFail<T extends Entity>(this: EntityConstructor<T>, id: string | number | ID): Promise<T> {
         const query = this.newQuery().where('id' as keyof T, id as number)
         const instance = await query.first()
         if (!instance || !Object.entries(instance).length) {
@@ -213,7 +225,14 @@ export abstract class Entity {
         return this
     }
 
-    async loadCount<K extends KeysOfType<this, List<Entity>>>(...relations: K[]) {
+    async loadCount<K extends KeysOfType<this, List<Entity>>>(
+        ...relations: (
+            // tslint:disable-next-line:no-any
+            KeysOfType<this, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this> |
+            // tslint:disable-next-line:no-any max-line-length
+            [KeysOfType<this, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this>, (Query: EntityQuery<any>) => void]
+            )[]
+    ) {
         await this.newQuery().withCount<K>(...relations).eagerLoadRelationshipsCounts([this])
 
         return this

@@ -1,7 +1,9 @@
-export interface Authenticatable {
-    getId(): number | string;
+import { Entity, EntityColumns } from '../../Database'
 
-    getUsername(): string;
+export interface Authenticatable<T extends Entity> {
+    getId(): EntityColumns<T>;
 
-    getPassword(): string;
+    getUsername(): EntityColumns<T>;
+
+    getPassword(): EntityColumns<T>;
 }

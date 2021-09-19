@@ -9,6 +9,7 @@ import { Update } from '../SQL/Statements/Update'
 import { Alter } from '../SQL/Statements/Alter'
 import { Schema } from './Schema'
 import { SchemaContract } from '@Typetron/Database/Drivers/SchemaContract'
+import { wrap } from '@Typetron/Database/Helpers'
 
 export class SqliteDriver implements DatabaseDriver {
     database: Database
@@ -111,6 +112,6 @@ export class SqliteDriver implements DatabaseDriver {
     }
 
     tableColumns(table: string) {
-        return this.get<{name: string, type: string}>(`PRAGMA table_info(${table})`)
+        return this.get<{name: string, type: string}>(`PRAGMA table_info(${wrap(table)})`)
     }
 }

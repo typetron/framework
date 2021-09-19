@@ -1,10 +1,8 @@
-import * as jwt from 'jsonwebtoken'
 import { Inject, Injectable, Scope } from '../../Container'
 import { User } from './User'
 import { AuthConfig } from '../Config'
 import { EntityKeys, ID } from '../../Database'
-import { Crypt } from '@Typetron/Encryption'
-import { Authenticatable } from './Authenticatable'
+import { Crypt, JWT } from '@Typetron/Encryption'
 
 @Injectable(Scope.REQUEST)
 export class Auth {
@@ -12,7 +10,18 @@ export class Auth {
     @Inject()
     authConfig: AuthConfig
 
+    @Inject()
+    jwt: JWT
+
+    @Inject()
+    crypt: Crypt
+
     id?: ID
+
+    /**
+     * This is primarily used in websocket connections so we don't need to pass the auth token for each weboscket message
+     */
+    expiresAt = new Date()
 
     private savedUser: User
 
@@ -26,7 +35,7 @@ export class Auth {
         }
 
         if (!this.id) {
-            throw new Error('There is no id saved in the Auth service. Please use the AuthMiddleware on this route')
+            throw new Error('You tried to use the Auth service without authenticating the user. Please use the AuthMiddleware or authenticate the user before using this route')
         }
 
         return this.savedUser = await this.authenticable.find(this.id) as T
@@ -34,38 +43,57 @@ export class Auth {
 
     async login(username: string, password: string): Promise<string> {
         const user = await this.authenticable.where((new this.authenticable).getUsername() as EntityKeys<User>, username).first()
-        if (!user || !await Crypt.compare(password, user.password)) {
+        if (!user || !await this.crypt.compare(password, user.password)) {
             throw new Error('Invalid credentials')
         }
 
-        this.id = user.id
-
-        return jwt.sign({sub: this.id = user.id}, this.authConfig.signature, {expiresIn: this.authConfig.duration})
+        return this.sign(this.id = user.id)
     }
 
-    loginById(id: number): string {
-        return jwt.sign({sub: this.id = id}, this.authConfig.signature, {expiresIn: this.authConfig.duration})
+    loginById(id: ID): Promise<string> {
+        return this.sign(id)
     }
 
-    async register<T extends Authenticatable = User>(username: string, password: string): Promise<T> {
+    loginUser(authenticable: User): Promise<string> {
+        return this.loginById(authenticable[authenticable.getId()])
+    }
+
+    sign(id: ID, expiresAtTimestampInSeconds?: number): Promise<string> {
+        return this.jwt.sign(
+            {
+                sub: this.set(id, expiresAtTimestampInSeconds)
+            },
+            this.authConfig.signature,
+            {
+                expiresIn: this.authConfig.duration
+            }
+        )
+    }
+
+    async register(username: string, password: string): Promise<User> {
         return await this.authenticable.create({
             [(new this.authenticable).getUsername() as EntityKeys<User>]: username,
-            password: await Crypt.hash(password, this.authConfig.saltRounds),
-        }) as unknown as T
+            password: await this.crypt.hash(password, this.authConfig.saltRounds),
+        })
     }
 
-    async verify(token: string): Promise<{sub: number}> {
-        return new Promise((resolve, reject) => {
-            jwt.verify(token, this.authConfig.signature, (error, data) => {
-                if (error) {
-                    reject(error)
-                }
-                const payload = data as {sub: number}
-                this.id = payload['sub']
-                resolve(payload)
-            })
+    async verify(token: string) {
+        const payload = await this.jwt.verify<number>(token, this.authConfig.signature)
 
-        })
+        this.set(payload.sub, payload.exp)
+
+        return payload
+    }
+
+    private set(id: ID, expiresAtTimestampInSeconds?: number): ID {
+        if (expiresAtTimestampInSeconds) {
+            this.expiresAt = new Date(expiresAtTimestampInSeconds * 1000)
+        } else {
+            this.expiresAt = new Date()
+            this.expiresAt.setSeconds(this.expiresAt.getSeconds() + this.authConfig.duration)
+        }
+
+        return this.id = id
     }
 
 }

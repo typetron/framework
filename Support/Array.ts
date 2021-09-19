@@ -19,7 +19,9 @@ declare global {
         // tslint:disable-next-line:no-any
         findWhere<K extends keyof T>(this: T[], property: K, value: T[K] | ArrayItemCallback<T, any>): T | undefined;
 
-        first(this: T[], defaultValue?: Object): T;
+        first(this: T[], defaultValue?: T): T | undefined;
+
+        last(this: T[], defaultValue?: T): T | undefined;
 
         remove<T>(this: T[], ...items: T[]): void;
 
@@ -28,6 +30,8 @@ declare global {
         whereIn<K extends keyof T>(this: T[], property: K, value: T[K][]): T[];
 
         groupBy<K extends keyof T>(this: T[], property: K): Record<K, T[]>;
+
+        sortBy<K extends keyof T>(this: T[], key: K, order?: 'ASC' | 'DESC' | 1 | -1): T[]
 
         groupBy<U extends string | number | symbol>(this: T[], callback: ArrayItemCallback<T, U>): Record<U, T[]>;
 
@@ -39,15 +43,15 @@ declare global {
     }
 }
 
-Array.prototype.empty = function () {
+Array.prototype.empty = function() {
     return !this.length
 }
 
-Array.prototype.random = function () {
+Array.prototype.random = function() {
     return this[Math.randomInt(0, this.length - 1)]
 }
 
-Array.prototype.randomIndex = function () {
+Array.prototype.randomIndex = function() {
     return Math.randomInt(0, this.length - 1)
 }
 
@@ -78,9 +82,13 @@ Array.prototype.whereIn = function <T, K extends keyof T>(property: K, values: (
     return this.filter(item => values.includes(item[property]))
 }
 
-Array.prototype.first = function (defaultValue = undefined) {
+Array.prototype.first = function(defaultValue = undefined) {
     const [first] = this
     return first || defaultValue
+}
+
+Array.prototype.last = function(defaultValue = undefined) {
+    return this[this.length - 1] || defaultValue
 }
 
 Array.prototype.groupBy = function <T, K extends keyof T, U>(property: K | ArrayItemCallback<T, U>) {
@@ -90,6 +98,11 @@ Array.prototype.groupBy = function <T, K extends keyof T, U>(property: K | Array
         (accumulator[key] = accumulator[key] || []).push(item)
         return accumulator
     }, {})
+}
+
+Array.prototype.sortBy = function <T, K extends keyof T>(this: T[], key: K, order?: 'ASC' | 'DESC' | 1 | -1): T[] {
+    const o = (order === 'ASC' ? 1 : order === 'DESC' ? -1 : order) || 1
+    return this.sort((a, b) => a[key] > b[key] ? 1 * o : b[key] > a[key] ? -1 * o : 0)
 }
 
 Array.prototype.forEachAsync = async function <T>(callback: ArrayItemCallback<T, void>, thisArg: T[]) {

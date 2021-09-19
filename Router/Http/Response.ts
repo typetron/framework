@@ -2,7 +2,8 @@ import { OutgoingHttpHeaders, ServerResponse } from 'http'
 import { Http } from '.'
 import { Buffer } from 'buffer'
 
-export class Response<T = string | object | undefined> {
+// tslint:disable-next-line:no-any
+export class Response<T = any> {
 
     constructor(
         public body: T,

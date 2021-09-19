@@ -1,10 +1,9 @@
-import { Application } from './Application'
-import { Inject } from '@Typetron/Container'
+import { Container, Inject } from '@Typetron/Container'
 
 export abstract class Provider {
 
     @Inject()
-    public app: Application
+    public app: Container
 
     abstract register(): void | Promise<void>;
 }

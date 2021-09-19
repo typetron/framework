@@ -4,7 +4,7 @@ import { Http } from '.'
 import { Parameters } from './Contracts'
 import * as querystring from 'querystring'
 import { ParsedUrlQuery } from 'querystring'
-import { File } from '../Storage'
+import { File } from '../../Storage'
 import Busboy from 'busboy'
 import * as os from 'os'
 import * as fs from 'fs'
@@ -12,7 +12,7 @@ import * as fs from 'fs'
 export class Request {
     // static methodField = '_method'
 
-    public parameters: {[key: string]: string} = {}
+    public parameters: Record<string, string | number> = {}
 
     constructor(
         public uri: string,

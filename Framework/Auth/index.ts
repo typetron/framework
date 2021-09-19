@@ -1,6 +1,5 @@
 import { Container, InjectableMetadata, Scope } from '../../Container'
-import { ControllerMetadata, RouteMetadata } from '@Typetron/Router/Metadata'
-import { Request } from '@Typetron/Web'
+import { ControllerMetadata, EventMetadata, RouteMetadata } from '../../Router/Metadata'
 
 export * from './Auth'
 export * from './User'
@@ -19,11 +18,17 @@ export function AuthUser() {
             const metadata = ControllerMetadata.get(target.constructor)
 
             const route = metadata.routes[property] || new RouteMetadata()
-            route.parametersOverrides[parameterIndex] = async function (request: Request, container: Container) {
+            route.parametersOverrides[parameterIndex] = async function(container: Container) {
                 return await container.get(AuthUserIdentifier)
             }
-
             metadata.routes[property] = route
+
+            const event = metadata.events[property] || new EventMetadata()
+            event.parametersOverrides[parameterIndex] = async function(container: Container) {
+                return await container.get(AuthUserIdentifier)
+            }
+            metadata.events[property] = event
+
             ControllerMetadata.set(metadata, target.constructor)
         }
     }

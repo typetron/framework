@@ -1,6 +1,6 @@
 import { Constructor } from '../../Support'
 import { Entity, EntityConstructor } from '../../Database'
-import { Request } from '../../Web'
+import { Request } from '../../Router/Http'
 import { BaseResolver, Container, InjectableMetadata, Scope } from '../../Container'
 
 export class EntityResolver extends BaseResolver {
@@ -11,10 +11,10 @@ export class EntityResolver extends BaseResolver {
     }
 
     async resolve<T>(abstract: EntityConstructor<Entity> & typeof Entity, parametersValues: object[]): Promise<T> {
-        let entity: Entity
+        let entity: Entity | undefined
         const request = this.container.get(Request)
         const requestParameterName = abstract.name
-        const parameter = request.parameters[requestParameterName]
+        const parameter = request.parameters[requestParameterName] ?? Number(parametersValues[0])
         if (parameter) {
             entity = await abstract.find(parameter)
             if (!entity) {
@@ -34,7 +34,7 @@ export class EntityResolver extends BaseResolver {
 
     private setEntityScopeToRequest() {
         const metadata = InjectableMetadata.get(Entity)
-        metadata.scope = Scope.REQUEST
+        metadata.scope = Scope.TRANSIENT
         InjectableMetadata.set(metadata, Entity)
     }
 }

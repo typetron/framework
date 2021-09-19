@@ -12,7 +12,7 @@ export class Container {
     ]
 
     // tslint:disable-next-line:no-any
-    protected instances: {[key: string]: any | Map<string, object>} = {}
+    protected instances = new Map<ServiceIdentifier<any>, any>()
 
     private parent?: Container
 
@@ -33,38 +33,47 @@ export class Container {
     }
 
     set<T>(abstract: ServiceIdentifier<T>, concrete: T | Type<T> | Function) {
-        const abstractName = this.getAbstractName(abstract)
-        const currentInstance = this.instances[abstractName]
-        if (typeof abstract !== 'string' && currentInstance && !(concrete instanceof (currentInstance.constructor as Type<T>))) {
-            const instancesMap = new Map()
-            instancesMap.set(currentInstance.constructor, currentInstance)
-            instancesMap.set(abstract, concrete)
-            this.instances[abstractName] = instancesMap
-        } else {
-            this.instances[abstractName] = concrete
-        }
+        this.instances.set(abstract, concrete)
     }
 
-    forceSet<T>(key: string, concrete: T | Type<T> | Function) {
-        this.instances[key] = concrete
+    /**
+     * @deprecated
+     */
+    forceSet<T>(abstract: ServiceIdentifier<T>, concrete: T | Type<T> | Function) {
+        this.set(abstract, concrete)
     }
 
-    get<T>(abstract: ServiceIdentifier<T>, parameters: object[] = []): T {
-        const abstractName = this.getAbstractName(abstract)
+    // tslint:disable-next-line:no-any
+    get<T>(abstract: ServiceIdentifier<T>, parameters: any[] = []): T {
         const metadata = this.getMetadata(abstract)
 
         if (metadata.scope === Scope.TRANSIENT) {
-            return this.getResolver(abstract, abstractName, metadata).resolve(abstract, parameters) as T
+            return this.getResolver(abstract, metadata).resolve(abstract, parameters) as T
         }
 
         let concrete = this.getInstance(abstract)
         if (concrete) {
             return concrete
         }
-        if (this.parent && (concrete = this.parent.getInstance(abstract))) {
+
+        // if (this.parent && metadata.scope !== Scope.REQUEST
+        //     && (concrete = this.parent.getInstance(abstract) ?? this.parent.get(abstract))
+        // ) {
+        //     return concrete
+        // }
+
+        if (this.parent && metadata.scope !== Scope.REQUEST && (concrete = this.parent.getInstance(abstract))) {
             return concrete
         }
-        const resolver = this.getResolver(abstract, abstractName, metadata)
+
+        if (typeof abstract === 'string') {
+            const instance = this.getInstance<T>(abstract) as T
+            if (!instance) {
+                throw new Error(`No instance found for '${this.getAbstractName(abstract)}'`)
+            }
+        }
+
+        const resolver = this.getResolver(abstract, metadata)
         concrete = resolver.resolve(abstract, parameters) as T
         this.set(abstract, concrete)
         return concrete
@@ -73,6 +82,7 @@ export class Container {
     createChildContainer(): Container {
         const childContainer = new Container()
         childContainer.parent = this
+        childContainer.set(Container, childContainer)
         childContainer.resolvers = this.resolvers.map(resolver => {
             return new (resolver.constructor as Constructor<Resolver>)(childContainer)
         })
@@ -105,13 +115,13 @@ export class Container {
         throw new Error(`Cannot get abstract name for ${abstract}`)
     }
 
-    private getResolver<T>(abstract: ServiceIdentifier<T>, abstractName: string, metadata: InjectableMetadata) {
+    private getResolver<T>(abstract: ServiceIdentifier<T>, metadata: InjectableMetadata) {
         let resolver = metadata.resolver
         if (!resolver) {
             resolver = this.resolvers.find(item => item.canResolve(abstract))
         }
         if (!resolver) {
-            throw new Error(`Resolver not found for '${abstractName}'`)
+            throw new Error(`Resolver not found for '${this.getAbstractName(abstract)}'`)
         }
         this.setResolverForAbstract(abstract, resolver, metadata)
         resolver.container = this
@@ -127,17 +137,6 @@ export class Container {
     }
 
     private getInstance<T>(abstract: ServiceIdentifier<T>): T | undefined {
-        const abstractName = this.getAbstractName(abstract)
-        let instance = this.instances[abstractName]
-        if (instance instanceof Map) {
-            instance = instance.get(abstract)
-        }
-        if (instance &&
-            this.getAbstractName(instance.constructor) === abstractName &&
-            !(instance instanceof (abstract as Function))
-        ) {
-            return undefined
-        }
-        return instance
+        return this.instances.get(abstract) || this.parent?.getInstance(abstract)
     }
 }

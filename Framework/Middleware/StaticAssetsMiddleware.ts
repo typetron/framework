@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '../../Container'
 import { MiddlewareInterface, RequestHandler, RouteNotFoundError } from '../../Router'
 import { Storage } from '../../Storage'
-import { Http, Request, Response } from '../../Web'
+import { Http, Request, Response } from '../../Router/Http'
 import { AppConfig } from '../Config'
 
 @Injectable()

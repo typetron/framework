@@ -8,7 +8,7 @@
 		"./**/*.ts"
 	],
 	"exclude": [
-		"./test/**/*.ts",
+		"./tests/**/*.ts",
 		"./dist/**"
 	],
 	"reporter": [

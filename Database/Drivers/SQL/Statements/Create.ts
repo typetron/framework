@@ -5,17 +5,13 @@ export class Create extends BaseStatement {
 
     columns: ColumnField<Entity>[] = []
 
-    getColumns() {
-        return ''
-    }
-
     toSql() {
         return `
             CREATE
-            TABLE
-            ${this.table}
+                TABLE
+                ${this.table}
             (
-                ${this.getColumns()}
+                ${this.components.columns.join(', ')}
             )
         `
     }

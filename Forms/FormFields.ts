@@ -1,5 +1,5 @@
 import { Constructor, Type } from '../Support'
-import { RuleInterface } from '../Validation'
+import { Optional, RuleInterface } from '../Validation'
 
 export class FormField {
     constructor(
@@ -15,6 +15,11 @@ export class FormField {
     validate(value: any): Record<string, string> | undefined {
         const errors: Record<string, string> = {}
         let hasErrors = false
+
+        if (this.rules.includes(Optional) && (value === undefined || value === null)) {
+            return
+        }
+
         this.rules.forEach(rule => {
             if (!rule.prototype.passes) {
                 rule = (rule as Function)()

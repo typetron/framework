@@ -9,5 +9,5 @@
 		"reflect-metadata",
 		"./Support"
 	],
-	"spec": "test/**/*Test.ts"
+	"spec": "tests/**/*Test.ts"
 }

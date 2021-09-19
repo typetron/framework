@@ -307,6 +307,16 @@ class QueryTest {
     }
 
     @test
+    async andWhereNotIn() {
+        this.query.table('users').where('age', 18).andWhereNotIn('name', ['John', 'Doe']);
+
+        (await this.expect()).to.equal(
+            'SELECT * FROM `users` WHERE age = ? AND name NOT IN (?, ?)'
+        )
+        this.expectBindings().to.deep.equal([18, 'John', 'Doe'])
+    }
+
+    @test
     async whereLike() {
         this.query.table('users').whereLike('name', '%John');
 

@@ -6,7 +6,7 @@ export class Insert extends BaseStatement {
     get columns() {
         const values = this.components.insert || []
 
-        return wrap(Object.keys(values.first()))
+        return wrap(Object.keys(values.first() ?? {}))
     }
 
     get values() {

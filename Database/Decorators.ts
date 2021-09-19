@@ -20,7 +20,7 @@ import { BaseRelationship } from './ORM/BaseRelationship'
 
 export const EntityMetadataKey = 'framework:entity'
 
-export type ID = number;
+export type ID = number | string;
 
 export class EntityOptions<T extends Entity> {
     table?: string

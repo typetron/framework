@@ -13,7 +13,7 @@ export function Inject<T extends Object>(abstract?: ServiceIdentifier<T>) {
     return function (target: T, targetKey: string, index?: number) {
         const fieldType = Reflect.getMetadata('design:type', target, targetKey) as ServiceIdentifier<T>
         const metadata = InjectableMetadata.get(target.constructor)
-        metadata.dependencies[targetKey] = fieldType
+        metadata.dependencies[targetKey] = abstract ?? fieldType
         InjectableMetadata.set(metadata, target.constructor)
     }
 }

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '../../Container'
 import { MiddlewareInterface, RequestHandler } from '../../Router'
-import { ErrorHandlerInterface, Request, Response } from '../../Web'
+import { ErrorHandlerInterface, Request, Response } from '../../Router/Http'
 
 @Injectable()
 export class CorsMiddleware implements MiddlewareInterface {

@@ -7,7 +7,7 @@ export class Storage {
         return fileSystem
             .readdirSync(directory)
             .reduce((files, name) => {
-                const filePath = directory + '/' + name
+                const filePath = path.join(directory, name)
                 const stats = fileSystem.statSync(filePath)
                 if (stats.isFile()) {
                     const file = new File(name)

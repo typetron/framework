@@ -1,10 +1,11 @@
-import { App } from '../Framework'
-import { Router } from './Router'
+import { App, Application } from '../Framework'
 import { Abstract, Constructor, Type } from '../Support'
-import { Http, Request } from '../Web'
 import { MiddlewareInterface } from './Middleware'
-import { ControllerMetadata, RouteMetadata } from './Metadata'
+import { ControllerMetadata, EventMetadata, RouteMetadata } from './Metadata'
 import { Guard } from './Guard'
+import { Handler as HttpHandler, Http, Request } from './Http'
+import { Handler as WebsocketsHandler } from './Websockets'
+import { WebsocketEvent } from './Websockets/WebsocketEvent'
 
 class ControllerOptions {
     prefix?: string
@@ -15,11 +16,12 @@ export function Controller(path = '', options = new ControllerOptions) {
         const metadata = ControllerMetadata.get(target)
         const prefix = options.prefix || path ? path + '.' : ''
 
-        const router = App.get(Router)
+        const httpHandler = App.get(HttpHandler)
+        const websocketHandler = App.get(WebsocketsHandler)
 
         Object.keys(metadata.routes).forEach(action => {
             const routeMetadata = metadata.routes[action]
-            const route = router.add(
+            const route = httpHandler.addRoute(
                 path + (path && routeMetadata.path ? '/' : '') + routeMetadata.path,
                 routeMetadata.method,
                 target as Constructor,
@@ -30,7 +32,32 @@ export function Controller(path = '', options = new ControllerOptions) {
             )
             route.guards = routeMetadata.guards
         })
+
+        Object.keys(metadata.events).forEach(action => {
+            const eventMetadata = metadata.events[action]
+            const name = prefix + (eventMetadata.name || action)
+            const event = websocketHandler.addEvent(
+                name,
+                target as Constructor,
+                action,
+                eventMetadata.parametersTypes,
+                metadata.middleware.concat(eventMetadata.middleware)
+            )
+            event.guards = eventMetadata.guards
+        })
     }
+}
+
+function addEvent(controller: Constructor, action: string, name: string) {
+    const metadata = ControllerMetadata.get(controller)
+
+    const event = metadata.events[action] || new EventMetadata
+    event.parametersTypes = Reflect.getMetadata('design:paramtypes', controller.prototype, action)
+    event.name = name
+
+    metadata.events[action] = event
+
+    ControllerMetadata.set(metadata, controller)
 }
 
 function addRoute(controller: Constructor, action: string, method: Http.Method, path: string, name: string) {
@@ -45,6 +72,40 @@ function addRoute(controller: Constructor, action: string, method: Http.Method, 
     metadata.routes[action] = route
 
     ControllerMetadata.set(metadata, controller)
+}
+
+export function Event(name = '') {
+    return (target: Object, action: string) => {
+        addEvent(target.constructor as Constructor, action, name)
+    }
+}
+
+export function OnOpen(target: Object, action: string) {
+    const websocketHandler = App.get(WebsocketsHandler)
+
+    websocketHandler.onOpen = new WebsocketEvent(
+        '',
+        target.constructor as Constructor,
+        action,
+        Reflect.getMetadata('design:paramtypes', target, action),
+    )
+}
+
+export function OnClose(target: Object, action: string) {
+    const websocketHandler = App.get(WebsocketsHandler)
+
+    websocketHandler.onClose = new WebsocketEvent(
+        '',
+        target.constructor as Constructor,
+        action,
+        Reflect.getMetadata('design:paramtypes', target, action),
+    )
+}
+
+export function Arg(name: string) {
+    return function(target: Object, action: string, parameterIndex: number) {
+        // addEvent(target.constructor as Constructor, action, name)
+    }
 }
 
 export function Get(path = '', name = '') {
@@ -98,7 +159,7 @@ export function Middleware(...middleware: Abstract<MiddlewareInterface>[]) {
 }
 
 export function AllowIf(...guards: Type<Guard>[]) {
-    return function (target: object, action: string) {
+    return function(target: object, action: string) {
         if (action) {
             target = target.constructor
         }
@@ -118,12 +179,13 @@ export function AllowIf(...guards: Type<Guard>[]) {
 }
 
 export function Query(name: string) {
-    return function (target: Object, action: string, parameterIndex: number) {
+    return function(target: Object, action: string, parameterIndex: number) {
         const metadata = ControllerMetadata.get(target.constructor)
         const parametersTypes = Reflect.getMetadata('design:paramtypes', target, action)
 
         const route = metadata.routes[action] || new RouteMetadata()
-        route.parametersOverrides[parameterIndex] = function (request: Request) {
+        route.parametersOverrides[parameterIndex] = function(container: Application) {
+            const request = container.get(Request)
             const value = request.query[name]
 
             if (parametersTypes[parameterIndex].name === 'Number') {
@@ -133,6 +195,26 @@ export function Query(name: string) {
         }
 
         metadata.routes[action] = route
+        ControllerMetadata.set(metadata, target.constructor)
+    }
+}
+
+export function Body() {
+    return function(target: Object, action: string, parameterIndex: number) {
+        const metadata = ControllerMetadata.get(target.constructor)
+
+        const route = metadata.events[action] || new RouteMetadata()
+        route.parametersOverrides[parameterIndex] = function(container: Application) {
+            const request = container.get(Request)
+
+            if (!request.body) {
+                throw new Error(`There is no data in the 'body' of the request`)
+            }
+
+            return request.body
+        }
+
+        metadata.events[action] = route
         ControllerMetadata.set(metadata, target.constructor)
     }
 }

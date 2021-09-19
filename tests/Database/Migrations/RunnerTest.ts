@@ -8,7 +8,7 @@ import { anything, instance, mock, when } from 'ts-mockito'
 @suite
 class RunnerTest {
     private runner: Migrator
-    private migrationsPath = './test/Database/Migrations/migrations'
+    private migrationsPath = './tests/Database/Migrations/migrations'
     private migrationFiles = ['1.createUserTable.ts', '2.createArticlesTable.ts']
     private tableNames = ['migration_test_users', 'migration_test_articles']
 

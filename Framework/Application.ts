@@ -7,35 +7,41 @@ import { FormResolver } from './Resolvers/FormResolver'
 import { EntityResolver } from './Resolvers/EntityResolver'
 import { RootDir } from './RootDir'
 import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware'
-import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Web'
+import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Router/Http'
 import { Storage } from '../Storage'
 import { AuthResolver } from './Resolvers/AuthResolver'
+import fileSystem from 'fs'
+import path from 'path'
+import { WebsocketsProvider } from './Providers/WebsocketsProvider'
 
 export class Application extends Container {
     static defaultConfigDirectory = 'config'
 
     public config = new Map<Function, object>()
 
-    private constructor(public directory: string, public configDirectory = Application.defaultConfigDirectory) {
+    constructor(public directory: string, public configDirectory = Application.defaultConfigDirectory) {
         super()
         Application.setInstance(this)
         this.set(Application, App.instance = this)
+        this.set(Container, this)
         this.set(RootDir, directory)
     }
 
     static async create(directory: string, configDirectory = Application.defaultConfigDirectory) {
-        try {
-            const app = new this(directory, configDirectory)
-            await app.bootstrap()
-            return app
-        } catch (error) {
-            console.error(error)
-            throw error
-        }
+        const app = new this(fileSystem.realpathSync.native(directory), configDirectory)
+        await app.bootstrap()
+        return app
     }
 
-    startServer() {
+    async startServer() {
         const httpHandler = this.get(HttpHandler)
+
+        const appConfig = this.get(AppConfig)
+
+        if (appConfig.websocketsPort) {
+            await this.registerProviders([WebsocketsProvider])
+        }
+
         return httpHandler.startServer(this)
     }
 
@@ -49,16 +55,16 @@ export class Application extends Container {
     }
 
     private async loadConfig(configDirectory: string) {
-        const path = this.directory + '/' + configDirectory
+        const configsPath = path.join(this.directory, configDirectory)
 
         const storage = this.get(Storage)
 
-        if (!await storage.exists(path)) {
-            console.warn(`Config path '${path}' does not exist. Running with default config.`)
+        if (!await storage.exists(configsPath)) {
+            console.warn(`Config path '${configsPath}' does not exist. Running with default config.`)
         }
 
         storage
-            .files(path)
+            .files(configsPath)
             .whereIn('extension', ['ts'])
             .forEach(file => {
                 const configItem = require(file.path).default as BaseConfig<{}>
@@ -82,14 +88,17 @@ export class Application extends Container {
         this.set(ErrorHandlerInterface, this.get(ErrorHandler))
 
         const appConfig = this.get(AppConfig)
+        await this.checkAppSecret()
 
         if (appConfig.staticAssets) {
             appConfig.middleware.unshift(StaticAssetsMiddleware)
         }
 
         this.registerResolvers()
-        await this.registerProviders(appConfig.providers || [])
-        await this.checkAppSecret()
+
+        const providers = appConfig.providers || []
+
+        await this.registerProviders(providers)
     }
 
     private async checkAppSecret() {

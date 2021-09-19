@@ -3,8 +3,8 @@ import { ErrorHandlerInterface } from './ErrorHandlerInterface'
 import { HttpError } from './Errors/HttpError'
 import { Http } from './index'
 import { Request } from './Request'
-import { Inject } from '../Container'
-import { AppConfig } from '../Framework/Config'
+import { Inject } from '../../Container'
+import { AppConfig } from '../../Framework/Config'
 
 export class ErrorHandler implements ErrorHandlerInterface {
 

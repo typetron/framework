@@ -8,7 +8,10 @@ export class FormBuilder {
         const formFields = Object.values(form.fields()) as FormField[]
         const instance = new form()
         Object.values(formFields).forEach(field => {
-            controls[field.name] = new FormControl(instance[field.name as keyof Form], {validators: this.getValidators(field)})
+            controls[field.name] = new FormControl(
+                instance[field.name as keyof Form],
+                {validators: this.getValidators(field)}
+            )
         })
         return new FormGroup(controls)
     }
