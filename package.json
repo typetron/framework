@@ -31,7 +31,8 @@
 		"jsonwebtoken": "^8.5.1",
 		"mysql": "^2.18.1",
 		"sqlite3": "^5.0.2",
-		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.4.0"
+		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.4.0",
+		"ts-mockito": "^2.6.1"
 	},
 	"devDependencies": {
 		"@testdeck/mocha": "^0.1.2",
@@ -48,7 +49,6 @@
 		"nyc": "^15.1.0",
 		"reflect-metadata": "^0.1.13",
 		"source-map-support": "^0.5.20",
-		"ts-mockito": "^2.6.1",
 		"ts-node": "^10.2.1",
 		"tsconfig-paths": "^3.11.0",
 		"tslint": "^6.1.3",
