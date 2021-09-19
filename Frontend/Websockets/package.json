@@ -15,7 +15,7 @@
 	},
 	"dependencies": {
 		"rxjs": "^6.6.7",
-		"@typetron/framework": "^0.3.3"
+		"@typetron/framework": "^0.3.4"
 	},
 	"devDependencies": {
 		"typescript": "4.1.6"
