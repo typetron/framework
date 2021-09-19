@@ -17,10 +17,8 @@
 	"scripts": {
 		"build": "tsc",
 		"test": "mocha",
-		"lint": "eslint",
 		"test:watch": "mocha --watch",
-		"preversion": "npm test",
-		"version": "npm run build"
+		"preversion": "npm test"
 	},
 	"engines": {
 		"node": ">= 12.13.0"
