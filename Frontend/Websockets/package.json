@@ -2,7 +2,7 @@
 	"name": "@typetron/websockets",
 	"description": "Typetron Websockets library",
 	"license": "MIT",
-	"version": "0.3.0",
+	"version": "0.3.2",
 	"author": {
 		"email": "ionel@typetron.org",
 		"name": "Ionel Lupu"
