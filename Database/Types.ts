@@ -157,7 +157,9 @@ export class WhereSubSelect extends WhereExpression {
     }
 }
 
+// tslint:disable-next-line:no-any
+export type RelationsTreeQuery = (query: EntityQuery<any>) => void
+
 export interface RelationsTree {
-    // tslint:disable-next-line:no-any
-    [key: string]: RelationsTree | ((query: EntityQuery<any>) => void)
+    [key: string]: RelationsTree | RelationsTreeQuery
 }

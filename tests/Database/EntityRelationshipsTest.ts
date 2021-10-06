@@ -262,6 +262,23 @@ class EntityRelationshipsTest {
         expect(user.articles).to.have.length(1)
     }
 
+    // @test
+    // async deepBelongsToEagerLoadWithCustomQuery() {
+    //     const admin = await Role.create(this.admin)
+    //
+    //     const joe = await User.create(this.joe)
+    //     await joe.profile.save(new Profile({address: 'south address'}))
+    //     const doe = await User.create(this.doe)
+    //     await doe.profile.save(new Profile({address: 'east address'}))
+    //
+    //     await admin.users.add(joe, doe)
+    //
+    //     const role = await Role.with(['users.profile', query => query.whereLike('address', '%east%')]).first() as Role
+    //
+    //     expect(role.users).to.have.length(1)
+    //     expect(role.users[0].name).to.be.equal(doe.name)
+    // }
+
     @test
     async belongsToLoad() {
         const user = await User.create(this.joe)

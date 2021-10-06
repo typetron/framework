@@ -23,7 +23,7 @@ export class Auth {
      */
     expiresAt = new Date()
 
-    private savedUser: User
+    private savedUser?: User
 
     get authenticable(): typeof User {
         return this.authConfig.entity
@@ -47,6 +47,7 @@ export class Auth {
             throw new Error('Invalid credentials')
         }
 
+        delete this.savedUser
         return this.sign(this.id = user.id)
     }
 
@@ -70,11 +71,11 @@ export class Auth {
         )
     }
 
-    async register(username: string, password: string): Promise<User> {
+    async register<T extends User>(username: string, password: string): Promise<T> {
         return await this.authenticable.create({
-            [(new this.authenticable).getUsername() as EntityKeys<User>]: username,
+            [(new this.authenticable).getUsername() as EntityKeys<T>]: username,
             password: await this.crypt.hash(password, this.authConfig.saltRounds),
-        })
+        }) as T
     }
 
     async verify(token: string) {

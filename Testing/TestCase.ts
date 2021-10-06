@@ -89,7 +89,7 @@ export abstract class TestCase {
         return this.request(Http.Method.DELETE, route, content, headers) as Promise<Response<T>>
     }
 
-    event<T extends string | object | undefined>(event: string, content?: EventRequest['message']): Promise<Response<T>> {
+    async event<T extends string | object | undefined>(event: string, content?: EventRequest['message']): Promise<Response<T>> {
         const socketMock = mock(WebSocket)
 
         when(socketMock.publishAndSend(anything(), anything(), anything())).thenCall((topic, calledEvent, message) => {
@@ -117,7 +117,16 @@ export abstract class TestCase {
             request.parameters[String.random(15)] = parameter
         })
 
-        return this.app.get(WebsocketsHandler).handle(container, request) as Promise<Response<T>>
+        try {
+            return await this.app.get(WebsocketsHandler).handle(container, request)
+        } catch (error) {
+            if (error instanceof HttpError) {
+                const errorResponse = await this.app.get(ErrorHandlerInterface).handle(error)
+                console.error(errorResponse.body)
+                return errorResponse
+            }
+            throw error
+        }
     }
 
     on<T>(event: string, callback: (response: T) => void) {

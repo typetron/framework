@@ -40,13 +40,11 @@ export class WebsocketsProvider extends Provider {
             compression: DEDICATED_COMPRESSOR_3KB,
 
             open: (socket: uWebSocket) => {
-                const socketWrapper = new WebSocket(socket)
-                socket.container = this.app.createChildContainer()
-                socket.container.set(WebSocket, socketWrapper)
-                this.handler.onOpen?.run(socket.container, {})
+                const socketWrapper = new WebSocket(socket, this.app.createChildContainer())
+                this.handler.onOpen?.run(socketWrapper.connection.container, {})
             },
-            close: (socket: uWebSocket) => {
-                this.handler.onClose?.run(socket.container, {})
+            close: async (socket: uWebSocket) => {
+                await this.handler.onClose?.run(socket.container, {})
             },
 
             /* For brevity we skip the other events (upgrade, open, ping, pong, close) */

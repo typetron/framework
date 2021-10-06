@@ -4,14 +4,14 @@ import { DotNotationProperties, EntityConstructor, EntityObject, Expression } fr
 import { KeysOfType } from '../Support'
 import { BelongsTo, BelongsToMany, HasMany, HasOne } from './Fields'
 import { List } from './List'
-import { RelationsTree } from './Types'
+import { RelationsTree, RelationsTreeQuery } from './Types'
 
 export class EntityQuery<T extends Entity> extends Query<T> {
 
     // tslint:disable-next-line:no-any
-    eagerLoad: (string | [string, (query: EntityQuery<any>) => void])[] = []
+    eagerLoad: (string | [string, RelationsTreeQuery])[] = []
     // tslint:disable-next-line:no-any
-    eagerLoadCount: (string | [string, (query: EntityQuery<any>) => void])[] = []
+    eagerLoadCount: (string | [string, RelationsTreeQuery])[] = []
 
     constructor(public entity: EntityConstructor<T>) {
         super()
@@ -36,11 +36,11 @@ export class EntityQuery<T extends Entity> extends Query<T> {
             const relation = this.entity.metadata.allRelationships[relationName]
 
             if (!relation) {
-                throw new Error(`Relation '${relationName}' doesn not exist on entity '${this.entity.name}'`)
+                throw new Error(`Relation '${relationName}' doesn't not exist on entity '${this.entity.name}'`)
             }
 
             // tslint:disable-next-line:no-any
-            let fieldQueryFunction: undefined | ((query: EntityQuery<any>) => void)
+            let fieldQueryFunction: undefined | RelationsTreeQuery
             let otherRelations: this['eagerLoad'] = []
             if (relationValue instanceof Function) {
                 fieldQueryFunction = relationValue
@@ -56,7 +56,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         })
         // await this.eagerLoad.forEachAsync(async (field) => {
         //     // tslint:disable-next-line:no-any
-        //     let fieldName: string, fieldQueryFunction: undefined | ((query: EntityQuery<any>) => void)
+        //     let fieldName: string, fieldQueryFunction: undefined | RelationsTreeQuery
         //     if (field instanceof Array) {
         //         fieldName = field[0]
         //         fieldQueryFunction = field[1]
@@ -76,7 +76,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
     public async eagerLoadRelationshipsCounts(entities: T[]) {
         await this.eagerLoadCount.forEachAsync(async (field) => {
             // tslint:disable-next-line:no-any
-            let fieldName: string, fieldQueryFunction: undefined | ((query: EntityQuery<any>) => void)
+            let fieldName: string, fieldQueryFunction: undefined | RelationsTreeQuery
             if (field instanceof Array) {
                 fieldName = field[0]
                 fieldQueryFunction = field[1]
@@ -132,13 +132,13 @@ export class EntityQuery<T extends Entity> extends Query<T> {
             // tslint:disable-next-line:no-any
             KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this> |
             // tslint:disable-next-line:no-any max-line-length
-            [KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this>, (query: EntityQuery<any>) => void]
+            [KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this>, RelationsTreeQuery]
             )[]
     ) {
         relations = relations.filter(Boolean)
         if (relations.length) {
             // tslint:disable-next-line:no-any
-            this.eagerLoad = this.eagerLoad.concat(relations as string | [string, (query: EntityQuery<any>) => void]).unique()
+            this.eagerLoad = this.eagerLoad.concat(relations as string | [string, RelationsTreeQuery]).unique()
         }
 
         return this
@@ -149,7 +149,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
             // tslint:disable-next-line:no-any
             KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this> |
             // tslint:disable-next-line:no-any max-line-length
-            [KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this>, (query: EntityQuery<any>) => void]
+            [KeysOfType<T, BelongsTo<any> | HasOne<any> | HasMany<any> | BelongsToMany<any>> | DotNotationProperties<this>, RelationsTreeQuery]
             )[]
     ) {
         // @ts-ignore
@@ -162,14 +162,21 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         const tree: RelationsTree = {}
 
         relations.forEach(relation => {
+            let relationName: string
+            let relationValue: RelationsTreeQuery | {} = {}
             if (relation instanceof Array) {
-                tree[relation[0]] = relation[1]
-                return
+                relationName = relation[0]
+                relationValue = relation[1]
+            } else {
+                relationName = relation
             }
+
             let container = tree
-            relation.split('.').forEach(part => {
+            const relationStringParts = relationName.split('.')
+            relationStringParts.forEach((part, index) => {
+                const value = index === relationStringParts.length - 1 ? relationValue : {}
                 // @ts-ignore
-                container = (container[part] ? container[part] : container[part] = {})
+                container = (container[part] ? container[part] : container[part] = value)
             })
         })
 
@@ -180,8 +187,11 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         return Object.keys(relationsTree).map(relationName => {
             const item = relationsTree[relationName]
 
-            const children = item instanceof Function ? item : this.treeBack(item)
-            return [relationName, children.length ? children : ''].filter(Boolean).join('.')
+            if (item instanceof Function) {
+                return [relationName, item]
+            } else {
+                return [relationName, this.treeBack(item)].filter(Boolean).join('.')
+            }
         })
     }
 }
