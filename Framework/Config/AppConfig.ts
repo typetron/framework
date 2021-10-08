@@ -6,7 +6,7 @@ import { Provider } from '../Provider'
 export class AppConfig extends BaseConfig<AppConfig> {
     environment: string
     port: number
-    websocketsPort?: number = 8001
+    websocketsPort?: number
     middleware: Abstract<MiddlewareInterface>[]
     providers: Type<Provider> []
     staticAssets?: {[key: string]: string | string[]}
