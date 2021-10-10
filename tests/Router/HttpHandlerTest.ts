@@ -14,11 +14,11 @@ class HttpHandlerTest {
             index() {}
         }
 
-        const router = container.get(Handler)
-        router.addRoute('', Http.Method.GET, Controller, 'index', 'index')
+        const handler = container.get(Handler)
+        handler.addRoute('', Http.Method.GET, Controller, 'index', 'index')
 
-        expect(() => router.addRoute('', Http.Method.POST, Controller, 'index', 'index')).to.not.throw(`There is already a route with the same url: [GET] ''`)
-        expect(() => router.addRoute('', Http.Method.GET, Controller, 'index', 'index')).to.throw(`There is already a route with the same url: [GET] ''`)
+        expect(() => handler.addRoute('', Http.Method.POST, Controller, 'index', 'index')).to.not.throw(`There is already a route with the same url: [GET] ''`)
+        expect(() => handler.addRoute('', Http.Method.GET, Controller, 'index', 'index')).to.throw(`There is already a route with the same url: [GET] ''`)
     }
 
     // @test

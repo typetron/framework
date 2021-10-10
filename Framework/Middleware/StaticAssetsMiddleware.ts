@@ -3,6 +3,7 @@ import { MiddlewareInterface, RequestHandler, RouteNotFoundError } from '../../R
 import { Storage } from '../../Storage'
 import { Http, Request, Response } from '../../Router/Http'
 import { AppConfig } from '../Config'
+import * as path from 'path'
 
 @Injectable()
 export class StaticAssetsMiddleware implements MiddlewareInterface {
@@ -36,39 +37,38 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
     }
 
     async loadStaticAsset(error: RouteNotFoundError, request: Request): Promise<Response> {
-        const assetsDirectories = this.appConfig.staticAssets
-        for (const path in assetsDirectories) {
-            let directories = assetsDirectories[path]
-            if (typeof directories === 'string') {
-                directories = [directories]
+        const configs = this.appConfig.staticAssets ?? []
+        for (const config of configs) {
+            if (!request.uri.match(config.url)) {
+                continue
             }
-            for (const directory of directories) {
-                const uri = path ? request.uri.replace(`/${path}`, '') : request.uri
-                let realPath = directory + uri
-                let extension = this.getExtension(uri)
-                if (!extension) {
-                    realPath += '/index.html'
-                    extension = 'html'
+
+            let realPath = path.join(config.path, request.uri)
+            let extension = path.extname(realPath).substring(1)
+            if (!extension) {
+                realPath = path.join(realPath, 'index.html')
+                extension = 'html'
+            }
+            if (!await this.storage.exists(realPath)) {
+                if (config.basePath) {
+                    const basePath = path.join(config.path, config.indexFile ?? 'index.html')
+
+                    return this.getResponse(basePath)
                 }
 
-                if (!await this.storage.exists(realPath)) {
-                    continue
-                }
-                const file = await this.storage.read(realPath)
-                const contentType = this.mimeTypes[extension || 'application/octet-stream'] || this.mimeTypes.txt
-                return new Response(file, Http.Status.OK, {'Content-type': contentType})
+                continue
             }
+            return this.getResponse(realPath, extension)
         }
 
         throw error
     }
 
-    getExtension(string: string): string | undefined {
-        const parts = string.split('.')
-        if (parts.length === 1) {
-            return undefined
-        }
-        return parts.pop()
+    private async getResponse(filePath: string, extension?: string) {
+        extension = extension ?? path.extname(filePath).substring(1)
+        const file = await this.storage.read(filePath)
+        const contentType = this.mimeTypes[extension || 'application/octet-stream'] || this.mimeTypes.txt
+        return new Response(file, Http.Status.OK, {'Content-type': contentType})
     }
 }
 

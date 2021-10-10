@@ -9,5 +9,5 @@ export class AppConfig extends BaseConfig<AppConfig> {
     websocketsPort?: number
     middleware: Abstract<MiddlewareInterface>[]
     providers: Type<Provider> []
-    staticAssets?: {[key: string]: string | string[]}
+    staticAssets?: {url: string, path: string, basePath?: boolean, indexFile?: string}[]
 }

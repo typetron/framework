@@ -1,5 +1,5 @@
 import { BaseConfig } from './BaseConfig'
-import { MysqlDriver, SqliteDriver } from '@Typetron/Database/Drivers'
+import { MysqlDriver, SqliteDriver } from '@Typetron/Database'
 import { DatabaseDriver } from '@Typetron/Database/Drivers/DatabaseDriver'
 
 export class DatabaseConfig extends BaseConfig<DatabaseConfig> {
