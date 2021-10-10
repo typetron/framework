@@ -30,7 +30,7 @@ class StaticAssetsMiddlewareTest {
         const response = await handler.handle(container, request)
 
         expect(response.headers['Content-type']).to.be.equal('text/css')
-        expect(String(response.body)).to.contain('color: purple')
+        expect(String(response.body)).to.contain('color : purple')
     }
 
     @test
@@ -124,6 +124,6 @@ class StaticAssetsMiddlewareTest {
         const response = await handler.handle(container, request)
 
         expect(response.headers['Content-type']).to.be.equal('text/css')
-        expect(String(response.body)).to.contain('color: purple')
+        expect(String(response.body)).to.contain('color : purple')
     }
 }
