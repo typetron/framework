@@ -27,7 +27,7 @@ export class Websocket {
             this.eventMessages$.next(message)
         }
         socket.onopen = () => {
-            this.onConnectCallback()
+            this.onConnectCallback?.()
             this.queuedEvents$.subscribe(message => {
                 socket.send(JSON.stringify(message))
             })
