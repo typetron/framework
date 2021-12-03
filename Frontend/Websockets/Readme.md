@@ -52,3 +52,35 @@ const users = await socket.request<User[]>('users.list')
 const savedUser = await socket.request<User>('users.save', {name: 'John'})
 ```
 
+#### Message format of the WebSocket events
+
+The Typetron WebSocket server uses a specific message format when exchanging information between it and the clients.
+These message have the following format:
+_When sending a message:_
+
+```json
+{
+	"event": "event name",
+	"message": {
+		// optional
+		"body": "content sent to the controllers",
+		"parameters": [
+			"param1",
+			"param1"
+		]
+		// controller method parameters (optional)
+	}
+}
+```
+
+_When receiving a message:_
+
+```json
+{
+	"event": "event name",
+	"status": "OK"
+	// or "Error",
+	"message": "backend response"
+	// optional
+}
+```

@@ -29,12 +29,13 @@ export class Auth {
         return this.authConfig.entity
     }
 
-    async user<T extends User>(): Promise<T> {
+    async user<T extends User>(): Promise<T | undefined> {
         if (this.savedUser) {
             return this.savedUser as T
         }
 
         if (!this.id) {
+            return undefined
             throw new Error('You tried to use the Auth service without authenticating the user. Please use the AuthMiddleware or authenticate the user before using this route')
         }
 

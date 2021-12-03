@@ -30,8 +30,7 @@
 		"jsonwebtoken": "^8.5.1",
 		"mysql": "^2.18.1",
 		"sqlite3": "^5.0.2",
-		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.4.0",
-		"ts-mockito": "^2.6.1"
+		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.4.0"
 	},
 	"devDependencies": {
 		"@testdeck/mocha": "^0.1.2",
@@ -40,6 +39,7 @@
 		"@types/chai": "^4.2.21",
 		"@types/jsonwebtoken": "^8.5.5",
 		"@types/mocha": "^9.0.0",
+		"ts-mockito": "^2.6.1",
 		"@types/mysql": "^2.15.19",
 		"@types/node": "^16.9.3",
 		"@types/sqlite3": "^3.1.7",
