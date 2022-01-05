@@ -19,3 +19,5 @@ export type EventRequest = Event<EventRequestMessage>
 export interface EventResponse<T> extends Event<T> {
     status: WebsocketMessageStatus
 }
+
+export type EventErrorResponse<T extends string = ''> = EventResponse<{message: T, stack: string}>

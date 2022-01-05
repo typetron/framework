@@ -4,7 +4,7 @@ import { AppConfig } from '../Config'
 import { App, DEDICATED_COMPRESSOR_3KB, WebSocket as uWebSocket } from 'uWebSockets.js'
 import { TextDecoder } from 'util'
 import { ErrorHandlerInterface, Http, Request } from '../../Router/Http'
-import { Handler, WebSocket } from '../../Router/Websockets'
+import { EventErrorResponse, Handler, WebSocket } from '../../Router/Websockets'
 import { EventRequest, EventResponse } from '../../Router/Websockets/types'
 
 enum WebsocketMessageStatus {
@@ -77,7 +77,7 @@ export class WebsocketsProvider extends Provider {
                     socket.send(JSON.stringify(sentResponse), isBinary, true)
 
                 } catch (error) {
-                    const errorMessage: EventResponse<{message: string, stack: string}> = {
+                    const errorMessage: EventErrorResponse = {
                         message: {
                             message: error.content ?? error.message,
                             stack: error.stack.split('\n')

@@ -2,7 +2,7 @@ import { Inject, Injectable, Scope } from '../../Container'
 import { User } from './User'
 import { AuthConfig } from '../Config'
 import { EntityKeys, ID } from '../../Database'
-import { Crypt, JWT } from '@Typetron/Encryption'
+import { Crypt, JWT, JWToken } from '@Typetron/Encryption'
 
 @Injectable(Scope.REQUEST)
 export class Auth {
@@ -51,16 +51,10 @@ export class Auth {
         // }
 
         if (!this.id) {
-            return undefined
             throw new Error('You tried to use the Auth service without authenticating the user. Please use the AuthMiddleware or authenticate the user before using this route')
         }
 
-        const user = await this.authenticable.find(this.id)
-        if (!user) {
-            throw new Error(`Authenticated user with ID ${this.id} not found `)
-        }
-
-        return this.savedUser = user as T
+        return this.savedUser = await this.authenticable.find(this.id) as T
     }
 
     async login(username: string, password: string): Promise<string> {
@@ -100,7 +94,7 @@ export class Auth {
         }) as T
     }
 
-    async verify(token: string) {
+    async verify(token: string): Promise<JWToken<number>> {
         const payload = await this.jwt.verify<number>(token, this.authConfig.signature)
 
         this.set(payload.sub, payload.exp)

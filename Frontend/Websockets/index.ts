@@ -1,13 +1,14 @@
 import { Observable, of, ReplaySubject, Subject, throwError } from 'rxjs'
 import { filter, map, switchMap, take } from 'rxjs/operators'
 import { EventRequest, EventResponse, WebsocketMessageStatus } from '@typetron/framework/Router/Websockets/types'
+import { EventErrorResponse } from '../../Router/Websockets'
 
 export class Websocket {
     socket?: WebSocket
 
     eventMessages$ = new Subject<EventResponse<unknown>>()
     queuedEvents$ = new ReplaySubject<EventRequest>()
-    errors$ = new Subject<EventResponse<{message: string, stack: string}>>()
+    errors$ = new Subject<EventErrorResponse>()
     onConnectCallback: Function
 
     constructor(public url: string, public protocols?: string | string[]) {
@@ -61,7 +62,7 @@ export class Websocket {
             filter(eventMessage => eventMessage.event === event),
             switchMap(eventMessage => {
                 if (eventMessage.status === WebsocketMessageStatus.Error) {
-                    this.errors$.next(eventMessage)
+                    this.errors$.next(eventMessage as EventErrorResponse)
                     return throwError(eventMessage)
                 }
                 return of(eventMessage)
