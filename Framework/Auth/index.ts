@@ -15,6 +15,7 @@ export function AuthUser() {
             metadata.scope = Scope.REQUEST
             InjectableMetadata.set(metadata, target.constructor)
         } else {
+            // TODO refactor this so it doesn't add the metadata to both .routes and .events
             const metadata = ControllerMetadata.get(target.constructor)
 
             const route = metadata.routes[property] || new RouteMetadata()

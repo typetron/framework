@@ -58,7 +58,7 @@ class EntityRelationshipsTest {
     async hasOneSave() {
         const user = await User.create(this.joe)
 
-        const profile = new Profile({
+        const profile = new Profile().fill({
             address: 'address'
         })
         await user.profile.save(profile)
@@ -72,7 +72,7 @@ class EntityRelationshipsTest {
     async hasOneLoad() {
         const user = await User.create(this.joe)
 
-        const profile = new Profile({
+        const profile = new Profile().fill({
             address: 'address'
         })
         await user.profile.save(profile)
@@ -90,7 +90,7 @@ class EntityRelationshipsTest {
     async hasOneEagerLoad() {
         const user = await User.create(this.joe)
 
-        const profile = new Profile({
+        const profile = new Profile().fill({
             address: 'address'
         })
         await user.profile.save(profile)
@@ -106,7 +106,7 @@ class EntityRelationshipsTest {
     async hasManySave() {
         const user = await User.create(this.joe)
 
-        const article = new Article({
+        const article = new Article().fill({
             title: 'title',
             content: 'content',
         })
@@ -138,9 +138,9 @@ class EntityRelationshipsTest {
 
     @test
     async hasManySaveUsingSaveOnUnsavedParent() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
 
-        await user.articles.save(new Article({
+        await user.articles.save(new Article().fill({
             title: 'title',
             content: 'content',
         }))
@@ -172,7 +172,7 @@ class EntityRelationshipsTest {
     @test
     async hasManyGet() {
         const user = await User.create(this.joe)
-        const article = new Article({
+        const article = new Article().fill({
             title: 'title',
             content: 'content',
         })
@@ -186,8 +186,8 @@ class EntityRelationshipsTest {
 
     @test
     async hasManyEagerLoad() {
-        const user = new User(this.joe)
-        const article = new Article({
+        const user = new User().fill(this.joe)
+        const article = new Article().fill({
             title: 'title',
             content: 'content',
         })
@@ -285,7 +285,9 @@ class EntityRelationshipsTest {
         let article = new Article()
         await user.articles.save(article)
 
-        article = await Article.find(article.id) as Article
+        article = await Article.findOrFail(article.id)
+        const a = await Article.get()
+        const u = await User.get()
         await article.load('author')
 
         expect(article.author).to.be.instanceOf(BelongsTo)
@@ -295,7 +297,7 @@ class EntityRelationshipsTest {
     @test
     async belongsToReLoad() {
         const user = await User.create(this.joe)
-        const article = new Article({})
+        const article = new Article()
         await user.articles.save(article)
 
         await article.load('author')
@@ -307,7 +309,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManySave() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
 
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
@@ -341,7 +343,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManyClearing() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
         await user.roles.add(admin.id, developer.id)
@@ -353,7 +355,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManyRemove() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
         await user.roles.add(admin.id, developer.id)
@@ -365,7 +367,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManySync() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
         const manager = await Role.create({name: 'Manager'})
@@ -379,7 +381,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManySyncWithoutDetaching() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
         const manager = await Role.create({name: 'manager'})
@@ -394,7 +396,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManyToggle() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
         const admin = await Role.create(this.admin)
         await user.roles.add(admin.id)
 
@@ -410,7 +412,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManyLoad() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
         const admin = await Role.create(this.admin)
         await user.roles.add(admin.id)
 
@@ -421,7 +423,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManyQuery() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
         await user.roles.add(admin.id, developer.id)
@@ -434,7 +436,7 @@ class EntityRelationshipsTest {
 
     @test
     async belongsToManyHas() {
-        const user = new User(this.joe)
+        const user = new User().fill(this.joe)
         const admin = await Role.create(this.admin)
         const developer = await Role.create(this.developer)
         await user.roles.add(admin.id)
@@ -459,8 +461,8 @@ class EntityRelationshipsTest {
         let adminRole = await Role.create({name: 'Admin'})
         const joe = await User.create(this.joe)
         await adminRole.users.add(joe)
-        await joe.articles.save(new Article({title: 'title'}))
-        await joe.profile.save(new Profile({address: 'address'}))
+        await joe.articles.save(new Article().fill({title: 'title'}))
+        await joe.profile.save(new Profile().fill({address: 'address'}))
 
         adminRole = await Role.find(adminRole.id) as Role
         await adminRole.load('users.articles.author', 'users.profile.user')

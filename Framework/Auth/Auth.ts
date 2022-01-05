@@ -29,17 +29,38 @@ export class Auth {
         return this.authConfig.entity
     }
 
+    // @BeforeRequest() // TODO implement the container's '@BeforeRequest' decorator to do something before each request.
+    //  For example, load the authenticated user in memory again
+    // async before() {
+    //     if (!this.id) {
+    //         return undefined
+    //         throw new Error('You tried to use the Auth service without authenticating the user. ' +
+    //             'Please use the AuthMiddleware or authenticate the user before using this route')
+    //     }
+    //
+    //     const user = await this.authenticable.find(this.id)
+    //     if (!user) {
+    //         throw new Error(`Authenticated user with ID ${this.id} not found `)
+    //     }
+    //     this.savedUser = await this.authenticable.find(this.id)
+    // }
+
     async user<T extends User>(): Promise<T | undefined> {
-        if (this.savedUser) {
-            return this.savedUser as T
-        }
+        // if (this.savedUser) { // TODO this if statement should be removed using the @BeforeRequest decorator above
+        //     return this.savedUser as T
+        // }
 
         if (!this.id) {
             return undefined
             throw new Error('You tried to use the Auth service without authenticating the user. Please use the AuthMiddleware or authenticate the user before using this route')
         }
 
-        return this.savedUser = await this.authenticable.find(this.id) as T
+        const user = await this.authenticable.find(this.id)
+        if (!user) {
+            throw new Error(`Authenticated user with ID ${this.id} not found `)
+        }
+
+        return this.savedUser = user as T
     }
 
     async login(username: string, password: string): Promise<string> {

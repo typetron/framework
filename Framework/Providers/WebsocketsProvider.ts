@@ -3,7 +3,7 @@ import { Container, Inject } from '../../Container'
 import { AppConfig } from '../Config'
 import { App, DEDICATED_COMPRESSOR_3KB, WebSocket as uWebSocket } from 'uWebSockets.js'
 import { TextDecoder } from 'util'
-import { Http, Request } from '../../Router/Http'
+import { ErrorHandlerInterface, Http, Request } from '../../Router/Http'
 import { Handler, WebSocket } from '../../Router/Websockets'
 import { EventRequest, EventResponse } from '../../Router/Websockets/types'
 
@@ -19,6 +19,9 @@ export class WebsocketsProvider extends Provider {
 
     @Inject()
     handler: Handler
+
+    @Inject()
+    errorHandler: ErrorHandlerInterface
 
     sockets = new Map<string | number, WebSocket>()
 
@@ -74,7 +77,7 @@ export class WebsocketsProvider extends Provider {
                     socket.send(JSON.stringify(sentResponse), isBinary, true)
 
                 } catch (error) {
-                    const errorMessage: EventResponse<unknown> = {
+                    const errorMessage: EventResponse<{message: string, stack: string}> = {
                         message: {
                             message: error.content ?? error.message,
                             stack: error.stack.split('\n')
@@ -82,7 +85,10 @@ export class WebsocketsProvider extends Provider {
                         event: data.event,
                         status: WebsocketMessageStatus.Error
                     }
-                    // console.log('error', errorMessage)
+                    if (errorMessage.message) {
+                        const response = await this.errorHandler.handle(error)
+                        errorMessage.message.message = response.body.message
+                    }
                     socket.send(JSON.stringify(errorMessage), isBinary, true)
                 }
 

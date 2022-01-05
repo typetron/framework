@@ -28,10 +28,11 @@ export class ClassResolver extends BaseResolver {
         let resolve: (value: T | PromiseLike<T>) => void
         let reject: (reason?: unknown) => void
         for (const dependency in metadata.dependencies) {
-            if (!metadata.dependencies.hasOwnProperty(dependency)) {
+            const dependencyAbstract = metadata.dependencies[dependency]
+            if (!dependencyAbstract) {
                 continue
             }
-            const value = this.container.get(metadata.dependencies[dependency]) as T[keyof T]
+            const value = this.container.get(dependencyAbstract) as T[keyof T]
             if (value instanceof Promise) {
                 asyncDependencies++
                 value.then(resolvedValue => {
@@ -74,6 +75,9 @@ export class ClassResolver extends BaseResolver {
                 continue
             }
             const dependency = metadata.dependencies[dependencyName]
+            if (!dependency) {
+                continue
+            }
             if (typeof dependency === 'symbol') {
                 concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T]
                 continue

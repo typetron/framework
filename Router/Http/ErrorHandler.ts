@@ -12,14 +12,14 @@ export class ErrorHandler implements ErrorHandlerInterface {
     appConfig: AppConfig
 
     handle(error: Error, request?: Request) {
-        if (this.appConfig.environment === 'production') {
-            if (error instanceof HttpError) {
-                return new Response(error.content, error.status)
-            }
-            return new Response(error.message, Http.Status.BAD_REQUEST)
+        if (this.appConfig.debug) {
+            return this.handleDevelopmentError(error, request)
         }
 
-        return this.handleDevelopmentError(error, request)
+        if (error instanceof HttpError) {
+            return new Response(error.content, error.status)
+        }
+        return new Response(error.message, Http.Status.BAD_REQUEST)
     }
 
     private handleDevelopmentError(error: Error, request?: Request) {

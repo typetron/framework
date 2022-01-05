@@ -62,7 +62,7 @@ export class WebsocketEvent {
                 const value = routeParameters[parameterIndex++]
                 return value === undefined || value === 'undefined' ? undefined : Number(value)
             }
-            return container.get(parameter, [routeParameters[parameterIndex]])
+            return container.get(parameter, [routeParameters[parameterIndex++]])
         })
     }
 

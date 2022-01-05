@@ -15,12 +15,17 @@ export abstract class Entity {
     // tslint:disable-next-line:no-any
     original: Record<string, any> = {}
 
-    constructor(data?: object) {
+    constructor() {
         const entityProxyHandler = new EntityProxyHandler<this>()
         const proxy = new Proxy(this, entityProxyHandler)
-        entityProxyHandler.entityProxy = proxy
 
-        proxy.fill(this.original = data || {})
+        // Weird JS issues: "filling" an instance with data is not possible since the default values of child entities
+        //  are assigned after the constructor of base class (this constructor exactly) is called.
+        //  Calling "proxy.fill will update the instance but then the default values will overwrite them"
+        // proxy.fill(this.original = data || {})
+
+        this.hydrateWithRelationships()
+
         return proxy
     }
 
@@ -132,14 +137,15 @@ export abstract class Entity {
         data: Partial<ChildObject<T, Entity>> | {},
         exists = false
     ): T {
-        const instance = new this(data)
+        const instance = new this()
+        instance.fill(instance.original = data)
         instance.exists = exists
 
         return instance
     }
 
     static create<T extends Entity>(this: EntityConstructor<T>, data?: ChildObject<T, Entity> | {}): Promise<T> {
-        return (new this()).save(data)
+        return this.new(data as object).save()
     }
 
     static async insert<T extends Entity>(this: EntityConstructor<T>, data: (ChildObject<T, Entity> | {})[]): Promise<void> {
@@ -189,7 +195,7 @@ export abstract class Entity {
         const query = this.newQuery().where('id' as keyof T, id as number)
         const instance = await query.first()
         if (!instance || !Object.entries(instance).length) {
-            throw new EntityNotFoundError(`No records found for entity '${this.name}' when querying with parameters [${query.getBindings().join(', ')}]`)
+            throw new EntityNotFoundError(this, `No records found for entity '${this.name}' when querying with parameters [${query.getBindings().join(', ')}]`)
         }
         return instance
     }
@@ -261,16 +267,21 @@ export abstract class Entity {
         return dataToSave
     }
 
-    fill(data: ChildObject<this, Entity> | {}) {
+    hydrateWithRelationships() {
         const relationships = this.metadata.allRelationships
-
         Object.keys(relationships).forEach(key => {
             if (!this[key as keyof this]) {
                 // @ts-ignore
                 this[key] = new relationships[key].relationClass(relationships[key], this) as unknown as T[keyof T]
             }
         })
+    }
 
+    fill(data: ChildObject<this, Entity> | {}) {
+        const relationships = this.metadata.relationships
+        Object.keys(relationships).forEach(key => {
+            relationships[key].update(this)
+        })
         const fields = {...this.metadata.columns, ...this.metadata.relationships, ...this.metadata.inverseRelationships}
         Object.keys(data).forEach(key => {
             const field = fields[key]

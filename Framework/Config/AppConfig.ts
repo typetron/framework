@@ -5,6 +5,7 @@ import { Provider } from '../Provider'
 
 export class AppConfig extends BaseConfig<AppConfig> {
     environment: string
+    debug = true
     port: number
     websocketsPort?: number
     middleware: Abstract<MiddlewareInterface>[]

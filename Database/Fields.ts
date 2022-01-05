@@ -89,6 +89,8 @@ export abstract class RelationshipField<T extends Entity, R extends Entity> exte
     ): Promise<R[]>;
 
     abstract getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void): Promise<T[]>;
+
+    abstract update(target: T): void;
 }
 
 export abstract class InverseRelationship<T extends Entity, R extends Entity> extends InverseField<T> {
@@ -278,6 +280,10 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
 
     set(target: T, value: T[keyof T]) {
         (target[this.property as keyof T] as InstanceType<this['relationClass']>).set(value as unknown as R)
+    }
+
+    update(target: T) {
+        (target[this.property as keyof T] as InstanceType<this['relationClass']>).update()
     }
 
     value<K extends keyof T>(entity: T, key: string) {
@@ -515,8 +521,12 @@ export class BelongsTo<T extends Entity, P extends Entity = Entity> extends Base
         parent: P
     ) {
         super(relationship, parent)
-        const parentId = parent.original[relationship.column]
-        if (parentId) {
+        this.update()
+    }
+
+    update() {
+        const parentId = this.parent.original[(this.relationship as RelationshipField<P, T>).column]
+        if (parentId && !this.instance) {
             this.setById(parentId)
         }
     }
@@ -554,7 +564,7 @@ export class BelongsTo<T extends Entity, P extends Entity = Entity> extends Base
     }
 
     setById(id: number) {
-        this.set(new this.relationship.related({[this.relationship.related.getPrimaryKey()]: id}))
+        this.set(this.relationship.related.new({[this.relationship.related.getPrimaryKey()]: id}))
     }
 
     async save(data: EntityObject<T> | {} | undefined = {}): Promise<T | undefined> {
@@ -614,7 +624,7 @@ export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRel
     }
 
     setById(id: number) {
-        this.set(new this.relationship.related({[this.relationship.related.getPrimaryKey()]: id}))
+        this.set(this.relationship.related.new({[this.relationship.related.getPrimaryKey()]: id}))
     }
 
     async save(instance: T | undefined = this.instance): Promise<T | undefined> {

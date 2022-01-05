@@ -7,7 +7,7 @@ export class Websocket {
 
     eventMessages$ = new Subject<EventResponse<unknown>>()
     queuedEvents$ = new ReplaySubject<EventRequest>()
-    errors$ = new Subject<EventResponse<unknown>>()
+    errors$ = new Subject<EventResponse<{message: string, stack: string}>>()
     onConnectCallback: Function
 
     constructor(public url: string, public protocols?: string | string[]) {

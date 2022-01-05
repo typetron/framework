@@ -1,13 +1,8 @@
 import { Entity } from './Entity'
 import { EntityQuery } from './EntityQuery'
 import { EntityConstructor } from './index'
-import { Type } from '../Support'
 
 export class EntityProxyHandler<T extends Entity> {
-    entityProxy: Type<T> | T
-
-    constructor() {
-    }
 
     set<K extends keyof T>(target: T, property: string, value: T[K]) {
         target[property as keyof T] = value

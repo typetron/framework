@@ -2,6 +2,7 @@ import { Constructor } from '../../Support'
 import { Entity, EntityConstructor } from '../../Database'
 import { Request } from '../../Router/Http'
 import { BaseResolver, Container, InjectableMetadata, Scope } from '../../Container'
+import { EntityNotFoundError } from '../../Database/EntityNotFoundError'
 
 export class EntityResolver extends BaseResolver {
 
@@ -18,7 +19,7 @@ export class EntityResolver extends BaseResolver {
         if (parameter) {
             entity = await abstract.find(parameter)
             if (!entity) {
-                throw new Error(`Entity '${requestParameterName}' with ${abstract.getPrimaryKey()} '${parameter}' not found`)
+                throw new EntityNotFoundError(abstract, `Entity '${requestParameterName}' with ${abstract.getPrimaryKey()} '${parameter}' not found`)
             }
         } else {
             throw new Error(`No parameter found that can be used as an entity identifier for the '${requestParameterName}' entity. Did you forget to add the '{${requestParameterName}}' parameter on the route?`)

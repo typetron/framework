@@ -27,24 +27,26 @@ export class Response<T = any> {
     }
 
     static send(response: Response<undefined | number | string | object | Buffer>, serverResponse: ServerResponse) {
-        let content = response.body ?? ''
-        let rawContent: String | Buffer | undefined
-        if (!(content instanceof Buffer)) {
-            if (content instanceof Object) {
-                content = JSON.stringify(content)
-                response.headers['Content-Type'] = 'application/json'
-            }
-            rawContent = content.toString()
-        } else {
-            rawContent = content
-        }
+        const content = this.getContent(response)
 
         for (const header in response.headers) {
             serverResponse.setHeader(header, response.headers[header] || '')
         }
 
         serverResponse.statusCode = response.status
-        serverResponse.end(rawContent)
+        serverResponse.end(content)
+    }
+
+    static getContent(response: Response<number | string | object | undefined>) {
+        let content = response.body ?? ''
+        if (!(content instanceof Buffer)) {
+            if (content instanceof Object) {
+                content = JSON.stringify(content)
+                response.headers['Content-Type'] = 'application/json'
+            }
+            return content.toString()
+        }
+        return content
     }
 
     setHeader(name: string, value: string) {

@@ -9,7 +9,7 @@ export class WebSocket {
 
     id?: number | string
 
-    constructor(public connection: uWebSocket, container: Container) {
+    constructor(public connection: uWebSocket, public container: Container) {
         this.reset(container)
     }
 

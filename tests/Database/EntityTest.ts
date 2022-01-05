@@ -57,7 +57,7 @@ class EntityTest {
 
     @test
     fillEntityWhenInstantiating() {
-        expect(new User({name: 'Joe'})).to.deep.include({name: 'Joe'})
+        expect(new User().fill({name: 'Joe'})).to.deep.include({name: 'Joe'})
     }
 
     @test

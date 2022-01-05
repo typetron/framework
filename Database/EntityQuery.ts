@@ -121,7 +121,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         })
         const instance = await this.first()
         if (!instance) {
-            return new this.entity({...properties, ...values})
+            return this.entity.new({...properties, ...values})
         }
         instance.exists = true
         return instance

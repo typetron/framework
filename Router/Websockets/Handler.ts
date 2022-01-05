@@ -1,15 +1,12 @@
 import { Container, Inject } from '../../Container'
 import { MiddlewareInterface, RequestHandler, Router } from '../../Router'
-import { ErrorHandlerInterface, Request, Response } from '../Http'
+import { Request, Response } from '../Http'
 import { Abstract, Constructor, Type } from '../../Support'
 import { WebsocketEvent } from './WebsocketEvent'
 
 export class Handler {
     @Inject()
     router: Router
-
-    @Inject()
-    errorHandler: ErrorHandlerInterface
 
     onOpen?: WebsocketEvent
     onClose?: WebsocketEvent
