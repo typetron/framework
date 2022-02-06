@@ -5,7 +5,7 @@ import * as path from 'path'
 export class Storage {
     files(directory: string, recursively = false): File[] {
         return fileSystem
-            .readdirSync(directory)
+            .readdirSync(directory) // TODO make this async
             .reduce((files, name) => {
                 const filePath = path.join(directory, name)
                 const stats = fileSystem.statSync(filePath)
