@@ -5,7 +5,8 @@ import { DatabaseDriver } from '@Typetron/Database/Drivers/DatabaseDriver'
 export class DatabaseConfig extends BaseConfig<DatabaseConfig> {
     synchronizeSchema = false
     entities: string
-    migrationsDirectory = 'migrations'
+    migrationsDirectory = 'Database/migrations'
+    seedersDirectory= 'Database/seeders'
     driver: keyof this['drivers'] = process.env.databaseDriver as keyof this['drivers'] ?? 'sqlite'
 
     drivers: Record<string, () => DatabaseDriver> = {
