@@ -1,8 +1,3 @@
-/* 
-1. read seed files from specified directory.
-2. execute run method for each seed file.
-*/
-
 import { Storage } from "@Typetron/Storage"
 import { Constructor } from "@Typetron/Support"
 import { Seeder } from "./Seeder"
