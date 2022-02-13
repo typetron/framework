@@ -1,2 +1,2 @@
-export * from './Seed'
 export * from './Seeder'
+export * from './SeederManager'

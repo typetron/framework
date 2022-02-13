@@ -1,14 +1,13 @@
 import { suite, test } from '@testdeck/mocha'
-import { Seeder } from '@Typetron/Database/Seeders'
+import { SeederManager } from '@Typetron/Database/Seeders'
 import { expect } from 'chai'
 import { Connection, Query, SqliteDriver } from '../../../Database'
 import { Storage } from '../../../Storage'
 
 @suite
 class RunnerTest {
-    private runner: Seeder
-    private seedsPath = './tests/Database/Seeders/seeds'
-    private seedFiles = ['RandomSeeder']
+    private runner: SeederManager
+    private seedsPath = './tests/Database/Seeders/seeders'
 
     async before() {
         Query.connection = new Connection(new SqliteDriver(':memory:'))
@@ -17,7 +16,7 @@ class RunnerTest {
         // }))
         await Query.connection.runRaw('CREATE TABLE random_table (col1 varchar)')
 
-        this.runner = new Seeder(new Storage(), Query.connection, this.seedsPath)
+        this.runner = new SeederManager(new Storage(), this.seedsPath)
     }
 
     @test
