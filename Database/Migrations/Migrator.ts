@@ -18,7 +18,7 @@ export class Migrator {
     ) {}
 
     async files(): Promise<File[]> {
-        return this.storage.files(this.directory, true)
+        return this.storage .files(this.directory, true).where("extension", "ts")
     }
 
     public async migrate(options?: MigrateOptions): Promise<boolean> {
@@ -30,7 +30,6 @@ export class Migrator {
 
         const files = await this.files()
         const migrates = await MigrationHistory.whereIn('name', files.pluck('name')).get()
-
         const filesToMigrate = files.filter(file => !migrates.findWhere('name', file.name))
 
         if (!filesToMigrate.length) {
@@ -53,7 +52,7 @@ export class Migrator {
                 })
                 console.log(`Migrated '${migrationName}'`)
             } catch (error) {
-                console.error(`Failed to run the migration from '${migrationName}'`, error.message)
+                console.error(`Failed to run the migration from '${migrationName}'`, (error as Error).message)
                 return false
             }
         }

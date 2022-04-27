@@ -40,6 +40,10 @@ declare global {
         sum<T extends number>(this: T[]): number;
 
         sum<K extends keyof T, U extends number>(key: K | ArrayItemCallback<T, U>): U;
+
+        whenNotEmpty (callback: () => void): this;
+
+        whenEmpty (callback: () => void): this;
     }
 }
 
@@ -146,4 +150,20 @@ Array.prototype.sum = function <T, K extends keyof T, U extends number>(property
     return this.reduce((accumulator, item, index, array) => {
         return accumulator + callback(item, index, array)
     }, 0)
+}
+
+Array.prototype.whenNotEmpty = function(callback) {
+    if(!this.empty()) {
+        callback()
+    }
+
+    return this
+}
+
+Array.prototype.whenEmpty = function(callback) {
+    if(this.empty()) {
+        callback()
+    }
+
+    return this
 }

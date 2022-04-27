@@ -124,4 +124,17 @@ class ArrayTest {
         expect(this.users.sum(user => user.age)).to.be.equal(this.joe.age + this.doe.age)
     }
 
+    @test
+    whenNotEmpty() {
+        let index = false;
+        [1].whenNotEmpty(() => index = true)
+        expect(index).to.be.equal(true);
+    }
+
+    @test
+    whenEmpty() {
+        let index = false;
+        [].whenEmpty(() => index = true)
+        expect(index).to.be.equal(true);
+    }
 }
