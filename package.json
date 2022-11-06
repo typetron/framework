@@ -19,7 +19,8 @@
 		"dev": "tsc --watch",
 		"test": "mocha",
 		"test:watch": "mocha --watch",
-		"preversion": "npm test"
+		"preversion": "npm test",
+		"prepublish": "cd Readme.md && cp package.json dist/package.json && cp package-lock.json dist/package-lock.json"
 	},
 	"engines": {
 		"node": ">= 12.13.0"
