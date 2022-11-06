@@ -19,7 +19,7 @@
 		"node": ">= 12.13.0"
 	},
 	"dependencies": {
-		"@typetron/framework": "^0.3.9"
+		"@typetron/framework": "^0.3.16"
 	},
 	"peerDependencies": {
 		"@angular/common": "^13.1.0",
