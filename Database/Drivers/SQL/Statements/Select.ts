@@ -1,5 +1,5 @@
 import { BaseStatement } from './BaseStatement'
-import { Expression } from '@Typetron/Database'
+import { StringExpression } from '../../..'
 import { wrap } from '../../../Helpers'
 
 export class Select extends BaseStatement {
@@ -10,7 +10,7 @@ export class Select extends BaseStatement {
     get columns() {
         let columns = this.components.columns || []
         columns = columns.map(column => {
-            return column instanceof Expression ? column.value : wrap(column)
+            return column instanceof StringExpression ? column.value : wrap(column)
         })
 
         const aggregate = this.components.aggregate
@@ -33,16 +33,13 @@ export class Select extends BaseStatement {
         return `WHERE ${super.wheres}`
     }
 
-    toSql() {
+    toSQL() {
         return `
             SELECT ${this.distinct}${this.columns}
-            FROM ${this.table}
-            ${this.joins}
-            ${this.wheres}
-            ${this.groups}
-            ${this.havings}
-            ${this.orders}
-            ${this.limit}
+            FROM ${this.table} ${this.joins} ${this.wheres} ${this.groups}
+                ${this.having}
+                ${this.orders}
+                ${this.limit}
         `
     }
 }

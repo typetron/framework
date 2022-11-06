@@ -5,6 +5,7 @@ import '../../Support'
 interface User {
     name: string;
     age: number;
+    admin: boolean;
 }
 
 @suite
@@ -12,11 +13,13 @@ class ArrayTest {
 
     joe = {
         name: 'Joe',
-        age: 20
+        age: 20,
+        admin: false
     }
     doe = {
         name: 'Doe',
-        age: 21
+        age: 21,
+        admin: true
     }
 
     users: User[] = []
@@ -59,8 +62,23 @@ class ArrayTest {
     }
 
     @test
+    whereNot() {
+        expect(this.users.whereNot('name', this.joe.name)).to.have.members([this.doe])
+    }
+
+    @test
+    whereWithDefaultValue() {
+        expect(this.users.where('admin')).to.have.members([this.doe])
+    }
+
+    @test
     whereIn() {
         expect(this.users.whereIn('name', [this.joe.name, this.doe.name])).to.have.members([this.joe, this.doe])
+    }
+
+    @test
+    whereNotIn() {
+        expect(this.users.whereNotIn('name', [this.joe.name])).to.have.members([this.doe])
     }
 
     @test
@@ -128,13 +146,20 @@ class ArrayTest {
     whenNotEmpty() {
         let index = false;
         [1].whenNotEmpty(() => index = true)
-        expect(index).to.be.equal(true);
+        expect(index).to.be.equal(true)
+    }
+
+    @test
+    whenNotEmptyPassesTheArrayInTheCallback() {
+        let index = false;
+        [1, 2, 3].filter(i => i >= 2).whenNotEmpty(values => index = values.length === 2)
+        expect(index).to.be.equal(true)
     }
 
     @test
     whenEmpty() {
         let index = false;
         [].whenEmpty(() => index = true)
-        expect(index).to.be.equal(true);
+        expect(index).to.be.equal(true)
     }
 }

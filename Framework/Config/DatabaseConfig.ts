@@ -6,7 +6,7 @@ export class DatabaseConfig extends BaseConfig<DatabaseConfig> {
     synchronizeSchema = false
     entities: string
     migrationsDirectory = 'Database/migrations'
-    seedersDirectory= 'Database/seeders'
+    seedersDirectory = 'Database/seeders'
     driver: keyof this['drivers'] = process.env.databaseDriver as keyof this['drivers'] ?? 'sqlite'
 
     drivers: Record<string, () => DatabaseDriver> = {

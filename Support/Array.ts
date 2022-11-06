@@ -25,9 +25,13 @@ declare global {
 
         remove<T>(this: T[], ...items: T[]): void;
 
-        where<K extends keyof T>(this: T[], property: K, value: T[K]): T[];
+        where<K extends keyof T>(this: T[], property: K, value?: T[K]): T[];
+
+        whereNot<K extends keyof T>(this: T[], property: K, value?: T[K]): T[];
 
         whereIn<K extends keyof T>(this: T[], property: K, value: T[K][]): T[];
+
+        whereNotIn<K extends keyof T>(this: T[], property: K, value: T[K][]): T[];
 
         groupBy<K extends keyof T>(this: T[], property: K): Record<K, T[]>;
 
@@ -41,9 +45,9 @@ declare global {
 
         sum<K extends keyof T, U extends number>(key: K | ArrayItemCallback<T, U>): U;
 
-        whenNotEmpty (callback: () => void): this;
+        whenNotEmpty(this: T[], callback: (values: T[]) => void): this;
 
-        whenEmpty (callback: () => void): this;
+        whenEmpty(callback: () => void): this;
     }
 }
 
@@ -78,12 +82,20 @@ Array.prototype.remove = function <T>(...items: T[]) {
     })
 }
 
-Array.prototype.where = function <T, K extends keyof T>(property: K, value: T[K]) {
-    return this.filter(item => item[property] === value)
+Array.prototype.where = function <T, K extends keyof T>(property: K, value?: T[K]) {
+    return this.filter(item => value ? item[property] === value : item[property])
+}
+
+Array.prototype.whereNot = function <T, K extends keyof T>(property: K, value?: T[K]) {
+    return this.filter(item => value ? item[property] !== value : !item[property])
 }
 
 Array.prototype.whereIn = function <T, K extends keyof T>(property: K, values: (T[K])[]) {
     return this.filter(item => values.includes(item[property]))
+}
+
+Array.prototype.whereNotIn = function <T, K extends keyof T>(property: K, values: (T[K])[]) {
+    return this.filter(item => !values.includes(item[property]))
 }
 
 Array.prototype.first = function(defaultValue = undefined) {
@@ -152,16 +164,16 @@ Array.prototype.sum = function <T, K extends keyof T, U extends number>(property
     }, 0)
 }
 
-Array.prototype.whenNotEmpty = function(callback) {
-    if(!this.empty()) {
-        callback()
+Array.prototype.whenNotEmpty = function <T>(callback: (values: T[]) => void) {
+    if (!this.empty()) {
+        callback(this)
     }
 
     return this
 }
 
-Array.prototype.whenEmpty = function(callback) {
-    if(this.empty()) {
+Array.prototype.whenEmpty = function(callback: () => void) {
+    if (this.empty()) {
         callback()
     }
 

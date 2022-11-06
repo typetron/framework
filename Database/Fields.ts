@@ -1,5 +1,5 @@
 import { Entity } from './Entity'
-import { EntityConstructor, EntityKeys, EntityMetadata, EntityObject, Expression, ID, Query } from './index'
+import { EntityConstructor, EntityKeys, EntityMetadata, EntityObject, ID, Query, StringExpression } from './index'
 import { List } from './List'
 import { BaseRelationship } from './ORM/BaseRelationship'
 import { wrap } from './Helpers'
@@ -391,9 +391,9 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
         const query = this.related
             .with(...eagerLoad)
             .addSelect(
-                new Expression(`${wrap(this.related.getTable())}.*`),
-                new Expression(relatedForeignKey),
-                new Expression(parentForeignKey)
+                new StringExpression(`${wrap(this.related.getTable())}.*`),
+                new StringExpression(relatedForeignKey),
+                new StringExpression(parentForeignKey)
             )
             .join(this.getPivotTable(), relatedForeignKey, '=', relatedKey)
             .whereIn(parentForeignKey, parentIds.unique())

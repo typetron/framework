@@ -16,11 +16,12 @@ import {
     WhereValue
 } from './Types'
 import { Connection } from './Connection'
-import { Expression } from './Expression'
+import { StringExpression } from './StringExpression'
 import { Statement } from './Drivers/Statement'
-import { Constructor } from '../Support'
+import { Constructor } from '@Typetron/Support'
+import { Expression } from './Expression'
 
-export class Query<T = {}> {
+export class Query<T = {}> extends Expression {
     static connection: Connection
 
     private statementType: Constructor<Statement> = Query.connection.driver.statements.select
@@ -60,15 +61,15 @@ export class Query<T = {}> {
 
     getBindings() {
         const statement = this.statement
-        statement.toSql()
+        statement.toSQL()
         return statement.bindings
     }
 
-    toSql() {
-        return this.statement.toSql().replace(/\s{2,}/g, ' ').trim()
+    toSQL() {
+        return this.statement.toSQL().replace(/\s{2,}/g, ' ').trim()
     }
 
-    async get<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T[]> {
+    async get<K extends keyof T>(...columns: (K | string | StringExpression)[]): Promise<T[]> {
         return Query.connection.get(this.select(...(columns.length ? columns : this.components.columns)))
     }
 
@@ -86,11 +87,11 @@ export class Query<T = {}> {
         return this.table(table)
     }
 
-    async first<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T | undefined> {
+    async first<K extends keyof T>(...columns: (K | string | StringExpression)[]): Promise<T | undefined> {
         return Query.connection.first(this.select(...(columns.length ? columns : this.components.columns)))
     }
 
-    select<K extends keyof T>(...columns: (K | string | Expression)[]) {
+    select<K extends keyof T>(...columns: (K | string | StringExpression)[]) {
         this.components.columns = columns as string[]
 
         return this
@@ -292,13 +293,13 @@ export class Query<T = {}> {
         return this
     }
 
-    addSelect<K extends keyof T>(...columns: (K | string | Expression)[]) {
+    addSelect<K extends keyof T>(...columns: (K | string | StringExpression)[]) {
         this.components.columns = this.components.columns.concat(columns as string[])
 
         return this
     }
 
-    async count<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<number> {
+    async count<K extends keyof T>(...columns: (K | string | StringExpression)[]): Promise<number> {
         this.components.aggregate = {
             function: 'COUNT',
             columns: columns as string[],
@@ -307,7 +308,7 @@ export class Query<T = {}> {
         return value?.aggregate || 0
     }
 
-    selectCount<K extends keyof T>(...columns: (K | string | Expression)[]): this {
+    selectCount<K extends keyof T>(...columns: (K | string | StringExpression)[]): this {
         this.components.aggregate = {
             function: 'COUNT',
             columns: columns as string[],
@@ -315,7 +316,7 @@ export class Query<T = {}> {
         return this
     }
 
-    async max<K extends keyof T>(column: (K | string | Expression), ...columns: (K | string | Expression)[]): Promise<T[]> {
+    async max<K extends keyof T>(column: (K | string | StringExpression), ...columns: (K | string | StringExpression)[]): Promise<T[]> {
         this.components.aggregate = {
             function: 'MAX',
             columns: [column].concat(columns) as string[],

@@ -1,15 +1,23 @@
 import { Database } from 'sqlite3'
-import { SqlValue } from '@Typetron/Database/Types'
+import { SqlValue } from '../../Types'
 import { DatabaseDriver } from '../DatabaseDriver'
-import { Create } from '../SQL/Statements/Create'
 import { Select } from '../SQL/Statements/Select'
 import { Insert } from '../SQL/Statements/Insert'
 import { Delete } from '../SQL/Statements/Delete'
 import { Update } from '../SQL/Statements/Update'
 import { Alter } from '../SQL/Statements/Alter'
 import { Schema } from './Schema'
-import { SchemaContract } from '@Typetron/Database/Drivers/SchemaContract'
-import { wrap } from '@Typetron/Database/Helpers'
+import { SchemaContract } from '../SchemaContract'
+import { wrap } from '../../Helpers'
+import { Create } from './Create'
+
+interface ColumnInfo {
+    name: string,
+    type: string,
+    notnull: string,
+    dflt_value: string,
+    pk: string
+}
 
 export class SqliteDriver implements DatabaseDriver {
     database: Database
@@ -48,7 +56,8 @@ export class SqliteDriver implements DatabaseDriver {
     }
 
     async truncate(table: string) {
-        return this.run(`DELETE FROM ${table}`)
+        return this.run(`DELETE
+                         FROM ${table}`)
     }
 
     async lastInsertedId(): Promise<number> {
@@ -111,7 +120,20 @@ export class SqliteDriver implements DatabaseDriver {
         )
     }
 
-    tableColumns(table: string) {
-        return this.get<{name: string, type: string}>(`PRAGMA table_info(${wrap(table)})`)
+    async tableColumns(table: string) {
+        const columnsInfo = await this.get<ColumnInfo>(`PRAGMA table_info(${wrap(table)})`)
+        const autoIncrements = await this.get<{name: string, seq: number}>(`
+            SELECT *
+            FROM sqlite_sequence
+        `)
+
+        return columnsInfo.map(info => ({
+            name: info.name,
+            type: info.type,
+            nullable: !Boolean(info.notnull),
+            default: info.dflt_value,
+            autoIncrement: Number(Boolean(autoIncrements.findWhere('name', table))),
+            primaryKey: Boolean(info.pk),
+        }))
     }
 }

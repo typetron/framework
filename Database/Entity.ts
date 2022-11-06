@@ -30,7 +30,7 @@ export abstract class Entity {
     }
 
     static get metadata(): EntityMetadata<Entity> {
-        return Reflect.getMetadata(EntityMetadataKey, this.prototype)
+        return Reflect.getMetadata(EntityMetadataKey, this.prototype) ?? new EntityMetadata<Entity>()
     }
 
     get metadata(): EntityMetadata<Entity> {

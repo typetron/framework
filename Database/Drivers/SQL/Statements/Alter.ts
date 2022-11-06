@@ -1,5 +1,5 @@
 import { BaseStatement } from './BaseStatement'
-import { ColumnField, Entity } from '@Typetron/Database'
+import { ColumnField, Entity } from '../../..'
 
 export class Alter extends BaseStatement {
 
@@ -9,14 +9,14 @@ export class Alter extends BaseStatement {
         return ''
     }
 
-    toSql() {
+    toSQL() {
         return `
             ALTER
-            TABLE
-            ${this.table}
-            (
+                TABLE
+                ${this.table}
+                (
                 ${this.getColumns()}
-            )
+                )
         `
     }
 }

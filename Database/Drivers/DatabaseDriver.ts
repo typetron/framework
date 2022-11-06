@@ -1,7 +1,8 @@
-import { SqlValue } from '@Typetron/Database/Types'
+import { SqlValue } from '../Types'
 import { Statement } from './Statement'
 import { Constructor } from '@Typetron/Support'
-import { SchemaContract } from '@Typetron/Database/Drivers/SchemaContract'
+import { SchemaContract } from './SchemaContract'
+import { ColumnDefinitionOptions } from '@Typetron/Database/Drivers/SQL'
 
 interface StatementsList {
     create: Constructor<Statement>,
@@ -32,5 +33,5 @@ export abstract class DatabaseDriver {
 
     abstract tableExists(table: string): Promise<Boolean>
 
-    abstract tableColumns(table: string): Promise<{name: string, type: string}[]>
+    abstract tableColumns(table: string): Promise<ColumnDefinitionOptions[]>
 }

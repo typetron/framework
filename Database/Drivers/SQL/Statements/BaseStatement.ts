@@ -1,4 +1,4 @@
-import { wrap } from '@Typetron/Database/Helpers'
+import { wrap } from '../../../Helpers'
 import { Statement } from '../../Statement'
 
 export abstract class BaseStatement extends Statement {
@@ -35,7 +35,7 @@ export abstract class BaseStatement extends Statement {
         return `GROUP BY ` + this.components.groups.map(column => wrap(column)).join(', ')
     }
 
-    get havings() {
+    get having() {
         return ''
     }
 
@@ -47,9 +47,9 @@ export abstract class BaseStatement extends Statement {
         return 'ORDER BY ' + this.components.orders.map(order => `${wrap(order[0])} ${order[1]}`).join(', ')
     }
 
-    abstract toSql(): string;
+    abstract toSQL(): string;
 
     toString() {
-        return this.toSql()
+        return this.toSQL()
     }
 }

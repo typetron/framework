@@ -3,6 +3,7 @@ import { suite, test } from '@testdeck/mocha'
 import { Connection, Query } from '../../Database'
 import { anyOfClass, instance, mock, when } from 'ts-mockito'
 import { SqliteDriver } from '@Typetron/Database/Drivers'
+import { expectQuery, trimSQL } from '@Typetron/tests/Database/utils'
 
 @suite
 class QueryTest {
@@ -14,13 +15,13 @@ class QueryTest {
         Query.connection = instance(this.connection)
         Query.connection.driver = new SqliteDriver(':memory:')
         when(this.connection.get(anyOfClass(Query))).thenCall((query: Query) => {
-            return query.toSql()
+            return query.toSQL()
         })
         this.query = new Query()
     }
 
     async expect() {
-        return expect(await this.query.toSql())
+        return expect(trimSQL(await this.query.toSQL()))
     }
 
     expectBindings() {
@@ -29,37 +30,33 @@ class QueryTest {
 
     @test
     async selectsEverything() {
-        expect(
-            Query.table('users').toSql()
-        ).to.equal(
-            'SELECT * FROM `users`'
-        )
+        expectQuery(Query.table('users')).toEqual('SELECT * FROM users')
     }
 
     @test
     async selectSpecificColumns() {
-        expect(
-            Query.table('users').select('name', 'email').toSql()
-        ).to.equal(
-            'SELECT `name`, `email` FROM `users`'
+        expectQuery(
+            Query.table('users').select('name', 'email')
+        ).toEqual(
+            'SELECT name, email FROM users'
         )
     }
 
     @test
     async addColumns() {
-        expect(
-            Query.table('users').addSelect('name', 'email').toSql()
-        ).to.equal(
-            'SELECT `name`, `email` FROM `users`'
+        expectQuery(
+            Query.table('users').addSelect('name', 'email')
+        ).toEqual(
+            'SELECT name, email FROM users'
         )
     }
 
     @test
     async selectDistinct() {
-        expect(
-            Query.table('users').distinct().select('name', 'email').toSql()
-        ).to.equal(
-            'SELECT DISTINCT `name`, `email` FROM `users`'
+        expectQuery(
+            Query.table('users').distinct().select('name', 'email')
+        ).toEqual(
+            'SELECT DISTINCT name, email FROM users'
         )
     }
 
@@ -69,7 +66,7 @@ class QueryTest {
         const user = await this.query.table('users').first('name');
 
         (await this.expect()).to.equal(
-            'SELECT `name` FROM `users`'
+            'SELECT name FROM users'
         )
         expect(user).to.deep.equal({name: 'John'})
     }
@@ -78,10 +75,10 @@ class QueryTest {
     async where() {
         const query = Query.table('users').where('name', '=', 'John')
 
-        expect(
-            query.toSql()
-        ).to.equal(
-            'SELECT * FROM `users` WHERE name = ?'
+        expectQuery(
+            query
+        ).toEqual(
+            'SELECT * FROM users WHERE name = ?'
         )
 
         expect(
@@ -95,10 +92,10 @@ class QueryTest {
     async whereWithDefaultOperator() {
         const query = Query.table('users').where('name', 'John')
 
-        expect(
-            query.toSql()
-        ).to.equal(
-            'SELECT * FROM `users` WHERE name = ?'
+        expectQuery(
+            query
+        ).toEqual(
+            'SELECT * FROM users WHERE name = ?'
         )
         expect(
             query.getBindings()
@@ -131,7 +128,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').orWhere('age', 21);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name = ? OR age = ?'
+            'SELECT * FROM users WHERE name = ? OR age = ?'
         )
         this.expectBindings().to.deep.equal(['John', 21])
     }
@@ -141,7 +138,7 @@ class QueryTest {
         this.query.table('users').whereBetween('age', [18, 25]);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age BETWEEN ? AND ?'
+            'SELECT * FROM users WHERE age BETWEEN ? AND ?'
         )
         this.expectBindings().to.deep.equal([18, 25])
     }
@@ -151,7 +148,7 @@ class QueryTest {
         this.query.table('users').whereNotBetween('age', [18, 25]);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age NOT BETWEEN ? AND ?'
+            'SELECT * FROM users WHERE age NOT BETWEEN ? AND ?'
         )
         this.expectBindings().to.deep.equal([18, 25])
     }
@@ -161,7 +158,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').orWhereBetween('age', [18, 25]);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name = ? OR age BETWEEN ? AND ?'
+            'SELECT * FROM users WHERE name = ? OR age BETWEEN ? AND ?'
         )
         this.expectBindings().to.deep.equal(['John', 18, 25])
     }
@@ -171,7 +168,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').orWhereNotBetween('age', [18, 25]);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name = ? OR age NOT BETWEEN ? AND ?'
+            'SELECT * FROM users WHERE name = ? OR age NOT BETWEEN ? AND ?'
         )
         this.expectBindings().to.deep.equal(['John', 18, 25])
     }
@@ -181,7 +178,7 @@ class QueryTest {
         this.query.table('users').whereIn('age', [18, 25]);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age IN (?, ?)'
+            'SELECT * FROM users WHERE age IN (?, ?)'
         )
         this.expectBindings().to.deep.equal([18, 25])
     }
@@ -191,7 +188,7 @@ class QueryTest {
         this.query.table('users').whereNotIn('age', [18, 25]);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age NOT IN (?, ?)'
+            'SELECT * FROM users WHERE age NOT IN (?, ?)'
         )
         this.expectBindings().to.deep.equal([18, 25])
     }
@@ -201,7 +198,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').orWhereIn('age', [18, 25]);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name = ? OR age IN (?, ?)'
+            'SELECT * FROM users WHERE name = ? OR age IN (?, ?)'
         )
         this.expectBindings().to.deep.equal(['John', 18, 25])
     }
@@ -211,7 +208,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').orWhereNotIn('age', [18, 25]);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name = ? OR age NOT IN (?, ?)'
+            'SELECT * FROM users WHERE name = ? OR age NOT IN (?, ?)'
         )
         this.expectBindings().to.deep.equal(['John', 18, 25])
     }
@@ -221,7 +218,7 @@ class QueryTest {
         this.query.table('users').whereNull('age');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age IS NULL'
+            'SELECT * FROM users WHERE age IS NULL'
         )
         this.expectBindings().to.deep.equal([])
     }
@@ -231,7 +228,7 @@ class QueryTest {
         this.query.table('users').andWhereNull('age');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age IS NULL'
+            'SELECT * FROM users WHERE age IS NULL'
         )
         this.expectBindings().to.deep.equal([])
     }
@@ -241,7 +238,7 @@ class QueryTest {
         this.query.table('users').whereNotNull('age');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age IS NOT NULL'
+            'SELECT * FROM users WHERE age IS NOT NULL'
         )
         this.expectBindings().to.deep.equal([])
     }
@@ -251,7 +248,7 @@ class QueryTest {
         this.query.table('users').andWhereNotNull('age');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age IS NOT NULL'
+            'SELECT * FROM users WHERE age IS NOT NULL'
         )
         this.expectBindings().to.deep.equal([])
     }
@@ -261,7 +258,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').orWhereNull('age');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name = ? OR age IS NULL'
+            'SELECT * FROM users WHERE name = ? OR age IS NULL'
         )
         this.expectBindings().to.deep.equal(['John'])
     }
@@ -271,7 +268,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').orWhereNotNull('age');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name = ? OR age IS NOT NULL'
+            'SELECT * FROM users WHERE name = ? OR age IS NOT NULL'
         )
         this.expectBindings().to.deep.equal(['John'])
     }
@@ -281,7 +278,7 @@ class QueryTest {
         this.query.table('users').where('age', 18).orWhereLike('name', '%John');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age = ? OR name LIKE ?'
+            'SELECT * FROM users WHERE age = ? OR name LIKE ?'
         )
         this.expectBindings().to.deep.equal([18, '%John'])
     }
@@ -291,7 +288,7 @@ class QueryTest {
         this.query.table('users').where('age', 18).orWhereNotLike('name', '%John');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age = ? OR name NOT LIKE ?'
+            'SELECT * FROM users WHERE age = ? OR name NOT LIKE ?'
         )
         this.expectBindings().to.deep.equal([18, '%John'])
     }
@@ -301,7 +298,7 @@ class QueryTest {
         this.query.table('users').where('age', 18).andWhereIn('name', ['John', 'Doe']);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age = ? AND name IN (?, ?)'
+            'SELECT * FROM users WHERE age = ? AND name IN (?, ?)'
         )
         this.expectBindings().to.deep.equal([18, 'John', 'Doe'])
     }
@@ -311,7 +308,7 @@ class QueryTest {
         this.query.table('users').where('age', 18).andWhereNotIn('name', ['John', 'Doe']);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE age = ? AND name NOT IN (?, ?)'
+            'SELECT * FROM users WHERE age = ? AND name NOT IN (?, ?)'
         )
         this.expectBindings().to.deep.equal([18, 'John', 'Doe'])
     }
@@ -321,7 +318,7 @@ class QueryTest {
         this.query.table('users').whereLike('name', '%John');
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name LIKE ?'
+            'SELECT * FROM users WHERE name LIKE ?'
         )
         this.expectBindings().to.deep.equal(['%John'])
     }
@@ -331,7 +328,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').andWhere('age', 18);
 
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` WHERE name = ? AND age = ?'
+            'SELECT * FROM users WHERE name = ? AND age = ?'
         )
         this.expectBindings().to.deep.equal(['John', 18])
     }
@@ -350,17 +347,17 @@ class QueryTest {
     async orderBys() {
         this.query.table('users').orderBy('age');
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` ORDER BY `age` DESC'
+            'SELECT * FROM users ORDER BY age DESC'
         )
 
         this.query.table('users').orderBy('age', 'ASC');
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` ORDER BY `age` ASC'
+            'SELECT * FROM users ORDER BY age ASC'
         )
 
         this.query.table('users').orderBy([['age', 'DESC'], ['email', 'ASC']]);
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` ORDER BY `age` DESC, `email` ASC'
+            'SELECT * FROM users ORDER BY age DESC, email ASC'
         )
     }
 
@@ -368,40 +365,43 @@ class QueryTest {
     async groupBy() {
         this.query.table('users').groupBy('name');
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` GROUP BY `name`'
+            'SELECT * FROM users GROUP BY name'
         )
 
         this.query.table('users').groupBy('city', 'country');
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` GROUP BY `city`, `country`'
+            'SELECT * FROM users GROUP BY city, country'
         )
     }
 
     @test
     async aggregateSelectCount() {
-        expect(await this.query.table('users').selectCount().get()).to.equal('SELECT COUNT(*) as aggregate FROM `users`')
+        const query = await this.query.table('users').selectCount().get() as unknown as string
+        expectQuery(query).toEqual('SELECT COUNT(*) as aggregate FROM users')
     }
 
     @test
     async aggregateCount() {
         when(this.connection.first(anyOfClass(Query))).thenCall((query: Query) => {
-            return {aggregate: query.toSql()}
+            return {aggregate: trimSQL(query.toSQL())}
         })
 
-        expect(await this.query.table('users').count()).to.equal('SELECT COUNT(*) as aggregate FROM `users`')
+        expect(await this.query.table('users').count()).to.equal('SELECT COUNT(*) as aggregate FROM users')
     }
 
     @test
     async aggregateMax() {
-        expect(await this.query.table('users').max('age')).to.equal('SELECT MAX(`age`) as aggregate FROM `users`')
+        const query = await this.query.table('users').max('age') as unknown as string
+        expectQuery(query).toEqual('SELECT MAX(age) as aggregate FROM users')
     }
 
     @test
     async limit() {
-        expect(
-            await this.query.table('users').limit(10, 20).get()
-        ).to.equal(
-            'SELECT * FROM `users` LIMIT 10, 20'
+        const query = await this.query.table('users').limit(10, 20).get() as unknown as string
+        expectQuery(
+            query
+        ).toEqual(
+            'SELECT * FROM users LIMIT 10, 20'
         )
     }
 
@@ -416,7 +416,7 @@ class QueryTest {
     async defaultJoin() {
         this.query.table('users').join('pets', 'pets.user_id', '=', 'users.id');
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` INNER JOIN `pets` ON pets.user_id = users.id'
+            'SELECT * FROM users INNER JOIN pets ON pets.user_id = users.id'
         )
 
         // this.new.query.table('users')
@@ -430,7 +430,7 @@ class QueryTest {
     async innerJoin() {
         this.query.table('users').innerJoin('pets', 'pets.user_id', '=', 'users.id');
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` INNER JOIN `pets` ON pets.user_id = users.id'
+            'SELECT * FROM users INNER JOIN pets ON pets.user_id = users.id'
         )
     }
 
@@ -438,7 +438,7 @@ class QueryTest {
     async leftJoin() {
         this.query.table('users').leftJoin('pets', 'pets.user_id', '=', 'users.id');
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` LEFT JOIN `pets` ON pets.user_id = users.id'
+            'SELECT * FROM users LEFT JOIN pets ON pets.user_id = users.id'
         )
     }
 
@@ -446,7 +446,7 @@ class QueryTest {
     async rightJoin() {
         this.query.table('users').rightJoin('pets', 'pets.user_id', '=', 'users.id');
         (await this.expect()).to.equal(
-            'SELECT * FROM `users` RIGHT JOIN `pets` ON pets.user_id = users.id'
+            'SELECT * FROM users RIGHT JOIN pets ON pets.user_id = users.id'
         )
     }
 
@@ -457,7 +457,7 @@ class QueryTest {
             email: 'john@example.com'
         });
         (await this.expect()).to.equal(
-            'INSERT INTO `users` (`name`, `email`) VALUES (?, ?)'
+            'INSERT INTO users (name, email) VALUES (?, ?)'
         )
         this.expectBindings().to.deep.equal(['John', 'john@example.com'])
     }
@@ -475,7 +475,7 @@ class QueryTest {
             }
         ]);
         (await this.expect()).to.equal(
-            'INSERT INTO `users` (`name`, `email`) VALUES (?, ?), (?, ?)'
+            'INSERT INTO users (name, email) VALUES (?, ?), (?, ?)'
         )
         this.expectBindings().to.deep.equal(['John', 'john@example.com', 'Chris', 'chris@example.com'])
     }
@@ -485,7 +485,7 @@ class QueryTest {
         this.query.table('users').delete();
 
         (await this.expect()).to.equal(
-            'DELETE FROM `users`'
+            'DELETE FROM users'
         )
     }
 
@@ -494,7 +494,7 @@ class QueryTest {
         this.query.table('users').where('name', 'John').delete();
 
         (await this.expect()).to.equal(
-            'DELETE FROM `users` WHERE name = ?'
+            'DELETE FROM users WHERE name = ?'
         )
         this.expectBindings().to.deep.equal(['John'])
     }
@@ -504,7 +504,7 @@ class QueryTest {
         this.query.table('users').update('name', 'John');
 
         (await this.expect()).to.equal(
-            'UPDATE `users` SET name = ?'
+            'UPDATE users SET name = ?'
         )
         this.expectBindings().to.deep.equal(['John'])
     }
@@ -517,7 +517,7 @@ class QueryTest {
         });
 
         (await this.expect()).to.equal(
-            'UPDATE `users` SET name = ?, age = ?'
+            'UPDATE users SET name = ?, age = ?'
         )
         this.expectBindings().to.deep.equal(['John', 21])
     }
@@ -526,7 +526,7 @@ class QueryTest {
     async updateWithCondition() {
         this.query.table('users').where('name', 'John').update('name', 'Doe');
         (await this.expect()).to.equal(
-            'UPDATE `users` SET name = ? WHERE name = ?'
+            'UPDATE users SET name = ? WHERE name = ?'
         )
         this.expectBindings().to.deep.equal(['Doe', 'John'])
     }
@@ -536,14 +536,14 @@ class QueryTest {
         const query = Query.table('users').where('id', q => {
             q.select('userId').from('roles').where('id', 1)
         })
-        expect(query.toSql()).to.equal('SELECT * FROM `users` WHERE id = (SELECT `userId` FROM `roles` WHERE id = ?)')
+        expect(trimSQL(query.toSQL())).to.equal('SELECT * FROM users WHERE id = (SELECT userId FROM roles WHERE id = ?)')
         expect(query.getBindings()).to.deep.equal([1])
     }
 
     @test
     async subSelectWhereWithDirectQuery() {
         const query = Query.table('users').where('id', new Query().select('userId').from('roles').where('id', 1))
-        expect(query.toSql()).to.equal('SELECT * FROM `users` WHERE id = (SELECT `userId` FROM `roles` WHERE id = ?)')
+        expect(trimSQL(query.toSQL())).to.equal('SELECT * FROM users WHERE id = (SELECT userId FROM roles WHERE id = ?)')
         expect(query.getBindings()).to.deep.equal([1])
     }
 
@@ -552,14 +552,14 @@ class QueryTest {
         const query = Query.table('users').whereIn('id', q => {
             q.select('userId').from('roles').where('id', 1)
         })
-        expect(query.toSql()).to.equal('SELECT * FROM `users` WHERE id IN (SELECT `userId` FROM `roles` WHERE id = ?)')
+        expect(trimSQL(query.toSQL())).to.equal('SELECT * FROM users WHERE id IN (SELECT userId FROM roles WHERE id = ?)')
         expect(query.getBindings()).to.deep.equal([1])
     }
 
     @test
     async subSelectWhereInWithDirectQuery() {
         const query = Query.table('users').whereIn('id', new Query().select('userId').from('roles').where('id', 1))
-        expect(query.toSql()).to.equal('SELECT * FROM `users` WHERE id IN (SELECT `userId` FROM `roles` WHERE id = ?)')
+        expect(trimSQL(query.toSQL())).to.equal('SELECT * FROM users WHERE id IN (SELECT userId FROM roles WHERE id = ?)')
         expect(query.getBindings()).to.deep.equal([1])
     }
 }

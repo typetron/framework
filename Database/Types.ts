@@ -1,5 +1,5 @@
 import { Query } from './Query'
-import { Expression } from './Expression'
+import { StringExpression } from './StringExpression'
 import { EntityQuery } from './EntityQuery'
 
 export enum Operators {
@@ -43,12 +43,12 @@ export interface BaseComponents {
 
 export interface CreateComponents {
     table: string;
-    columns: (string | Expression)[];
+    columns: (string | StringExpression)[];
 }
 
 export interface SelectComponents extends BaseComponents {
     distinct?: boolean;
-    columns: (string | Expression)[];
+    columns: (string | StringExpression)[];
     aggregate?: {
         function: string,
         columns: string[];
@@ -153,7 +153,7 @@ export class WhereNull extends WhereExpression {
 
 export class WhereSubSelect extends WhereExpression {
     constructor(column: string, operator: Operator, public query: Query, boolean: Boolean) {
-        super(column, new SqlExpression(`${operator} (${query.toSql()})`, query.getBindings()), boolean)
+        super(column, new SqlExpression(`${operator} (${query.toSQL()})`, query.getBindings()), boolean)
     }
 }
 

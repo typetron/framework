@@ -2,7 +2,7 @@
 	"name": "@typetron/framework",
 	"description": "Modern Node.js framework for modern apps written in Typescript",
 	"license": "MIT",
-	"version": "0.3.11",
+	"version": "0.3.12",
 	"keywords": [
 		"typetron",
 		"framework",
@@ -30,7 +30,7 @@
 		"jsonwebtoken": "^8.5.1",
 		"mysql": "^2.18.1",
 		"sqlite3": "^5.0.2",
-		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.4.0"
+		"uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.14.0"
 	},
 	"devDependencies": {
 		"@testdeck/mocha": "^0.1.2",

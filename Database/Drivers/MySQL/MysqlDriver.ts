@@ -1,7 +1,7 @@
-import { DatabaseDriver } from '@Typetron/Database/Drivers/DatabaseDriver'
+import { DatabaseDriver } from '../DatabaseDriver'
 import { Connection, ConnectionConfig, createConnection, OkPacket } from 'mysql'
-import { SqlValue } from '@Typetron/Database/Types'
-import { Create } from '../SQL/Statements/Create'
+import { SqlValue } from '../../Types'
+import { Create } from './Create'
 import { Select } from '../SQL/Statements/Select'
 import { Insert } from '../SQL/Statements/Insert'
 import { Delete } from '../SQL/Statements/Delete'
@@ -9,6 +9,15 @@ import { Update } from '../SQL/Statements/Update'
 import { Alter } from '../SQL/Statements/Alter'
 import { SchemaContract } from '../SchemaContract'
 import { Schema } from './Schema'
+
+interface ColumnInfo {
+    name: string
+    type: string
+    nullable: 0 | 1
+    default?: string | number
+    autoIncrement: 0 | 1
+    primaryKey: 0 | 1
+}
 
 export class MysqlDriver extends DatabaseDriver {
     connection: Connection
@@ -87,15 +96,28 @@ export class MysqlDriver extends DatabaseDriver {
         )
     }
 
-    tableColumns(table: string) {
-        return this.get<{name: string, type: string}>(
-            `select COLUMN_NAME as name,
-                    DATA_TYPE   as type
+    async tableColumns(table: string) {
+        const columnsInfo = await this.get<ColumnInfo>(
+            `select cast(IS_NULLABLE = 'YES' as unsigned)      as nullable,
+                    cast(EXTRA = 'auto_increment' as unsigned) as autoIncrement,
+                    cast(COLUMN_KEY = 'PRI' as unsigned)       as primaryKey,
+                    COLUMN_NAME                                as name,
+                    DATA_TYPE                                  as type,
+                    COLUMN_DEFAULT as 'default'
              from information_schema.COLUMNS
              where table_name = ?
                and table_schema = ?
             `,
             [table, this.connection.config.database]
         )
+
+        return columnsInfo.map(info => ({
+            name: info.name,
+            type: info.type,
+            nullable: Boolean(info.nullable),
+            default: info.default,
+            autoIncrement: info.autoIncrement,
+            primaryKey: Boolean(info.primaryKey)
+        }))
     }
 }

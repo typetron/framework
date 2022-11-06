@@ -2,7 +2,7 @@ import { MigrationHistory } from './MigrationHistory'
 import { Migration } from './Migration'
 import * as path from 'path'
 import { File, Storage } from '@Typetron/Storage'
-import { Connection } from '@Typetron/Database'
+import { Connection } from '..'
 import { Constructor } from '@Typetron/Support'
 
 interface MigrateOptions {
@@ -18,7 +18,7 @@ export class Migrator {
     ) {}
 
     async files(): Promise<File[]> {
-        return this.storage .files(this.directory, true).where("extension", "ts")
+        return this.storage.files(this.directory, true).where('extension', 'ts')
     }
 
     public async migrate(options?: MigrateOptions): Promise<boolean> {

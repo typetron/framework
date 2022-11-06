@@ -10,12 +10,10 @@ export class Delete extends BaseStatement {
         return `WHERE ` + super.wheres
     }
 
-    toSql() {
+    toSQL() {
         return `
-            DELETE FROM ${this.table}
-            ${this.wheres}
-            ${this.orders}
-            ${this.limit}
+            DELETE
+            FROM ${this.table} ${this.wheres} ${this.orders} ${this.limit}
         `
     }
 

@@ -1,4 +1,4 @@
-import { ChildKeys, ChildObject, Constructor } from '../Support'
+import { ChildKeys, ChildObject, Constructor } from '@Typetron/Support'
 import { Entity } from './Entity'
 import { BaseRelationship } from './ORM/BaseRelationship'
 
@@ -15,6 +15,7 @@ export type DotNotationProperties<T> = string;
 export * from './Query'
 export * from './Entity'
 export * from './Decorators'
+export * from './StringExpression'
 export * from './Expression'
 export * from './Drivers'
 export * from './Fields'

@@ -17,7 +17,8 @@ export class Insert extends BaseStatement {
         }).join(', ')
     }
 
-    toSql() {
-        return `INSERT INTO ${this.table} (${this.columns}) VALUES ${this.values} `
+    toSQL() {
+        return `INSERT INTO ${this.table} (${this.columns})
+                VALUES ${this.values} `
     }
 }

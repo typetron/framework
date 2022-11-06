@@ -37,7 +37,10 @@ export class JWT {
             jwt.verify(
                 token,
                 secretOrPrivateKey,
-                options ?? {},
+                {
+                    ...options,
+                    complete: true
+                },
                 (error: VerifyErrors | null, decoded?: object) => {
                     error ? reject(error) : resolve(decoded as JWToken<T>)
                 }

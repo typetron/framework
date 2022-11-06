@@ -1,7 +1,3 @@
-export class Expression {
-    constructor(public value: string) {}
-
-    toSQL() {
-        return this.value
-    }
+export abstract class Expression {
+    abstract toSQL(): string
 }

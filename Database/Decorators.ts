@@ -1,4 +1,4 @@
-import { ChildObject, Constructor, KeysOfType } from '../Support'
+import { ChildObject, Constructor, KeysOfType } from '@Typetron/Support'
 import { Entity } from './Entity'
 import {
     BelongsTo,
@@ -61,28 +61,34 @@ function setField<T extends Entity>(entity: T, field: ColumnField<T>) {
     Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
 }
 
-export function Column<T extends Entity>(column?: string) {
-    return function (entity: object, name: string) {
-        const type = Reflect.getMetadata('design:type', entity, name)
-        const field = new ColumnField(entity.constructor as EntityConstructor<T>, name, () => type, column || name)
+// tslint:disable-next-line:no-any
+export function Column<T extends Entity>(column?: string | {type: any}): PropertyDecorator;
+// tslint:disable-next-line:no-any
+export function Column<T extends Entity>(column: string, options?: {type: any}): PropertyDecorator;
+// tslint:disable-next-line:no-any
+export function Column<T extends Entity>(column?: string | {type: any}, options?: {type: any}): PropertyDecorator {
+    return function(entity: Object, name: string | symbol) {
+        const actualColumn: string | undefined = typeof column === 'string' ? column : undefined
+        const type = options?.type ?? Reflect.getMetadata('design:type', entity, name)
+        const field = new ColumnField(entity.constructor as EntityConstructor<T>, String(name), () => type, actualColumn || String(name))
         setField(entity as T, field)
     }
 }
 
 export function JSONColumn<T extends Entity>(column?: string) {
-    return function (entity: object, name: string) {
+    return function(entity: object, name: string) {
         const field = new JSONField(entity.constructor as EntityConstructor<T>, name, () => String, column || name)
         setField(entity as T, field)
     }
 }
 
 export function Enum<T extends Entity>(...values: string[]) {
-    return function (entity: object, name: string) {
+    return function(entity: object, name: string) {
     }
 }
 
 export function PrimaryColumn<T extends Entity>(column?: string) {
-    return function (entity: object, name: string) {
+    return function(entity: object, name: string) {
         const type = Reflect.getMetadata('design:type', entity, name)
         const field = new PrimaryField(entity.constructor as EntityConstructor<T>, name, () => type, column || name)
         setField(entity as T, field)
@@ -90,7 +96,7 @@ export function PrimaryColumn<T extends Entity>(column?: string) {
 }
 
 export function CreatedAt<T extends Entity>(column?: string) {
-    return function (entity: object, name: string) {
+    return function(entity: object, name: string) {
         Column(column)(entity as T, name)
         const entityMetadata = EntityMetadata.get(entity as T)
         entityMetadata.createdAtColumn = column || name
@@ -99,7 +105,7 @@ export function CreatedAt<T extends Entity>(column?: string) {
 }
 
 export function UpdatedAt<T extends Entity>(column?: string) {
-    return function (entity: object, name: string) {
+    return function(entity: object, name: string) {
         Column(column)(entity as T, name)
         const entityMetadata = EntityMetadata.get(entity as T)
         entityMetadata.updatedAtColumn = column || name
@@ -120,7 +126,7 @@ export function Relation<T extends Entity, R extends Entity>(
     inverseBy: KeysOfType<ChildObject<R, Entity>, BaseRelationship<T>>,
     // options: Partial<RelationshipOptions> = {}
 ) {
-    return function (entity: object, property: string) {
+    return function(entity: object, property: string) {
         let entityMetadata = EntityMetadata.get(entity as T)
         const fieldClass = Reflect.getMetadata('design:type', entity, property) as RelationshipsList
         const entityClass = entity.constructor as EntityConstructor<T>
@@ -133,7 +139,7 @@ export function Relation<T extends Entity, R extends Entity>(
 }
 
 export function BelongsToManyOptions<T extends Entity>(options: BelongsToManyFieldOptions) {
-    return function (entity: object, property: string) {
+    return function(entity: object, property: string) {
         const entityOptions = entityOptionsCache.get(entity as T) || {}
         entityOptions[property] = options
         entityOptionsCache.set(entity as T, entityOptions)

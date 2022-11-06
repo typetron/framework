@@ -22,14 +22,12 @@ export class Update extends BaseStatement {
         return columns.join(', ')
     }
 
-    toSql() {
+    toSQL() {
         return `
             UPDATE
-            ${this.table}
+                ${this.table}
             SET ${this.columns}
-            ${this.wheres}
-            ${this.orders}
-            ${this.limit}
+                    ${this.wheres} ${this.orders} ${this.limit}
         `
     }
 }

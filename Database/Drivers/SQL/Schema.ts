@@ -1,43 +1,26 @@
-import { wrap } from '../../Helpers'
 import { SchemaContract } from '../SchemaContract'
-import { Create } from '../SQL/Statements/Create'
-import { BelongsToManyField, ColumnField, Entity, EntityConstructor, EntityMetadata, JSONField, PrimaryField } from '@Typetron/Database'
+import { BelongsToManyField, ColumnField, Entity, EntityConstructor, EntityMetadata } from '../..'
 
-export class Schema extends SchemaContract {
+export abstract class Schema extends SchemaContract {
 
-    // tslint:disable-next-line:no-any
-    typesMatches = new Map<any, string>([
-        [Entity, 'integer'],
-        [PrimaryField, `integer constraint ${String.random(9, 'abcdefghijklmnopqrstuvwxyz')} primary key autoincrement`],
-        [Number, 'integer'],
-        [String, 'varchar'],
-        [Date, 'datetime'],
-        [JSONField, 'text'],
-        [Boolean, 'integer'],
-    ])
+    // async create(table: string, columns: ColumnField<Entity>[]) {
+    //     const columnsSQLs = columns
+    //         .filter(column => column.column)
+    //         .map(columnMetadata => this.getColumnSql(columnMetadata))
+    //
+    //     // @ts-ignore
+    //     const createStatement = new Create({
+    //         table,
+    //         columns: columnsSQLs
+    //     })
+    //
+    //     await this.driver.run(createStatement.toSql())
+    // }
 
-    async create(table: string, columns: ColumnField<Entity>[]) {
-        const columnsSQLs = columns
-            .filter(column => column.column)
-            .map(columnMetadata => this.getColumnSql(columnMetadata))
-
-        // @ts-ignore
-        const createStatement = new Create({
-            table,
-            columns: columnsSQLs
-        })
-
-        await this.driver.run(createStatement.toSql())
-    }
-
-    async addColumn(table: string, column: ColumnField<Entity>) {
-        await this.driver.run(`ALTER TABLE ${table}
-            ADD ${this.getColumnSql(column)}(6)`)
-    }
-
-    async removeColumn(table: string, column: ColumnField<Entity>) {
-
-    }
+    // async addColumn(table: string, column: ColumnField<Entity>) {
+    //     await this.driver.run(`ALTER TABLE ${table}
+    //         ADD ${this.getColumnSql(column)}(6)`)
+    // }
 
     async synchronize(entitiesMetadata: EntityMetadata<Entity>[]) {
         const pivotTables = new Map<string, ColumnField<Entity>[]>()
@@ -72,40 +55,19 @@ export class Schema extends SchemaContract {
             }
             await this.syncTableColumns(name, columns)
         }
-
     }
 
-    protected async syncTableColumns(table: string, columns: ColumnField<Entity>[]) {
-        const tableColumns = await this.driver.tableColumns(table)
-        for await (const columnMetadata of columns) {
-            const tableColumn = tableColumns.findWhere('name', columnMetadata.column)
-            tableColumns.remove(tableColumn)
-            if (!tableColumn) {
-                await this.addColumn(table, columnMetadata)
-            }
-        }
+    protected abstract syncTableColumns(table: string, columns: ColumnField<Entity>[]): Promise<void>;
 
-        if (tableColumns.length) {
-            const temporaryTableName = table + '_tmp'
-            await this.create(temporaryTableName, columns)
-            const columnList = wrap(columns.pluck('column'))
-            await this.driver.run(`INSERT INTO ${temporaryTableName}(${columnList})
-                                   SELECT ${columnList}
-                                   FROM ${table}`)
-            await this.driver.run(`DROP TABLE ${table}`)
-            await this.driver.run(`ALTER TABLE ${temporaryTableName} RENAME TO ${table};`)
-        }
-    }
-
-    protected getColumnSql(columnMetadata: ColumnField<Entity>): string {
-        const columnType = columnMetadata.type()
-        const type = Array.from(this.typesMatches.keys())
-            .find(key =>
-                key === columnMetadata.type() || columnType.prototype instanceof key || columnMetadata instanceof key
-            ) || String
-
-        const columnInfo = this.typesMatches.get(type)
-
-        return `${columnMetadata.column} ${columnInfo}`
-    }
+    // protected getColumnSql(columnMetadata: ColumnField<Entity>): string {
+    //     const columnType = columnMetadata.type()
+    //     const type = Array.from(this.typesMatches.keys())
+    //         .find(key =>
+    //             key === columnMetadata.type() || columnType.prototype instanceof key || columnMetadata instanceof key
+    //         ) || String
+    //
+    //     const columnInfo = this.typesMatches.get(type)
+    //
+    //     return `${columnMetadata.column} ${columnInfo}`
+    // }
 }

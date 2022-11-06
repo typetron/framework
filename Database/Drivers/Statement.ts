@@ -1,14 +1,16 @@
-import { Components, SqlValue } from '@Typetron/Database/Types'
+import { Components, SqlValue } from '../Types'
+import { StringExpression } from '../StringExpression'
 
-export abstract class Statement {
+export abstract class Statement extends StringExpression {
     bindings: SqlValue[] = []
 
     constructor(public components: Components) {
+        super('')
     }
 
-    abstract toSql(): string;
+    abstract toSQL(): string;
 
     toString() {
-        return this.toSql()
+        return this.toSQL()
     }
 }

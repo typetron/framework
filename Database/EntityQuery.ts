@@ -1,7 +1,7 @@
 import { Query } from './Query'
 import { Entity } from './Entity'
-import { DotNotationProperties, EntityConstructor, EntityObject, Expression } from './index'
-import { KeysOfType } from '../Support'
+import { DotNotationProperties, EntityConstructor, EntityObject, StringExpression } from './index'
+import { KeysOfType } from '@Typetron/Support'
 import { BelongsTo, BelongsToMany, HasMany, HasOne } from './Fields'
 import { List } from './List'
 import { RelationsTree, RelationsTreeQuery } from './Types'
@@ -17,7 +17,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         super()
     }
 
-    async get<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T[]> {
+    async get<K extends keyof T>(...columns: (K | string | StringExpression)[]): Promise<T[]> {
         let entities = await super.get(...columns)
 
         entities = this.entity.hydrate(this.entity, entities, true)
@@ -93,7 +93,7 @@ export class EntityQuery<T extends Entity> extends Query<T> {
         return entities
     }
 
-    async first<K extends keyof T>(...columns: (K | string | Expression)[]): Promise<T | undefined> {
+    async first<K extends keyof T>(...columns: (K | string | StringExpression)[]): Promise<T | undefined> {
         const entityData = await super.first(...columns)
         if (!entityData) {
             return undefined
