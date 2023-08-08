@@ -1,1 +1,1 @@
-export * from "./Consumers/Cache";
+export * from './Consumers/Cache'
