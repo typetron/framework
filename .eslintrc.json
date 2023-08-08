@@ -1,0 +1,25 @@
+{
+    "extends" : [
+        "eslint:recommended", "plugin:@typescript-eslint/recommended"
+    ],
+    "parser" : "@typescript-eslint/parser",
+    "plugins" : [
+        "@typescript-eslint"
+    ],
+    "root" : true,
+    "overrides": [
+        {
+            "files": [
+                "./tests/**/*.ts"
+            ],
+            "rules": {
+                "@typescript-eslint/no-unused-vars": "off"
+            }
+        }
+    ],
+    "rules" : {
+        "@typescript-eslint/no-explicit-any" : "off",
+        "@typescript-eslint/ban-ts-comment": "warn",
+        "@typescript-eslint/no-unused-vars": "warn"
+    }
+}

@@ -17,7 +17,7 @@ declare global {
         forEachAsync(callback: ArrayItemCallback<T, void>, thisArg?: this): Promise<void>;
 
         // tslint:disable-next-line:no-any
-        findWhere<K extends keyof T>(this: T[], property: K, value: T[K] | ArrayItemCallback<T, any>): T | undefined;
+        findWhere<K extends keyof T>(this: T[], property: K, value: T[K] | ArrayItemCallback<T, unknown>): T | undefined;
 
         first(this: T[], defaultValue?: T): T | undefined;
 
@@ -64,7 +64,7 @@ Array.prototype.randomIndex = function() {
 }
 
 // tslint:disable-next-line:no-any
-Array.prototype.findWhere = function <T, K extends keyof T>(property: K, value: T[K] | ArrayItemCallback<T, any>) {
+Array.prototype.findWhere = function <T, K extends keyof T>(property: K, value: T[K] | ArrayItemCallback<T, unknown>) {
     return this.find(item => item[property] === value)
 }
 
@@ -78,8 +78,8 @@ Array.prototype.remove = function <T>(...items: T[]) {
         if (index === -1) {
             return
         }
-        this.splice(this.indexOf(item), 1)
-    })
+    this.splice(this.indexOf(item), 1)
+  })
 }
 
 Array.prototype.where = function <T, K extends keyof T>(property: K, value?: T[K]) {

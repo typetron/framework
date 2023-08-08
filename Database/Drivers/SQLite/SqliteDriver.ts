@@ -111,7 +111,7 @@ export class SqliteDriver implements DatabaseDriver {
         )
     }
 
-    tableExists(table: string): Promise<Boolean> {
+    tableExists(table: string): Promise<boolean> {
         return this.first(
             `SELECT *
              FROM sqlite_master
@@ -132,7 +132,7 @@ export class SqliteDriver implements DatabaseDriver {
         return columnsInfo.map((info) => ({
             name: info.name,
             type: info.type,
-            nullable: !Boolean(info.notnull),
+            nullable: !info.notnull,
             default: info.dflt_value,
             autoIncrement: Number(Boolean(autoIncrements.findWhere('name', table))),
             primaryKey: Boolean(info.pk),

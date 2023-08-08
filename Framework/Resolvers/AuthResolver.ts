@@ -3,11 +3,11 @@ import { Auth, AuthUserIdentifier } from '../Auth'
 
 export class AuthResolver extends BaseResolver {
 
-    async resolve<T>(abstract: Symbol, parameters: object[]): Promise<T> {
+    async resolve<T>(abstract: symbol, parameters: object[]): Promise<T> {
         return await this.container.get(Auth).user() as unknown as T
     }
 
-    canResolve<T>(abstract: Symbol): boolean {
+    canResolve<T>(abstract: symbol): boolean {
         return abstract === AuthUserIdentifier
     }
 

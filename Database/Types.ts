@@ -24,7 +24,7 @@ export enum JoinType {
     RIGHT = 'RIGHT'
 }
 
-export type Boolean = 'AND' | 'OR' | 'XOR';
+export type BooleanOperator = 'AND' | 'OR' | 'XOR';
 export type Operator = keyof typeof Operators;
 export type SqlValue = string | number | Date | undefined;
 export type SqlValueMap = {[key: string]: SqlValue};
@@ -108,13 +108,13 @@ class SqlExpression implements SqlClause {
 }
 
 export class WhereExpression extends SqlExpression {
-    constructor(public column: string, public expression: SqlExpression, public boolean: Boolean) {
+    constructor(public column: string, public expression: SqlExpression, public boolean: BooleanOperator) {
         super(`${boolean} ${column} ${expression.toSql()}`, expression.getValues())
     }
 }
 
 export class Where extends WhereExpression {
-    constructor(column: string, operator: Operator, value: SqlValue, boolean: Boolean) {
+    constructor(column: string, operator: Operator, value: SqlValue, boolean: BooleanOperator) {
         super(column, new SqlExpression(`${operator} ?`, [value]), boolean)
     }
 }
@@ -123,19 +123,19 @@ export class WhereNested {
 }
 
 export class WhereBetween extends WhereExpression {
-    constructor(column: string, values: [SqlValue, SqlValue], boolean: Boolean, not = false) {
+    constructor(column: string, values: [SqlValue, SqlValue], boolean: BooleanOperator, not = false) {
         super(column, new SqlExpression(`${not ? 'NOT ' : ''}BETWEEN ? AND ?`, values), boolean)
     }
 }
 
 export class WhereLike extends WhereExpression {
-    constructor(column: string, value: SqlValue, boolean: Boolean, not = false) {
+    constructor(column: string, value: SqlValue, boolean: BooleanOperator, not = false) {
         super(column, new SqlExpression(`${not ? 'NOT ' : ''}LIKE ?`, [value]), boolean)
     }
 }
 
 export class WhereIn extends WhereExpression {
-    constructor(column: string, values: WhereValue[], boolean: Boolean, not = false) {
+    constructor(column: string, values: WhereValue[], boolean: BooleanOperator, not = false) {
         const value = values.map(() => '?').join(', ')
         if (values.length) {
             super(column, new SqlExpression(`${not ? 'NOT ' : ''}IN (${value})`, values), boolean)
@@ -146,13 +146,13 @@ export class WhereIn extends WhereExpression {
 }
 
 export class WhereNull extends WhereExpression {
-    constructor(column: string, boolean: Boolean, not = false) {
+    constructor(column: string, boolean: BooleanOperator, not = false) {
         super(column, new SqlExpression(`IS ${not ? 'NOT ' : ''}NULL`), boolean)
     }
 }
 
 export class WhereSubSelect extends WhereExpression {
-    constructor(column: string, operator: Operator, public query: Query, boolean: Boolean) {
+    constructor(column: string, operator: Operator, public query: Query, boolean: BooleanOperator) {
         super(column, new SqlExpression(`${operator} (${query.toSQL()})`, query.getBindings()), boolean)
     }
 }

@@ -27,7 +27,7 @@ export class WebSocket {
     }
 
     // tslint:disable-next-line:no-any
-    publish(topic: string, event: string, body?: any) {
+    publish(topic: string, event: string, body?: unknown) {
         const sentResponse: EventResponse<unknown> = {
             event,
             message: body,
@@ -37,13 +37,13 @@ export class WebSocket {
     }
 
     // tslint:disable-next-line:no-any
-    publishAndSend(topic: string, event: string, body?: any) {
+    publishAndSend(topic: string, event: string, body?: unknown) {
         this.publish(topic, event, body)
         this.send(event, body)
     }
 
     // tslint:disable-next-line:no-any
-    send(event: string, body?: any) {
+    send(event: string, body?: unknown) {
         const sentResponse: EventResponse<unknown> = {
             event,
             message: body,
