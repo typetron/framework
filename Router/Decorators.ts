@@ -12,7 +12,7 @@ class ControllerOptions {
 }
 
 export function Controller(path = '', options = new ControllerOptions) {
-    return (target: Object) => {
+    return (target: object) => {
         const metadata = ControllerMetadata.get(target)
         const prefix = options.prefix || path ? path + '.' : ''
 
@@ -75,12 +75,12 @@ function addRoute(controller: Constructor, action: string, method: Http.Method, 
 }
 
 export function Event(name = '') {
-    return (target: Object, action: string) => {
+    return (target: object, action: string) => {
         addEvent(target.constructor as Constructor, action, name)
     }
 }
 
-export function OnOpen(target: Object, action: string) {
+export function OnOpen(target: object, action: string) {
     const websocketHandler = App.get(WebsocketsHandler)
 
     websocketHandler.onOpen = new WebsocketEvent(
@@ -91,7 +91,7 @@ export function OnOpen(target: Object, action: string) {
     )
 }
 
-export function OnClose(target: Object, action: string) {
+export function OnClose(target: object, action: string) {
     const websocketHandler = App.get(WebsocketsHandler)
 
     websocketHandler.onClose = new WebsocketEvent(
@@ -103,43 +103,43 @@ export function OnClose(target: Object, action: string) {
 }
 
 export function Arg(name: string) {
-    return function(target: Object, action: string, parameterIndex: number) {
+    return function(target: object, action: string, parameterIndex: number) {
         // addEvent(target.constructor as Constructor, action, name)
     }
 }
 
 export function Get(path = '', name = '') {
-    return (target: Object, action: string) => {
+    return (target: object, action: string) => {
         addRoute(target.constructor as Constructor, action, Http.Method.GET, path, name)
     }
 }
 
 export function Post(path: string = '', name = '') {
-    return (target: Object, action: string) => {
+    return (target: object, action: string) => {
         addRoute(target.constructor as Constructor, action, Http.Method.POST, path, name)
     }
 }
 
 export function Put(path: string = '', name = '') {
-    return (target: Object, action: string) => {
+    return (target: object, action: string) => {
         addRoute(target.constructor as Constructor, action, Http.Method.PUT, path, name)
     }
 }
 
 export function Patch(path: string = '', name = '') {
-    return (target: Object, action: string) => {
+    return (target: object, action: string) => {
         addRoute(target.constructor as Constructor, action, Http.Method.PATCH, path, name)
     }
 }
 
 export function Delete(path: string = '', name = '') {
-    return (target: Object, action: string) => {
+    return (target: object, action: string) => {
         addRoute(target.constructor as Constructor, action, Http.Method.DELETE, path, name)
     }
 }
 
 export function Middleware(...middleware: Abstract<MiddlewareInterface>[]) {
-    return (target: Object, action?: string) => {
+    return (target: object, action?: string) => {
         if (action) {
             target = target.constructor
         }
@@ -179,7 +179,7 @@ export function AllowIf(...guards: Type<Guard>[]) {
 }
 
 export function Query(name: string) {
-    return function(target: Object, action: string, parameterIndex: number) {
+    return function(target: object, action: string, parameterIndex: number) {
         const metadata = ControllerMetadata.get(target.constructor)
         const parametersTypes = Reflect.getMetadata('design:paramtypes', target, action)
 
@@ -200,7 +200,7 @@ export function Query(name: string) {
 }
 
 export function Body() {
-    return function(target: Object, action: string, parameterIndex: number) {
+    return function(target: object, action: string, parameterIndex: number) {
         const metadata = ControllerMetadata.get(target.constructor)
 
         const route = metadata.events[action] || new RouteMetadata()
