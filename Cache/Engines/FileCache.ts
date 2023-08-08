@@ -2,7 +2,7 @@ import { Inject } from '@Typetron/Container'
 import EngineInterface from '../Contracts/EngineInterface'
 import { Storage } from '@Typetron/Storage'
 import { CacheConfig } from '@Typetron/Framework'
-import * as crypto from 'crypto'
+import { createHash } from 'node:crypto'
 
 class FileCache implements EngineInterface {
     @Inject()
@@ -45,22 +45,22 @@ class FileCache implements EngineInterface {
     }
 
     public async flush(): Promise<void> {
-        this.storage.removeDirectory(this.config.path)
+        await this.storage.removeDirectory(this.config.path)
     }
 
-    public async delete(key: string): Promise<Boolean> {
+    public async delete(key: string): Promise<boolean> {
         return this.deleteFIle(key)
     }
 
     private async ensureCacheDirectoryExists() {
         if (!(await this.storage.exists('.' + this.config.path))) {
-            this.storage.makeDirectory('.' + this.config.path)
+            await this.storage.makeDirectory('.' + this.config.path)
         }
     }
 
     private async write(key: string, data: any) {
         await this.ensureCacheDirectoryExists()
-        this.storage.put(this.path(key), data)
+        await this.storage.put(this.path(key), data)
     }
 
     private async writeWithTime(key: string, data: any, duration: number) {
@@ -76,7 +76,7 @@ class FileCache implements EngineInterface {
         newArr['meta'] = {expiresIn}
         newArr['data'] = data
 
-        this.storage.put(this.path(key), JSON.stringify(newArr))
+        await this.storage.put(this.path(key), JSON.stringify(newArr))
     }
 
     private path(key: string): string {
@@ -103,19 +103,19 @@ class FileCache implements EngineInterface {
     }
 
     private hashKey(key: string) {
-        return crypto.createHash('sha1').update(key).digest('hex')
+        return createHash('sha1').update(key).digest('hex')
     }
 
-    private async isCacheExist(key: string): Promise<Boolean> {
+    private async isCacheExist(key: string): Promise<boolean> {
         return await this.storage.exists(this.path(key))
     }
 
-    private async deleteFIle(key: string): Promise<Boolean> {
+    private async deleteFIle(key: string): Promise<boolean> {
         try {
             if (!(await this.isCacheExist(key))) {
                 return false;
             }
-            this.storage.delete(this.path(key));
+            await this.storage.delete(this.path(key));
             return true;
         } catch (e) {
             return false;

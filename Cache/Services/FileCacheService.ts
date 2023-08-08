@@ -22,7 +22,7 @@ export class FileCacheService extends FileCache implements ServiceInterface {
         return this.deserialize(value)
     }
 
-    public async has(name: string): Promise<Boolean> {
+    public async has(name: string): Promise<boolean> {
         const value = await this.get(name)
 
         return !!value
@@ -38,7 +38,7 @@ export class FileCacheService extends FileCache implements ServiceInterface {
         }
     }
 
-    public async delete(name: string): Promise<Boolean> {
+    public async delete(name: string): Promise<boolean> {
         if (await this.has(name)) {
             await super.delete(name)
             return true
