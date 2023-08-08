@@ -1,6 +1,7 @@
 node_modules
 .idea
 *.js
+!.eslintrc.json
 *.js.map
 *.ts.map
 *.d.ts

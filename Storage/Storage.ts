@@ -46,7 +46,7 @@ export class Storage {
         if (directory && !await this.exists(directory)) {
             await this.makeDirectory(directory)
         }
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             fileSystem.createReadStream(file.path)
                 .on('error', reject)
                 .pipe(fileSystem.createWriteStream(newPath))

@@ -32,7 +32,7 @@ export class Container {
         return this.instances
     }
 
-    set<T>(abstract: ServiceIdentifier<T>, concrete: T | Type<T> | Function) {
+    set<T>(abstract: ServiceIdentifier<T>, concrete: T | Type<T> | (() => void)) {
         this.instances.set(abstract, concrete)
     }
 
