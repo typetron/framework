@@ -1,5 +1,5 @@
 import {
-    Boolean,
+    BooleanOperator,
     Components,
     Direction,
     JoinType,
@@ -43,7 +43,7 @@ export class Query<T = {}> extends Expression {
         return new this.statementType(this.components)
     }
 
-    static table<T = {}>(table: string): Query<T> {
+    static table<T = object>(table: string): Query<T> {
         return (new this() as Query<T>).table(table)
     }
 
@@ -101,7 +101,7 @@ export class Query<T = {}> extends Expression {
         column: K | string,
         operator: Operator | Query | WhereValue | WhereFunction | T[K],
         value?: Query | WhereValue | WhereFunction | T[K],
-        boolean: Boolean = 'AND'
+        boolean: BooleanOperator = 'AND'
     ): this {
         // if (column instanceof Function) {
         //     const query = new WhereNested();
@@ -154,7 +154,7 @@ export class Query<T = {}> extends Expression {
     whereIn<K extends keyof T>(
         column: K | string,
         values: Query | WhereFunction | WhereValue[] | T[K][],
-        boolean: Boolean = 'AND',
+        boolean: BooleanOperator = 'AND',
         not = false
     ): this {
         if (values instanceof Query) {
@@ -180,7 +180,7 @@ export class Query<T = {}> extends Expression {
         return this.whereIn(column, values, 'AND', true)
     }
 
-    whereLike<K extends keyof T>(column: K | string, value: SqlValue, boolean: Boolean = 'AND', not = false): this {
+    whereLike<K extends keyof T>(column: K | string, value: SqlValue, boolean: BooleanOperator = 'AND', not = false): this {
         this.components.wheres.push(new WhereLike(column as string, value, boolean, not))
 
         return this
@@ -189,7 +189,7 @@ export class Query<T = {}> extends Expression {
     whereNotIn<K extends keyof T>(
         column: K | string,
         values: Query | WhereFunction | WhereValue[] | T[K][],
-        boolean: Boolean = 'AND'
+        boolean: BooleanOperator = 'AND'
     ): this {
         return this.whereIn(column, values, boolean, true)
     }
@@ -210,13 +210,13 @@ export class Query<T = {}> extends Expression {
         return this.whereLike(column, value, 'OR', true)
     }
 
-    whereBetween<K extends keyof T>(column: K | string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND', not = false): this {
+    whereBetween<K extends keyof T>(column: K | string, values: [SqlValue, SqlValue], boolean: BooleanOperator = 'AND', not = false): this {
         this.components.wheres.push(new WhereBetween(column as string, values, boolean, not))
 
         return this
     }
 
-    whereNotBetween<K extends keyof T>(column: K | string, values: [SqlValue, SqlValue], boolean: Boolean = 'AND'): this {
+    whereNotBetween<K extends keyof T>(column: K | string, values: [SqlValue, SqlValue], boolean: BooleanOperator = 'AND'): this {
         return this.whereBetween(column, values, boolean, true)
     }
 
@@ -228,7 +228,7 @@ export class Query<T = {}> extends Expression {
         return this.whereBetween(column, values, 'OR', true)
     }
 
-    whereNull<K extends keyof T>(column: K | string, boolean: Boolean = 'AND', not = false): this {
+    whereNull<K extends keyof T>(column: K | string, boolean: BooleanOperator = 'AND', not = false): this {
         this.components.wheres.push(new WhereNull(column as string, boolean, not))
 
         return this
@@ -238,11 +238,11 @@ export class Query<T = {}> extends Expression {
         return this.whereNull(column)
     }
 
-    whereNotNull<K extends keyof T>(column: K | string, boolean: Boolean = 'AND'): this {
+    whereNotNull<K extends keyof T>(column: K | string, boolean: BooleanOperator = 'AND'): this {
         return this.whereNull(column, boolean, true)
     }
 
-    andWhereNotNull<K extends keyof T>(column: K | string, boolean: Boolean = 'AND'): this {
+    andWhereNotNull<K extends keyof T>(column: K | string, boolean: BooleanOperator = 'AND'): this {
         return this.whereNotNull(column, boolean)
     }
 

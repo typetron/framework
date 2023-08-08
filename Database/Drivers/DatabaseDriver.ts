@@ -31,7 +31,7 @@ export abstract class DatabaseDriver {
 
     abstract tables(): Promise<{name: string}[]>
 
-    abstract tableExists(table: string): Promise<Boolean>
+    abstract tableExists(table: string): Promise<boolean>
 
     abstract tableColumns(table: string): Promise<ColumnDefinitionOptions[]>
 }

@@ -85,7 +85,7 @@ export class MysqlDriver extends DatabaseDriver {
         )
     }
 
-    tableExists(table: string): Promise<Boolean> {
+    tableExists(table: string): Promise<boolean> {
         return this.first(
             `select *
              from information_schema.tables

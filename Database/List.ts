@@ -1,7 +1,7 @@
 import { Entity } from './Entity'
 import { EntityKeys } from './index'
 import { EntityQuery } from './EntityQuery'
-import { Boolean, Operator, WhereValue } from './Types'
+import { BooleanOperator, Operator, WhereValue } from './Types'
 import { BelongsToManyField, HasManyField } from './Fields'
 import { BaseRelationship as Relationship } from './ORM/BaseRelationship'
 
@@ -47,7 +47,7 @@ export abstract class List<E extends Entity, P extends Entity = Entity> extends 
         column: EntityKeys<E>,
         operator: Operator | WhereValue | E[K],
         value?: WhereValue | E[K],
-        boolean?: Boolean
+        boolean?: BooleanOperator
     ): EntityQuery<E> {
         return this.relationship.getQuery(this.parent).where(column, operator, value, boolean)
     }

@@ -4,7 +4,7 @@ import { ChildObject, KeysOfType } from '../Support'
 import { EntityMetadata, EntityMetadataKey, ID } from './Decorators'
 import { EntityNotFoundError } from './EntityNotFoundError'
 import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseField } from './Fields'
-import { Boolean as BooleanType, Direction, Operator, WhereFunction, WhereValue } from './Types'
+import { BooleanOperator, Direction, Operator, WhereFunction, WhereValue } from './Types'
 import { DotNotationProperties, EntityConstructor, EntityKeys, EntityObject } from './index'
 import { Query } from './Query'
 import { List } from './List'
@@ -46,7 +46,7 @@ export abstract class Entity {
         column: EntityKeys<T>,
         operator: Operator | Query | WhereValue | T[K],
         value?: Query | WhereValue | T[K],
-        boolean?: BooleanType
+        boolean?: BooleanOperator
     ): EntityQuery<T> {
         const columnMetadata = {
             ...this.metadata.columns,
@@ -59,7 +59,7 @@ export abstract class Entity {
         this: EntityConstructor<T>,
         column: EntityKeys<T>,
         value: Query | WhereValue[] | T[K][],
-        boolean?: BooleanType
+        boolean?: BooleanOperator
     ): EntityQuery<T> {
         const columnMetadata = {
             ...this.metadata.columns,
@@ -84,7 +84,7 @@ export abstract class Entity {
         this: EntityConstructor<T>,
         column: EntityKeys<T>,
         value?: WhereValue | T[K],
-        boolean?: BooleanType
+        boolean?: BooleanOperator
     ): EntityQuery<T> {
         const columnMetadata = {
             ...this.metadata.columns,
@@ -252,7 +252,7 @@ export abstract class Entity {
         await this.newQuery().whereIn(this.getPrimaryKey(), ids).delete()
     }
 
-    private getDataToSave(data: ChildObject<this, Entity> | {}) {
+    private getDataToSave(data: ChildObject<this, Entity> | object) {
         this.fill(data)
 
         this.updateTimestamps()
@@ -277,7 +277,7 @@ export abstract class Entity {
         })
     }
 
-    fill(data: ChildObject<this, Entity> | {}) {
+    fill(data: ChildObject<this, Entity> | object) {
         const relationships = this.metadata.relationships
         Object.keys(relationships).forEach(key => {
             relationships[key].update(this)
@@ -286,7 +286,7 @@ export abstract class Entity {
         Object.keys(data).forEach(key => {
             const field = fields[key]
             if (field) {
-                const value = data[key as keyof {}]
+                const value = data[key as keyof object]
                 field.set(this, this.convertValueByType(value, field))
             }
         })
@@ -306,7 +306,7 @@ export abstract class Entity {
         await this.newQuery().truncate()
     }
 
-    async save(data: ChildObject<this, Entity> | {} = {}): Promise<this> {
+    async save(data: ChildObject<this, Entity> | object = {}): Promise<this> {
         const dataToSave = this.getDataToSave(data)
 
         const query = this.newQuery()
