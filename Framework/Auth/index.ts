@@ -8,7 +8,7 @@ export * from './Authenticatable'
 export const AuthUserIdentifier = Symbol('framework.auth:userIdentifier')
 
 export function AuthUser() {
-    return function (target: Object, property: string, parameterIndex?: number) {
+    return function(target: Object, property: string, parameterIndex?: number) {
         if (parameterIndex === undefined) {
             const metadata = InjectableMetadata.get(target.constructor)
             metadata.dependencies[property] = AuthUserIdentifier

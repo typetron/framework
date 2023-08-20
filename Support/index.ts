@@ -1,6 +1,7 @@
 import './Array'
 import './String'
 import './Math'
+import './utils'
 
 export type KeysOfType<T, Condition> = { [P in keyof T]: T[P] extends Condition ? P : never }[keyof T];
 export type ChildKeys<Child, Parent> = Exclude<keyof Child, keyof Parent>;

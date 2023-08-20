@@ -12,10 +12,10 @@ import { wrap } from '../../Helpers'
 import { Create } from './Create'
 
 interface ColumnInfo {
-    name: string,
-    type: string,
-    notnull: string,
-    dflt_value: string,
+    name: string
+    type: string
+    notnull: string
+    dflt_value: string
     pk: string
 }
 
@@ -40,7 +40,7 @@ export class SqliteDriver implements DatabaseDriver {
     async run(query: string, params: SqlValue[] = []): Promise<void> {
         return new Promise((resolve, reject) => {
             const appError = new Error()
-            this.database.run(query, params, error => {
+            this.database.run(query, params, (error) => {
                 if (error) {
                     return reject(this.buildError(appError, error, query))
                 }
@@ -61,22 +61,22 @@ export class SqliteDriver implements DatabaseDriver {
     }
 
     async lastInsertedId(): Promise<number> {
-        return new Promise<number>(((resolve, reject) => {
+        return new Promise<number>((resolve, reject) => {
             const appError = new Error()
             const query = 'SELECT last_insert_rowid() as id;'
-            this.database.get(query, [], (error, lastInsert) => {
+            this.database.get(query, [], (error, lastInsert: any) => {
                 if (error) {
                     return reject(this.buildError(appError, error, query))
                 }
                 resolve(lastInsert.id)
             })
-        }))
+        })
     }
 
     async get<T>(query: string, params: SqlValue[] = []): Promise<T[]> {
         return new Promise<T[]>((resolve, reject) => {
             const appError = new Error()
-            this.database.all(query, params, (error, rows) => {
+            this.database.all(query, params, (error, rows: any) => {
                 if (error) {
                     return reject(this.buildError(appError, error, query))
                 }
@@ -88,7 +88,7 @@ export class SqliteDriver implements DatabaseDriver {
     async first<T>(query: string, params: SqlValue[] = []): Promise<T> {
         return new Promise<T>((resolve, reject) => {
             const appError = new Error()
-            this.database.get(query, params, (error, row) => {
+            this.database.get(query, params, (error, row: any) => {
                 if (error) {
                     return reject(this.buildError(appError, error, query))
                 }
@@ -121,13 +121,15 @@ export class SqliteDriver implements DatabaseDriver {
     }
 
     async tableColumns(table: string) {
-        const columnsInfo = await this.get<ColumnInfo>(`PRAGMA table_info(${wrap(table)})`)
-        const autoIncrements = await this.get<{name: string, seq: number}>(`
+        const columnsInfo = await this.get<ColumnInfo>(
+            `PRAGMA table_info(${wrap(table)})`
+        )
+        const autoIncrements = await this.get<{name: string; seq: number}>(`
             SELECT *
             FROM sqlite_sequence
         `)
 
-        return columnsInfo.map(info => ({
+        return columnsInfo.map((info) => ({
             name: info.name,
             type: info.type,
             nullable: !info.notnull,

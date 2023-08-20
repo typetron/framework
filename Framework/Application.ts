@@ -7,28 +7,38 @@ import { FormResolver } from './Resolvers/FormResolver'
 import { EntityResolver } from './Resolvers/EntityResolver'
 import { RootDir } from './RootDir'
 import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware'
-import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler } from '../Router/Http'
+import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler, } from '../Router/Http'
 import { Storage } from '../Storage'
 import { AuthResolver } from './Resolvers/AuthResolver'
 import fileSystem from 'fs'
 import path from 'path'
 import { WebsocketsProvider } from './Providers/WebsocketsProvider'
+import { CacheProvider } from '@Typetron/Framework/Providers/CacheProvider'
 
 export class Application extends Container {
     static defaultConfigDirectory = 'config'
 
     public config = new Map<Function, object>()
 
-    constructor(public directory: string, public configDirectory = Application.defaultConfigDirectory) {
+    constructor(
+        public directory: string,
+        public configDirectory = Application.defaultConfigDirectory
+    ) {
         super()
         Application.setInstance(this)
-        this.set(Application, App.instance = this)
+        this.set(Application, (App.instance = this))
         this.set(Container, this)
         this.set(RootDir, directory)
     }
 
-    static async create(directory: string, configDirectory = Application.defaultConfigDirectory) {
-        const app = new this(fileSystem.realpathSync.native(directory), configDirectory)
+    static async create(
+        directory: string,
+        configDirectory = Application.defaultConfigDirectory
+    ) {
+        const app = new this(
+            fileSystem.realpathSync.native(directory),
+            configDirectory
+        )
         await app.bootstrap()
         return app
     }
@@ -39,7 +49,7 @@ export class Application extends Container {
         const appConfig = this.get(AppConfig)
 
         if (appConfig.websocketsPort) {
-            await this.registerProviders([WebsocketsProvider])
+            await this.registerProviders([WebsocketsProvider, CacheProvider])
         }
 
         return httpHandler.startServer(this)
@@ -47,7 +57,7 @@ export class Application extends Container {
 
     public async registerProviders(providers: Type<Provider>[]) {
         await Promise.all(
-            providers.map(provider => {
+            providers.map((provider) => {
                 const instance = this.get(provider)
                 return instance.register()
             })
@@ -59,14 +69,16 @@ export class Application extends Container {
 
         const storage = this.get(Storage)
 
-        if (!await storage.exists(configsPath)) {
-            console.warn(`Config path '${configsPath}' does not exist. Running with default config.`)
+        if (!(await storage.exists(configsPath))) {
+            console.warn(
+                `Config path '${configsPath}' does not exist. Running with default config.`
+            )
         }
 
         storage
             .files(configsPath)
             .whereIn('extension', ['ts'])
-            .forEach(file => {
+            .forEach((file) => {
                 const configItem = require(file.path).default as BaseConfig<{}>
                 if (configItem && configItem.constructor) {
                     configItem.applyNewValues()
@@ -104,7 +116,7 @@ export class Application extends Container {
     private async checkAppSecret() {
         const authConfig = this.get(AuthConfig)
         if (!authConfig.signature) {
-            throw new Error(`APP_SECRET is not setup in your '.env' file.`)
+          throw new Error(`APP_SECRET is not setup in your '.env' file.`);
         }
     }
 }

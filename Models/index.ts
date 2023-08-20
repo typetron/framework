@@ -9,7 +9,7 @@ export interface ModelField {
 }
 
 export function Field(name?: string) {
-    return function (target: Object, property: string) {
+    return function(target: Object, property: string) {
         const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, target.constructor) || {}
         let type = Reflect.getMetadata('design:type', target, property)
         if (type.prototype instanceof Model) {
@@ -42,7 +42,7 @@ export class ArrayType<T extends Model> extends ModelTypeInterface<T, T[]> {
 }
 
 export function FieldMany(type: typeof Model) {
-    return function (target: Object, property: string) {
+    return function(target: Object, property: string) {
         const fields: Record<string, ModelField> = Reflect.getMetadata(ModelMetadataKey, target.constructor) || {}
         const field = fields[property] || {name: property, type: new ArrayType(type)} as ModelField
         field.type = new ArrayType(type)

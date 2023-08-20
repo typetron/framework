@@ -4,23 +4,24 @@ import { InjectableMetadata, Scope } from './Metadata'
 import { Container } from './Container'
 
 export class ClassResolver extends BaseResolver {
-
     canResolve<T>(abstract: Constructor<T>): boolean {
         return abstract.prototype && abstract.prototype.constructor.name
     }
 
     resolve<T>(abstract: Constructor<T>, parametersValues: object[]) {
-        const parametersTypes: Constructor[] = Reflect.getMetadata('design:paramtypes', abstract) || []
+        const parametersTypes: Constructor[] =
+            Reflect.getMetadata('design:paramtypes', abstract) || []
 
         const parameters = parametersTypes.map((parameterType, index) => {
             if (parametersValues[index]) {
                 return parametersValues[index]
             }
             if (parameterType.name === 'Object' && parametersValues[index]) {
-                parameterType = (parametersValues[index] as Constructor) // || this.getParameterValue(abstract, index);
+                parameterType = parametersValues[index] as Constructor // || this.getParameterValue(abstract, index);
             }
             return this.container.get(parameterType)
         })
+
         const instance = new abstract(...parameters)
 
         const metadata = InjectableMetadata.get(abstract)
@@ -35,15 +36,17 @@ export class ClassResolver extends BaseResolver {
             const value = this.container.get(dependencyAbstract) as T[keyof T]
             if (value instanceof Promise) {
                 asyncDependencies++
-                value.then(resolvedValue => {
-                    instance[dependency as keyof T] = resolvedValue
-                    asyncDependencies--
-                    if (!asyncDependencies) {
-                        resolve(instance)
-                    }
-                }).catch(error => {
-                    reject(error)
-                })
+                value
+                    .then((resolvedValue) => {
+                        instance[dependency as keyof T] = resolvedValue
+                        asyncDependencies--
+                        if (!asyncDependencies) {
+                            resolve(instance)
+                        }
+                    })
+                    .catch((error) => {
+                        reject(error)
+                    })
             } else {
                 instance[dependency as keyof T] = value
             }
@@ -68,7 +71,11 @@ export class ClassResolver extends BaseResolver {
     //     return value.abstract;
     // }
 
-    reload<T>(abstract: Constructor<T>, concrete: T, container: Container = this.container): T {
+    reload<T>(
+        abstract: Constructor<T>,
+        concrete: T,
+        container: Container = this.container
+    ): T {
         const metadata = InjectableMetadata.get(abstract)
         for (const dependencyName in metadata.dependencies) {
             if (!metadata.dependencies[dependencyName]) {
@@ -79,12 +86,16 @@ export class ClassResolver extends BaseResolver {
                 continue
             }
             if (typeof dependency === 'symbol') {
-                concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T]
+                concrete[dependencyName as keyof T] = container.get(
+                    dependency
+                ) as T[keyof T]
                 continue
             }
             const dependencyMetadata = InjectableMetadata.get(dependency)
             if (dependencyMetadata.scope === Scope.REQUEST) {
-                concrete[dependencyName as keyof T] = container.get(dependency) as T[keyof T]
+                concrete[dependencyName as keyof T] = container.get(
+                    dependency
+                ) as T[keyof T]
             }
         }
         return concrete
