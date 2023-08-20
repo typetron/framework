@@ -12,11 +12,11 @@ import { wrap } from '../../Helpers'
 import { Create } from './Create'
 
 interface ColumnInfo {
-    name: string;
-    type: string;
-    notnull: string;
-    dflt_value: string;
-    pk: string;
+    name: string
+    type: string
+    notnull: string
+    dflt_value: string
+    pk: string
 }
 
 export class SqliteDriver implements DatabaseDriver {

@@ -115,8 +115,8 @@ export class Application extends Container {
 
     private async checkAppSecret() {
         const authConfig = this.get(AuthConfig)
-        // if (!authConfig.signature) {
-        //   throw new Error(`APP_SECRET is not setup in your '.env' file.`);
-        // }
+        if (!authConfig.signature) {
+          throw new Error(`APP_SECRET is not setup in your '.env' file.`);
+        }
     }
 }

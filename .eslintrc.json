@@ -18,6 +18,8 @@
         }
     ],
     "rules" : {
+        "max-len": ["error", { "code": 140, "tabWidth": 4 }],
+        "@typescript-eslint/semi": ["error", "never", { "beforeStatementContinuationChars": "always"}], // doesn't apply to TS interfaces
         "@typescript-eslint/no-explicit-any" : "off",
         "no-async-promise-executor" : "off",
         "@typescript-eslint/ban-ts-comment": "warn",
