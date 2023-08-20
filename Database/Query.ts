@@ -92,6 +92,7 @@ export class Query<T = {}> extends Expression {
     }
 
     select<K extends keyof T>(...columns: (K | string | StringExpression)[]) {
+        this.statementType = Query.connection.driver.statements.select
         this.components.columns = columns as string[]
 
         return this

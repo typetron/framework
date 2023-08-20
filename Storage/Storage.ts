@@ -1,14 +1,15 @@
-import * as fileSystem from 'fs'
+import * as fileSystemDeprecated from 'fs'
 import { File } from './File'
 import * as path from 'path'
+import * as fileSystem from 'node:fs/promises'
 
 export class Storage {
     files(directory: string, recursively = false): File[] {
-        return fileSystem
+        return fileSystemDeprecated
             .readdirSync(directory) // TODO make this async
             .reduce((files, name) => {
                 const filePath = path.join(directory, name)
-                const stats = fileSystem.statSync(filePath)
+                const stats = fileSystemDeprecated.statSync(filePath)
                 if (stats.isFile()) {
                     const file = new File(name)
                     file.directory = directory
@@ -22,41 +23,32 @@ export class Storage {
             }, [] as File[])
     }
 
-    async read(filePath: string, options?: any): Promise<Buffer> {
-        return new Promise((resolve, reject) => {
-            fileSystem.readFile(filePath, options, (error, data) => {
-                error ? reject(error) : resolve(data)
-            })
-        })
+    async read(filePath: string): Promise<Buffer> {
+        return fileSystem.readFile(filePath)
     }
 
-    exists(filePath: string): Promise<boolean> {
-        return new Promise((resolve) => {
-            fileSystem.access(filePath, (error) => {
-                error ? resolve(false) : resolve(true)
-            })
-        })
+    async exists(filePath: string): Promise<boolean> {
+        try {
+            await fileSystem.access(filePath)
+            return true
+        } catch (error) {
+            return false
+        }
     }
 
-    async save(
-        file: File,
-        directory: string = '',
-        name?: string | number
-    ): Promise<File> {
+    async save(file: File, directory: string = '', name?: string | number): Promise<File> {
         const newPath = path.join(directory, file.name)
         if (!file.name) {
-            file.name = String(
-                name || this.generateFileName() + '.' + file.extension
-            )
+            file.name = String(name || this.generateRandomFileName() + '.' + file.extension)
         }
         if (directory && !(await this.exists(directory))) {
             await this.makeDirectory(directory)
         }
         return new Promise(async (resolve, reject) => {
-            fileSystem
+            fileSystemDeprecated
                 .createReadStream(file.path)
                 .on('error', reject)
-                .pipe(fileSystem.createWriteStream(newPath))
+                .pipe(fileSystemDeprecated.createWriteStream(newPath))
                 .on('finish', () => {
                     resolve(file)
                 })
@@ -64,53 +56,36 @@ export class Storage {
         })
     }
 
-    async put(
-        filePath: string,
-        content: string | Buffer,
-        options?: any
-    ): Promise<File> {
+    async put(filePath: string, content: string | Buffer, options?: any): Promise<File> {
         const file = new File(path.basename(filePath))
-        file.directory = path.dirname(filePath).split(path.sep).pop()
+        file.directory = path.dirname(filePath)
 
         if (file.directory && !(await this.exists(file.directory))) {
             await this.makeDirectory(file.directory)
         }
 
-        return new Promise(async (resolve, reject) => {
-            fileSystem.writeFile(filePath, content, options, (error) => {
-                error ? reject(error) : resolve(file)
-            })
-        })
+        await fileSystem.writeFile(filePath, content, options)
+        return file
     }
 
     async makeDirectory(directory: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            fileSystem.mkdir(directory, {recursive: true}, (error) => {
-                error ? reject(error) : resolve()
-            })
-        })
+        await fileSystem.mkdir(directory, {recursive: true})
     }
 
-    async removeDirectory(directory: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            fileSystem.rm(directory, {recursive: true}, (error) => {
-                error ? reject(error) : resolve()
-            })
-        })
+    async deleteDirectory(directory: string): Promise<void> {
+        if (await this.exists(directory)) {
+            await fileSystem.rm(directory, {recursive: true})
+        }
     }
 
     async delete(filePath: string): Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            if (!(await this.exists(filePath))) {
-                resolve()
-            }
-            fileSystem.unlink(filePath, (error) => {
-                error ? reject(error) : resolve()
-            })
-        })
+        if (!(await this.exists(filePath))) {
+            return
+        }
+        await fileSystem.unlink(filePath)
     }
 
-    private generateFileName(): string {
+    private generateRandomFileName(): string {
         const stringDomain =
             'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
         return (

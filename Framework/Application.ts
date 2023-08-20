@@ -13,6 +13,7 @@ import { AuthResolver } from './Resolvers/AuthResolver'
 import fileSystem from 'fs'
 import path from 'path'
 import { WebsocketsProvider } from './Providers/WebsocketsProvider'
+import { CacheProvider } from '@Typetron/Framework/Providers/CacheProvider'
 
 export class Application extends Container {
     static defaultConfigDirectory = 'config'
@@ -48,7 +49,7 @@ export class Application extends Container {
         const appConfig = this.get(AppConfig)
 
         if (appConfig.websocketsPort) {
-            await this.registerProviders([WebsocketsProvider])
+            await this.registerProviders([WebsocketsProvider, CacheProvider])
         }
 
         return httpHandler.startServer(this)
