@@ -123,7 +123,7 @@ export abstract class TestCase {
             if (error instanceof HttpError) {
                 const errorResponse = await this.app.get(ErrorHandlerInterface).handle(error)
                 console.error(errorResponse.body)
-                return errorResponse
+                return errorResponse as Response<T>
             }
             throw error
         }

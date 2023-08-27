@@ -32,7 +32,7 @@ export class Handler {
         return event
     }
 
-    async handle(container: Container, request: Request): Promise<Response> {
+    async handle<T = unknown>(container: Container, request: Request): Promise<Response<T>> {
 
         container.set(Request, request)
 
@@ -69,7 +69,7 @@ export class Handler {
             stack = middleware.handle.bind(middleware, request, stack)
         })
 
-        return await stack(request)
+        return await stack(request) as Response<T>
     }
 
 }

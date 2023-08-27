@@ -7,6 +7,7 @@ import { Resolver } from './Resolver'
 export class Container {
     protected static instance: Container
 
+    // TODO performance: get rid of this
     public resolvers: Resolver[] = [
         new ClassResolver(this)
     ]
@@ -83,6 +84,7 @@ export class Container {
         const childContainer = new Container()
         childContainer.parent = this
         childContainer.set(Container, childContainer)
+        // TODO performance: get rid of this
         childContainer.resolvers = this.resolvers.map(resolver => {
             return new (resolver.constructor as Constructor<Resolver>)(childContainer)
         })

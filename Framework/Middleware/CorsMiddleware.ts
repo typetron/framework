@@ -11,10 +11,11 @@ export class CorsMiddleware implements MiddlewareInterface {
     async handle(request: Request, next: RequestHandler) {
         let response: Response
         if (request.method === 'OPTIONS') {
-            // tslint:disable-next-line:no-any
             response = new Response(undefined)
-            response.headers['Access-Control-Allow-Methods'] = 'GET, PUT, PATCH, POST, DELETE'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.setHeaders({
+                'Access-Control-Allow-Methods': 'GET, PUT, PATCH, POST, DELETE',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            })
         } else {
             try {
                 response = await next(request)
@@ -23,7 +24,7 @@ export class CorsMiddleware implements MiddlewareInterface {
             }
         }
 
-        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.setHeader('Access-Control-Allow-Origin', '*')
         return response
     }
 

@@ -48,9 +48,10 @@ export class Handler {
             try {
                 const request = await Request.capture(incomingMessage)
                 const response = await this.handle(app, request)
-                Response.send(response, serverResponse)
+                Response.send(serverResponse, response.status, response.body, response.headers)
             } catch (error) {
-                Response.send(await this.errorHandler.handle(error), serverResponse)
+                const errorResponse = await this.errorHandler.handle(error)
+                Response.send(serverResponse, errorResponse.status, errorResponse.body, errorResponse.headers)
             }
         })
 
@@ -87,7 +88,7 @@ export class Handler {
                 routeStack = middleware.handle.bind(middleware, request, routeStack)
             })
 
-            return await routeStack(request)
+            return routeStack(request)
         }
 
         this.router.middleware.forEach(middlewareClass => {
@@ -95,7 +96,7 @@ export class Handler {
             stack = middleware.handle.bind(middleware, request, stack)
         })
 
-        return await stack(request)
+        return stack(request)
     }
 
     private findRouteIndex(uri: string, method: string): number {

@@ -2,15 +2,14 @@ import { OutgoingHttpHeaders, ServerResponse } from 'http'
 import { Http } from '.'
 import { Buffer } from 'buffer'
 
-// tslint:disable-next-line:no-any
-export class Response<T = any> {
+type Content = unknown | undefined | number | string | object | Buffer
+
+export class Response<T = unknown> {
 
     constructor(
         public body: T,
         public status: Http.Status = Http.Status.OK,
-        public headers: OutgoingHttpHeaders = {
-            'Content-Type': 'text/html'
-        }
+        public headers: OutgoingHttpHeaders = {}
     ) {
     }
 
@@ -26,27 +25,21 @@ export class Response<T = any> {
         return new Response(content, Http.Status.BAD_REQUEST)
     }
 
-    static send(response: Response<undefined | number | string | object | Buffer>, serverResponse: ServerResponse) {
-        const content = this.getContent(response)
-
-        for (const header in response.headers) {
-            serverResponse.setHeader(header, response.headers[header] || '')
-        }
-
-        serverResponse.statusCode = response.status
-        serverResponse.end(content)
-    }
-
-    static getContent(response: Response<number | string | object | undefined>) {
-        let content = response.body ?? ''
+    static send(serverResponse: ServerResponse, status: Http.Status, content: Content, headers?: OutgoingHttpHeaders) {
         if (!(content instanceof Buffer)) {
             if (content instanceof Object) {
                 content = JSON.stringify(content)
-                response.headers['Content-Type'] = 'application/json'
+                serverResponse.setHeader('Content-Type', 'application/json')
             }
-            return content.toString()
+            content = String(content ?? '')
         }
-        return content
+
+        for (const header in headers) {
+            serverResponse.setHeader(header, headers[header] || '')
+        }
+
+        serverResponse.statusCode = status
+        serverResponse.end(content)
     }
 
     setHeader(name: string, value: string) {

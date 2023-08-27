@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "es2018",
+		"target": "es2020",
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
 		"sourceMap": true,
@@ -33,13 +33,17 @@
 		}
 	},
 	"include": [
-		"./**/*.ts"
-	],
-	"exclude": [
-		"node_modules",
-		"Frontend",
-		"test",
-		"dist"
+		"Cache",
+		"Container",
+		"Database",
+		"Encryption",
+		"Forms",
+		"Framework",
+		"Models",
+		"Router",
+		"Storage",
+		"Support",
+		"Testing",
 	]
 }
 
