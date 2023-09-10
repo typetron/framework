@@ -3,7 +3,7 @@ import { BaseConfig } from './BaseConfig'
 export type CacheStoreKey = keyof CacheConfig['drivers']
 
 export class CacheConfig extends BaseConfig<CacheConfig> {
-    defaultStore: CacheStoreKey = process.env?.CACHE_DRIVER as CacheStoreKey ?? 'file'
+    default: CacheStoreKey = process.env?.CACHE_DRIVER as CacheStoreKey ?? 'file'
 
     drivers = {
         file: {

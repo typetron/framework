@@ -157,7 +157,7 @@ export abstract class TestCase {
             headers.authorization = `Bearer ${token}`
         }
 
-        const request = new Request(route.getUrl(), method, {}, {}, headers, content)
+        const request = new Request(route.getUrl(), method, {}, headers, {}, content)
 
         let response: Response
         try {

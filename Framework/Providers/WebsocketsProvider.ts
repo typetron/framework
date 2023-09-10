@@ -102,11 +102,14 @@ export class WebsocketsProvider extends Provider {
     }
 
     private async handleEvent(container: Container, {event, message}: EventRequest) {
-        const request = new Request(event, Http.Method.GET,
+        const request = new Request(
+            event,
+            Http.Method.GET,
             {},
             {},
             {},
-            message?.body as object ?? {}
+            message?.body as object ?? {},
+            {},
         )
 
         // TODO find a way to save parameters so they can be retrieved easily in the Resolvers (check routeEntity resolver for example)

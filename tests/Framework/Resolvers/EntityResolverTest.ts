@@ -16,7 +16,7 @@ class EntityResolverTest {
         const connection = mock(Connection)
         Query.connection = instance(connection)
         Query.connection.driver = new SqliteDriver(':memory:')
-        when(connection.first(anyOfClass(Query))).thenResolve({id: 2}, {id: 1})
+        when(connection.first(anyOfClass(Query))).thenResolve({id: 2}, {id: 3})
 
         const container = new Container()
         container.resolvers.unshift(new EntityResolver(container))
@@ -38,11 +38,11 @@ class EntityResolverTest {
         const request = new Request('read', Http.Method.GET)
         request.parameters = {
             0: 2,
-            1: 1
+            1: 3
         }
         const response: Response<[ID, ID]> = await handler.handle(container, request)
 
         expect(response.body[0]).to.be.equal(2)
-        expect(response.body[1]).to.be.equal(1)
+        expect(response.body[1]).to.be.equal(3)
     }
 }

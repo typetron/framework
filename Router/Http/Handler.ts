@@ -2,9 +2,14 @@ import { Container, Inject } from '../../Container'
 import { MiddlewareInterface, RequestHandler, Route, RouteNotFoundError, Router } from '../'
 import { ErrorHandlerInterface, Http, Response } from './'
 import { Request } from './Request'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { AppConfig } from '../../Framework'
 import { Abstract, Constructor, Type } from '@Typetron/Support'
+import { AppServer, nodeServer, uNetworkingServer } from '@Typetron/Router/Servers'
+
+const httpServers: Record<AppConfig['server'], AppServer> = {
+    node: nodeServer,
+    uNetworking: uNetworkingServer
+}
 
 export class Handler {
     @Inject()
@@ -43,19 +48,15 @@ export class Handler {
 
     startServer(app: Container): void {
         const config = app.get(AppConfig)
+        const startServer = httpServers[config.server]
 
-        const server = createServer(async (incomingMessage: IncomingMessage, serverResponse: ServerResponse) => {
+        startServer(config.port, async (request) => {
             try {
-                const request = await Request.capture(incomingMessage)
-                const response = await this.handle(app, request)
-                Response.send(serverResponse, response.status, response.body, response.headers)
+                return await this.handle(app, request)
             } catch (error) {
-                const errorResponse = await this.errorHandler.handle(error)
-                Response.send(serverResponse, errorResponse.status, errorResponse.body, errorResponse.headers)
+                return this.errorHandler.handle(error)
             }
         })
-
-        server.listen(config.port)
     }
 
     async handle(app: Container, request: Request): Promise<Response> {
@@ -64,9 +65,8 @@ export class Handler {
         container.set(Request, request)
 
         let stack: RequestHandler = async () => {
-            // const routeIndex = this.cachedRoutes[`${request.method} ${request.uri}`]
-            //     ?? this.findRouteIndex(request.uri ?? '', request.method)
-            const routeIndex = this.findRouteIndex(request.uri ?? '', request.method)
+            const routeIndex = this.cachedRoutes[`${request.method} ${request.uri}`]
+                ?? this.findRouteIndex(request.uri ?? '', request.method)
 
             const route = this.router.routes[routeIndex]
 
@@ -103,7 +103,7 @@ export class Handler {
         const preparedUri = this.prepareUri(uri)
 
         const index = this.router.routes.findIndex(route => {
-            return route.method === method && route.matches(preparedUri)
+            return route.method.toLowerCase() === method.toLowerCase() && route.matches(preparedUri)
         })
 
         if (index === -1) {

@@ -4,7 +4,6 @@ node_modules
 !.eslintrc.json
 *.js.map
 *.ts.map
-*.d.ts
 tsconfig.tsbuildinfo
 .nyc_output
-dist
+build

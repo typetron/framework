@@ -5,6 +5,7 @@ import { Provider } from '../Provider'
 
 export class AppConfig extends BaseConfig<AppConfig> {
     environment: string
+    server: 'node' | 'uNetworking' = 'node'
     debug = true
     port: number
     websocketsPort?: number

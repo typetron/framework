@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "es2020",
+        "target": "ES2020",
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
 		"sourceMap": true,
@@ -14,7 +14,7 @@
 		"declarationMap": true,
 		//		"noUnusedLocals": true,
 		//		"noUnusedParameters": true,
-		"outDir": "./dist",
+        "outDir": "./build",
 		"noImplicitAny": true,
 		//		"noUncheckedIndexedAccess": true,
 		"moduleResolution": "node",
@@ -32,7 +32,10 @@
 			]
 		}
 	},
-	"include": [
+    "files": [
+        "types.d.ts"
+    ],
+    "include": [
 		"Cache",
 		"Container",
 		"Database",
@@ -40,10 +43,11 @@
 		"Forms",
 		"Framework",
 		"Models",
+        "Mail",
 		"Router",
 		"Storage",
 		"Support",
-		"Testing",
+        "Testing"
 	]
 }
 

@@ -78,8 +78,8 @@ Array.prototype.remove = function <T>(...items: T[]) {
         if (index === -1) {
             return
         }
-    this.splice(this.indexOf(item), 1)
-  })
+        this.splice(this.indexOf(item), 1)
+    })
 }
 
 Array.prototype.where = function <T, K extends keyof T>(property: K, value?: T[K]) {
@@ -128,6 +128,9 @@ Array.prototype.forEachAsync = async function <T>(callback: ArrayItemCallback<T,
 }
 
 Array.prototype.mapAsync = async function <T, U>(callback: ArrayItemCallback<T, Promise<U>>, thisArg: T[]) {
+    if (!this.length) {
+        return []
+    }
     const promises = []
     for (let index = 0; index < this.length; index++) {
         promises.push(callback.call(thisArg, this[index], index, this))

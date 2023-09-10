@@ -2,6 +2,7 @@ import { Constructor } from '../Support'
 import { BaseResolver } from './Resolver'
 import { InjectableMetadata, Scope } from './Metadata'
 import { Container } from './Container'
+import { ParametersTypesMetadata } from '@Typetron/Support/Metadata'
 
 export class ClassResolver extends BaseResolver {
     canResolve<T>(abstract: Constructor<T>): boolean {
@@ -9,8 +10,10 @@ export class ClassResolver extends BaseResolver {
     }
 
     resolve<T>(abstract: Constructor<T>, parametersValues: object[]) {
-        const parametersTypes: Constructor[] =
-            Reflect.getMetadata('design:paramtypes', abstract) || []
+
+        // TODO improve this since it looks very hard to write next time
+        const parametersTypes: Constructor[] = ParametersTypesMetadata.get(abstract).parameters
+            ?? (ParametersTypesMetadata.get(abstract).parameters = Reflect.getMetadata('design:paramtypes', abstract) ?? [])
 
         const parameters = parametersTypes.map((parameterType, index) => {
             if (parametersValues[index]) {

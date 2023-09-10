@@ -1,5 +1,4 @@
 import { IncomingHttpHeaders, IncomingMessage } from 'http'
-import * as Url from 'url'
 import { Http } from '.'
 import { Parameters } from './Contracts'
 import * as querystring from 'querystring'
@@ -8,45 +7,142 @@ import { File } from '../../Storage'
 import Busboy from 'busboy'
 import * as os from 'os'
 import * as fs from 'fs'
+import * as Url from 'fast-url-parser'
+
+const cacheURLs = new Array<{url: string, instance: URL}>(100)
 
 export class Request {
     // static methodField = '_method'
 
     public parameters: Record<string, string | number> = {}
 
+    private raw: {
+        urlOrUri: string,
+        method: Http.Method,
+        headers?: IncomingHttpHeaders,
+        query?: string | ParsedUrlQuery,
+        cookies?: Parameters | string,
+        body?: string | object,
+        files?: Record<string, File | File[]>,
+    }
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    private details: {
+        url: string,
+        uri: string,
+        method: Http.Method,
+        headers: IncomingHttpHeaders,
+        query: ParsedUrlQuery,
+        cookies: Parameters,
+        body: string | object | undefined,
+        files: Record<string, File | File[]>,
+    } = {}
+
     constructor(
-        public uri: string,
-        public method: Http.Method,
-        public query: ParsedUrlQuery = {},
-        public cookies: Parameters = {},
-        public headers: IncomingHttpHeaders = {},
-        public body: string | object | undefined = {},
-        public files: Record<string, File | File[]> = {},
-    ) {}
+        urlOrUri: string,
+        method: Http.Method,
+        headers?: IncomingHttpHeaders,
+        query?: string | ParsedUrlQuery,
+        cookies?: string | Parameters,
+        body?: string | object,
+        files?: Record<string, File | File[]>,
+    ) {
+        this.raw = {
+            urlOrUri,
+            method,
+            headers,
+            query,
+            cookies,
+            body,
+            files,
+        }
+    }
 
-    // get headers() {
-    //     return this.request.headers;
-    // }
-    //
+    get headers(): IncomingHttpHeaders {
+        return this.details.headers ?? (this.details.headers = {})
+    }
+
+    get uri(): string {
+        return this.details.uri ?? (() => {
+            const url = cacheURLs[this.raw.urlOrUri.length]?.url === this.raw.urlOrUri
+                ? cacheURLs[this.raw.urlOrUri.length].instance
+                : (() => {
+                    cacheURLs[this.raw.urlOrUri.length] = {
+                        url: this.raw.urlOrUri,
+                        instance: Url.parse(this.raw.urlOrUri)
+                    }
+                    return cacheURLs[this.raw.urlOrUri.length].instance
+                })()
+
+            return this.details.uri = url.pathname ?? ''
+        })()
+    }
+
+    get method(): Http.Method {
+        return this.raw.method
+    }
+
     // get url(): string {
-    //     return this.request.url || '';
-    // }
-    //
-    // set url(url: string) {
-    //     this.request.url = url;
-    // }
-    //
-    // get method(): Http.Method {
-    //     return this.request.method as Http.Method;
-    // }
-    //
-    // set method(method: Http.Method) {
-    //     this.request.method = method;
+    //     return this.details.url (() => {
+    //         return this.details.url = this.raw.url
+    //     })()
     // }
 
-    // emit(event: string) {
-    //     this.request.emit(event);
-    // }
+    get query(): ParsedUrlQuery {
+        return this.details.query ?? (() => {
+            return this.details.query = typeof this.raw.query === 'object'
+                ? this.raw.query
+                : querystring.parse(
+                    typeof this.raw.query === 'string'
+                        ? this.raw.query
+                        : Url.parse(this.raw.urlOrUri).search ?? ''
+                )
+        })()
+    }
+
+    get cookies(): Parameters {
+        return this.details.cookies ?? (() => {
+            return {todo: 'parse cookies'}
+        })()
+    }
+
+    get body() {
+        return this.details.body
+    }
+
+    set body(body: string | object | undefined) {
+        this.details.body = body
+    }
+
+    get files() {
+        return this.raw.files ?? {}
+    }
+
+    set files(files: Record<string, File | File[]>) {
+        this.raw.files = files
+    }
+
+    static async capture(message: IncomingMessage): Promise<Request> {
+        const request = new this(
+            message.url ?? '',
+            message.method as Http.Method || Http.Method.GET,
+            message.headers
+        )
+
+        if (request.method !== Http.Method.GET) {
+            if (this.isMultipartRequest(message)) {
+                [request.body, request.files] = await Request.loadMultipartContent(message)
+            } else {
+                request.body = await Request.loadSimpleContent(message)
+            }
+
+            // const overwrittenMethod = (request.body as Record<string, string | undefined>)[Request.methodField] || ''
+            // request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method
+        }
+
+        return request
+    }
 
     static async loadMultipartContent(incomingMessage: IncomingMessage): Promise<[string | object, Record<string, File | File[]>]> {
 
@@ -116,29 +212,8 @@ export class Request {
         })
     }
 
-    static async capture(message: IncomingMessage): Promise<Request> {
-        const url = Url.parse(message.url || '')
-
-        const request = new this(
-            url.pathname || '',
-            message.method as Http.Method || Http.Method.GET,
-            url.query ? querystring.parse(url.query) : {},
-            {}, // message.headers.cookie.split(';')
-            message.headers,
-        )
-
-        if (request.method !== Http.Method.GET) {
-            if (this.isMultipartRequest(message)) {
-                [request.body, request.files] = await Request.loadMultipartContent(message)
-            } else {
-                request.body = await Request.loadSimpleContent(message)
-            }
-
-            // const overwrittenMethod = (request.body as Record<string, string | undefined>)[Request.methodField] || ''
-            // request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method
-        }
-
-        return request
+    getHeader(name: string): IncomingHttpHeaders {
+        return this.details.headers ?? (this.details.headers = {})
     }
 
     private static isJSONRequest(incomingMessage: IncomingMessage) {
