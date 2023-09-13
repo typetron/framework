@@ -1,5 +1,6 @@
-import { AbstractControl, FormControl, FormGroup, ValidatorFn } from '@angular/forms'
-import { Form, FormField } from '@Typetron/Forms'
+import type { AbstractControl, ValidatorFn } from '@angular/forms'
+import { FormControl, FormGroup } from '@angular/forms'
+import type { Form, FormField } from '@Typetron/Forms'
 import { Constructor } from '@Typetron/Support'
 
 export class FormBuilder {

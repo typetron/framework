@@ -1,10 +1,10 @@
 {
-	"extends": "../../tsconfig.json",
 	"compilerOptions": {
-		"module": "ES6",
+        "module": "ES2020",
 		"outDir": "dist",
 		"baseUrl": ".",
-		"paths": {
+        "moduleResolution": "node",
+        "paths": {
 			"@Typetron/*": [
 				"node_modules/@typetron/framework/*"
 			]
@@ -13,9 +13,8 @@
 			"dom"
 		]
 	},
-	"include": [
-		"./*.ts"
-	],
-	"exclude": []
+    "files": [
+        "index.ts"
+    ]
 }
 

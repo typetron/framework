@@ -2,29 +2,25 @@
 	"name": "@typetron/angular",
 	"description": "Frontend tools for Angular from Typetron",
 	"license": "MIT",
-	"version": "12.9.1",
+    "version": "16.2.4",
 	"author": {
 		"email": "ionel@typetron.org",
 		"name": "Ionel Lupu"
 	},
 	"scripts": {
 		"build": "tsc",
-		"test": "mocha",
-		"lint": "eslint",
-		"test:watch": "mocha --watch",
-		"preversion": "npm test",
 		"version": "npm run build"
 	},
 	"engines": {
-		"node": ">= 12.13.0"
+        "node": ">= 18.12.0"
 	},
 	"dependencies": {
-		"@typetron/framework": "^0.3.16"
+        "@typetron/framework": "^0.4.0-rc1"
 	},
 	"peerDependencies": {
-		"@angular/common": "^13.1.0",
-		"@angular/core": "^13.1.0",
-		"@angular/forms": "^13.1.0"
+        "@angular/common": "^16.2.4",
+        "@angular/core": "^16.2.4",
+        "@angular/forms": "^16.2.4"
 	},
 	"devDependencies": {
 		"typescript": "4.1.6"
