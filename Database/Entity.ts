@@ -244,7 +244,7 @@ export abstract class Entity {
         return this
     }
 
-    newQuery() {
+    newQuery<T extends Entity>(this: T) {
         return this.static.newQuery()
     }
 

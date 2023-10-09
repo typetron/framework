@@ -2,7 +2,7 @@
     "name": "@typetron/framework",
     "description": "Modern Node.js framework for modern apps written in Typescript",
     "license": "MIT",
-    "version": "0.4.0-rc4",
+    "version": "0.4.0-rc5",
     "keywords": [
         "typetron",
         "framework",
