@@ -51,7 +51,7 @@ export abstract class InverseField<T extends Entity> implements EntityField<T> {
         return entity[key as K]
     }
 
-    abstract set(target: T, value: T[keyof T]): void;
+    abstract set(target: T, value: T[keyof T]): void
 
     // relationshipColumnValue<K extends keyof T>(entity: T, value: T[K]): T[K] | T[K][] | string | number | undefined {
     //     return value;
@@ -78,19 +78,19 @@ export abstract class RelationshipField<T extends Entity, R extends Entity> exte
         return this.type()
     }
 
-    abstract match(entities: T[], relatedEntities: R[]): T[];
+    abstract match(entities: T[], relatedEntities: R[]): T[]
 
-    abstract matchCounts(entities: T[], counts: T[]): T[];
+    abstract matchCounts(entities: T[], counts: T[]): T[]
 
     abstract getRelatedValue(
         relatedEntities: R[],
         eagerLoad: EntityQuery<T>['eagerLoad'],
         customQuery?: (query: Query) => void
-    ): Promise<R[]>;
+    ): Promise<R[]>
 
-    abstract getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void): Promise<T[]>;
+    abstract getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void): Promise<T[]>
 
-    abstract update(target: T): void;
+    abstract update(target: T): void
 }
 
 export abstract class InverseRelationship<T extends Entity, R extends Entity> extends InverseField<T> {
@@ -109,17 +109,17 @@ export abstract class InverseRelationship<T extends Entity, R extends Entity> ex
         return this.type()
     }
 
-    abstract match(entities: T[], relatedEntities: R[]): T[];
+    abstract match(entities: T[], relatedEntities: R[]): T[]
 
-    abstract matchCounts(entities: T[], counts: T[]): T[];
+    abstract matchCounts(entities: T[], counts: T[]): T[]
 
     abstract getRelatedValue(
         relatedEntities: R[],
         eagerLoad: EntityQuery<T>['eagerLoad'],
         customQuery?: (query: Query) => void
-    ): Promise<R[]>;
+    ): Promise<R[]>
 
-    abstract getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void): Promise<T[]>;
+    abstract getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void): Promise<T[]>
 
 }
 
