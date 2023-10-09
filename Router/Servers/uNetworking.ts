@@ -8,7 +8,7 @@ export function uNetworkingServer(port: number, handler: (request: Request) => P
         // passphrase: '1234'
     })
         .any('*', async (response, request) => {
-            const appRequest = new Request(request.getUrl(), request.getMethod() as Http.Method, {})
+            const appRequest = new Request(request.getUrl(), request.getMethod() as Http.Method)
             const appResponse = await handler(appRequest)
             Object.keys(appResponse.headers).forEach(header => {
                 const headerValue = appResponse.headers[header]

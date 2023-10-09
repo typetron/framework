@@ -49,9 +49,7 @@ export class Storage {
                 .createReadStream(file.path)
                 .on('error', reject)
                 .pipe(fileSystemDeprecated.createWriteStream(newPath))
-                .on('finish', () => {
-                    resolve(file)
-                })
+                .on('finish', () => resolve(file))
                 .on('error', reject)
         })
     }
@@ -79,6 +77,10 @@ export class Storage {
     }
 
     async delete(filePath: string): Promise<void> {
+        if ((await fileSystem.stat(filePath)).isDirectory()) {
+            throw new Error('Can not delete because this path leads to a directory and not a file.')
+        }
+
         if (!(await this.exists(filePath))) {
             return
         }

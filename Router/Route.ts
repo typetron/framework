@@ -91,7 +91,7 @@ export class Route {
                 return this.parameters[part.name]
             }
             return part.name
-        }).join('/')
+        }).filter(Boolean).join('/')
     }
 
     private async resolveParameters(parameters: Type<Function>[], overrides: Function[], container: Container) {

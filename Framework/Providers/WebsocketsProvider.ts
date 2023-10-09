@@ -5,7 +5,7 @@ import { App, DEDICATED_COMPRESSOR_3KB, WebSocket as uWebSocket } from 'uWebSock
 import { TextDecoder } from 'util'
 import { ErrorHandlerInterface, Http, Request, Response } from '../../Router/Http'
 import { EventErrorResponse, Handler, WebSocket } from '../../Router/Websockets'
-import { EventRequest, EventResponse } from '../../Router/Websockets/types'
+import { EventRequest, EventResponse } from '@Typetron/Router/Websockets'
 
 enum WebsocketMessageStatus {
     OK = 'OK',
@@ -105,7 +105,6 @@ export class WebsocketsProvider extends Provider {
         const request = new Request(
             event,
             Http.Method.GET,
-            {},
             {},
             {},
             message?.body as object ?? {},

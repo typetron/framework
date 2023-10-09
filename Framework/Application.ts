@@ -17,8 +17,6 @@ import { WebsocketsProvider } from './Providers/WebsocketsProvider'
 export class Application extends Container {
     static defaultConfigDirectory = 'config'
 
-    public config = new Map<Function, object>()
-
     constructor(
         public directory: string,
         public configDirectory = Application.defaultConfigDirectory
@@ -81,7 +79,6 @@ export class Application extends Container {
                 const configItem = require(file.path).default as BaseConfig<{}>
                 if (configItem && configItem.constructor) {
                     configItem.applyNewValues()
-                    this.config.set(configItem.constructor, configItem)
                     this.set(configItem.constructor, configItem)
                 }
             })
@@ -115,7 +112,7 @@ export class Application extends Container {
     private async checkAppSecret() {
         const authConfig = this.get(AuthConfig)
         if (!authConfig.signature) {
-          throw new Error(`APP_SECRET is not setup in your '.env' file.`);
+            throw new Error(`APP_SECRET is not setup in your '.env' file.`)
         }
     }
 }

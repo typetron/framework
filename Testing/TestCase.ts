@@ -22,7 +22,7 @@ export abstract class TestCase {
         DatabaseProvider
     ]
 
-    abstract bootstrapApp(): Promise<Application>;
+    abstract bootstrapApp(): Promise<Application>
 
     async before() {
         if (!TestCase.app) {
@@ -108,7 +108,6 @@ export abstract class TestCase {
         const request = new Request(event, Http.Method.GET,
             {},
             {},
-            {},
             content?.body ?? {}
         )
 
@@ -157,7 +156,14 @@ export abstract class TestCase {
             headers.authorization = `Bearer ${token}`
         }
 
-        const request = new Request(route.getUrl(), method, {}, headers, {}, content)
+        const request = new Request(route.getUrl(), method, {}, {}, content)
+
+        request.setHeadersLoader(() => {
+            return headers
+        })
+        request.getHeader = <T extends string | string[] | undefined>(name: keyof IncomingHttpHeaders | string): T => {
+            return headers[String(name).toLowerCase()] as T
+        }
 
         let response: Response
         try {

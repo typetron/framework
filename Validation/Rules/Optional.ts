@@ -7,7 +7,7 @@ export function Optional(): Type<RuleInterface> {
         identifier = 'optional'
 
         passes(attribute: string, value: RuleValue): boolean {
-            return true
+            return true // TODO
         }
 
         message(attribute: string): string {
@@ -15,3 +15,4 @@ export function Optional(): Type<RuleInterface> {
         }
     }
 }
+

@@ -4,10 +4,11 @@ import { Parameters } from './Contracts'
 import * as querystring from 'querystring'
 import { ParsedUrlQuery } from 'querystring'
 import { File } from '../../Storage'
-import Busboy from 'busboy'
+import busboy, { FileInfo } from 'busboy'
 import * as os from 'os'
 import * as fs from 'fs'
 import * as Url from 'fast-url-parser'
+import { Readable } from 'stream'
 
 const cacheURLs = new Array<{url: string, instance: URL}>(100)
 
@@ -19,7 +20,6 @@ export class Request {
     private raw: {
         urlOrUri: string,
         method: Http.Method,
-        headers?: IncomingHttpHeaders,
         query?: string | ParsedUrlQuery,
         cookies?: Parameters | string,
         body?: string | object,
@@ -32,17 +32,17 @@ export class Request {
         url: string,
         uri: string,
         method: Http.Method,
-        headers: IncomingHttpHeaders,
         query: ParsedUrlQuery,
         cookies: Parameters,
         body: string | object | undefined,
         files: Record<string, File | File[]>,
     } = {}
 
+    getHeader: <T extends string | string[]>(name: keyof IncomingHttpHeaders | string) => T | undefined
+
     constructor(
         urlOrUri: string,
         method: Http.Method,
-        headers?: IncomingHttpHeaders,
         query?: string | ParsedUrlQuery,
         cookies?: string | Parameters,
         body?: string | object,
@@ -51,7 +51,6 @@ export class Request {
         this.raw = {
             urlOrUri,
             method,
-            headers,
             query,
             cookies,
             body,
@@ -60,7 +59,14 @@ export class Request {
     }
 
     get headers(): IncomingHttpHeaders {
-        return this.details.headers ?? (this.details.headers = {})
+        return {}
+    }
+
+    get url(): string {
+        return this.details.url ?? (() => {
+            const url = Url.parse(this.raw.urlOrUri)
+            return this.details.url = url.format()
+        })()
     }
 
     get uri(): string {
@@ -83,12 +89,6 @@ export class Request {
         return this.raw.method
     }
 
-    // get url(): string {
-    //     return this.details.url (() => {
-    //         return this.details.url = this.raw.url
-    //     })()
-    // }
-
     get query(): ParsedUrlQuery {
         return this.details.query ?? (() => {
             return this.details.query = typeof this.raw.query === 'object'
@@ -96,8 +96,14 @@ export class Request {
                 : querystring.parse(
                     typeof this.raw.query === 'string'
                         ? this.raw.query
-                        : Url.parse(this.raw.urlOrUri).search ?? ''
+                        : Url.parse(this.raw.urlOrUri).query ?? ''
                 )
+        })()
+    }
+
+    get body() {
+        return this.details.body ?? (() => {
+            return this.details.body = this.raw.body
         })()
     }
 
@@ -107,55 +113,18 @@ export class Request {
         })()
     }
 
-    get body() {
-        return this.details.body
-    }
-
-    set body(body: string | object | undefined) {
-        this.details.body = body
-    }
-
-    get files() {
-        return this.raw.files ?? {}
-    }
-
-    set files(files: Record<string, File | File[]>) {
-        this.raw.files = files
-    }
-
-    static async capture(message: IncomingMessage): Promise<Request> {
-        const request = new this(
-            message.url ?? '',
-            message.method as Http.Method || Http.Method.GET,
-            message.headers
-        )
-
-        if (request.method !== Http.Method.GET) {
-            if (this.isMultipartRequest(message)) {
-                [request.body, request.files] = await Request.loadMultipartContent(message)
-            } else {
-                request.body = await Request.loadSimpleContent(message)
-            }
-
-            // const overwrittenMethod = (request.body as Record<string, string | undefined>)[Request.methodField] || ''
-            // request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method
-        }
-
-        return request
-    }
-
     static async loadMultipartContent(incomingMessage: IncomingMessage): Promise<[string | object, Record<string, File | File[]>]> {
 
         return new Promise((resolve, reject) => {
-            const busboy = new Busboy({headers: incomingMessage.headers})
+            const formDataParser = busboy({headers: incomingMessage.headers})
             const files: Record<string, File | File[]> = {}
             const content: Record<string, string> = {}
 
-            busboy.on('file', function(fieldName, file, fileName, encoding, mimetype) {
-                const extension = fileName.split('.').pop()
+            formDataParser.on('file', function(fieldName: string, file: Readable, {filename, encoding, mimeType}: FileInfo) {
+                const extension = filename.split('.').pop()
                 const fileInstance = new File(`upload_${new Date().getTime().toString()}_${String.randomAlphaNum(9)}.${extension}`)
 
-                fileInstance.originalName = fileName
+                fileInstance.originalName = filename
                 fileInstance.directory = os.tmpdir()
                 fileInstance.saved = true
 
@@ -172,15 +141,52 @@ export class Request {
                     files[fieldName] = field instanceof Array ? [...field, fileInstance] : field ? [field, fileInstance] : fileInstance
                 })
             })
-            busboy.on('field', function(fieldName, value) {
+            formDataParser.on('field', function(fieldName, value) {
                 content[fieldName] = value
             })
-            busboy.on('finish', function() {
+            formDataParser.on('finish', function() {
                 resolve([content, files])
             })
 
-            incomingMessage.pipe(busboy)
+            incomingMessage.pipe(formDataParser)
         })
+    }
+
+    set body(body: string | object | undefined) {
+        this.details.body = body
+    }
+
+    get files() {
+        return this.raw.files ?? {}
+    }
+
+    set files(files: Record<string, File | File[]>) {
+        this.raw.files = files
+    }
+
+    // static async capture(message: IncomingMessage): Promise<Request> {
+    //     const request = new this(
+    //         message.url ?? '',
+    //         message.method as Http.Method || Http.Method.GET,
+    //         message.headers
+    //     )
+    //
+    //     if (request.method !== Http.Method.GET) {
+    //         if (this.isMultipartRequest(message)) {
+    //             [request.body, request.files] = await Request.loadMultipartContent(message)
+    //         } else {
+    //             request.body = await Request.loadSimpleContent(message)
+    //         }
+    //
+    //         // const overwrittenMethod = (request.body as Record<string, string | undefined>)[Request.methodField] || ''
+    //         // request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method
+    //     }
+    //
+    //     return request
+    // }
+
+    private static isJSONRequest(incomingMessage: IncomingMessage): boolean {
+        return Boolean(incomingMessage.headers['content-type']?.includes('application/json'))
     }
 
     static async loadSimpleContent(incomingMessage: IncomingMessage): Promise<string | object | undefined> {
@@ -212,15 +218,17 @@ export class Request {
         })
     }
 
-    getHeader(name: string): IncomingHttpHeaders {
-        return this.details.headers ?? (this.details.headers = {})
+    setHeadersLoader(loader: () => IncomingHttpHeaders): void {
+        Object.defineProperty(this, 'headers', {
+            get: function() {
+                return loader()
+            },
+            enumerable: true,
+            configurable: true
+        })
     }
 
-    private static isJSONRequest(incomingMessage: IncomingMessage) {
-        return incomingMessage.headers['content-type']?.includes('application/json')
-    }
-
-    private static isMultipartRequest(message: IncomingMessage) {
-        return message.headers['content-type']?.includes('multipart/form-data')
+    isMultipartRequest() {
+        return Boolean(this.getHeader('content-type')?.includes('multipart/form-data'))
     }
 }

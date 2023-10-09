@@ -6,11 +6,11 @@ export function FileExtension(extensions: string[], message?: string): Type<Rule
     return class extends Rule {
         identifier = 'fileExtension'
 
-        passes(attribute: string, value: File): boolean {
-            return value.extension ? extensions.includes(value.extension) : false
+        passes(attribute: string, value?: File): boolean {
+            return value?.extension ? extensions.includes(value.extension) : false
         }
 
-        message(attribute: string): string {
+        message(attribute: string, value?: File): string {
             const messagePart = extensions.length === 1
                 ? `the '.${extensions.first()}' extension`
                 : `these extensions: ${extensions.map(extension => `.${extension}`).join(', ')}`
