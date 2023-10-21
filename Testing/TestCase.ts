@@ -1,28 +1,31 @@
 import '../Support/Math'
-import { ErrorHandlerInterface, Handler as HTTPHandler, Http, HttpError, Request, Response } from '../Router/Http'
+import { ErrorHandlerInterface, Handler as HTTPHandler, Http, HttpError, Request as HttpRequest, Response } from '../Router/Http'
 import { IncomingHttpHeaders } from 'http'
 import { Application, DatabaseProvider } from '../Framework'
 import { Router } from '../Router'
 import { Auth, User } from '../Framework/Auth'
-import { EventRequest } from '../Router/Websockets/types'
+import { ActionRequest } from '../Router/Websockets/types'
 import { Handler as WebsocketsHandler, WebSocket } from '../Router/Websockets'
 import { Container } from '../Container'
 import { ID } from '@Typetron/Database'
 import { anything, instance, mock, when } from 'ts-mockito'
 import { Crypt } from '@Typetron/Encryption'
+import { Request } from '@Typetron/Router/Request'
+import { HttpRoute } from '@Typetron/Router/Http/HttpRoute'
 
 export abstract class TestCase {
     static app: Application
     app: Container
 
     // tslint:disable-next-line:no-any
-    eventListeners = new Map<string, (response: any) => void>()
+    actionListeners = new Map<string, (response: any) => void>()
 
     providersNeedingReboot = [
         DatabaseProvider
     ]
 
     abstract bootstrapApp(): Promise<Application>
+
 
     async before() {
         if (!TestCase.app) {
@@ -37,6 +40,8 @@ export abstract class TestCase {
 
         this.app.set(Crypt, instance(crypt))
     }
+
+    async after() {}
 
     async loginById(id: ID) {
         await this.app.get(Auth).loginById(id)
@@ -89,27 +94,23 @@ export abstract class TestCase {
         return this.request(Http.Method.DELETE, route, content, headers) as Promise<Response<T>>
     }
 
-    async event<T extends string | object | undefined>(event: string, content?: EventRequest['message']): Promise<Response<T>> {
+    async action<T extends string | object | undefined>(action: string, content?: ActionRequest['message']): Promise<Response<T>> {
         const socketMock = mock(WebSocket)
 
-        when(socketMock.publishAndSend(anything(), anything(), anything())).thenCall((topic, calledEvent, message) => {
-            const callback = this.eventListeners.get(calledEvent)
+        when(socketMock.publishAndSend(anything(), anything(), anything())).thenCall((topic, calledActon, message) => {
+            const callback = this.actionListeners.get(calledActon)
             callback?.(message)
         })
 
-        when(socketMock.send(anything(), anything())).thenCall((calledEvent, message) => {
-            const callback = this.eventListeners.get(calledEvent)
+        when(socketMock.send(anything(), anything())).thenCall((calledActon, message) => {
+            const callback = this.actionListeners.get(calledActon)
             callback?.(message)
         })
 
         const container = this.app.createChildContainer()
         container.set(WebSocket, instance(socketMock))
 
-        const request = new Request(event, Http.Method.GET,
-            {},
-            {},
-            content?.body ?? {}
-        )
+        const request = new Request(action, content?.body)
 
         // TODO find a way to save parameters so they can be retrieved easily in the Resolvers (check EntityResolver for example)
         content?.parameters?.forEach(parameter => {
@@ -128,8 +129,8 @@ export abstract class TestCase {
         }
     }
 
-    on<T>(event: string, callback: (response: T) => void) {
-        this.eventListeners.set(event, callback)
+    on<T>(action: string, callback: (response: T) => void) {
+        this.actionListeners.set(action, callback)
     }
 
     private async request(
@@ -144,7 +145,7 @@ export abstract class TestCase {
         }
 
         const router = this.app.get(Router)
-        const route = router.routes.findWhere('name', routeName)
+        const route = router.routes.findWhere('name', routeName) as HttpRoute
         if (!route) {
             throw new Error(`Route '${routeName}' not found`)
         }
@@ -156,7 +157,7 @@ export abstract class TestCase {
             headers.authorization = `Bearer ${token}`
         }
 
-        const request = new Request(route.getUrl(), method, {}, {}, content)
+        const request = new HttpRequest(route.getUrl(), method, {}, {}, content)
 
         request.setHeadersLoader(() => {
             return headers

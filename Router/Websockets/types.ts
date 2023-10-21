@@ -3,21 +3,21 @@ export enum WebsocketMessageStatus {
     Error = 'Error',
 }
 
-export interface Event<T> {
-    event: string
+export interface Action<T> {
+    action: string
     message?: T
 }
 
-export interface EventRequestMessage {
+export interface ActionRequestMessage {
     parameters?: (string | number)[]
     // tslint:disable-next-line:no-any
     body?: any
 }
 
-export type EventRequest = Event<EventRequestMessage>
+export type ActionRequest = Action<ActionRequestMessage>
 
-export interface EventResponse<T> extends Event<T> {
+export interface ActionResponse<T> extends Action<T> {
     status: WebsocketMessageStatus
 }
 
-export type EventErrorResponse<T extends string = string> = EventResponse<{message: T, stack: string}>
+export type ActionErrorResponse<T extends string = string> = ActionResponse<{message: T, stack: string}>

@@ -45,7 +45,7 @@ export class Auth {
     //     this.savedUser = await this.authenticable.find(this.id)
     // }
 
-    async user<T extends User>(): Promise<T | undefined> {
+    async user<T extends User>(): Promise<T> {
         // if (this.savedUser) { // TODO this if statement should be removed using the @BeforeRequest decorator above
         //     return this.savedUser as T
         // }
@@ -54,7 +54,13 @@ export class Auth {
             throw new Error('You tried to use the Auth service without authenticating the user. Please use the AuthMiddleware or authenticate the user before using this route')
         }
 
-        return this.savedUser = await this.authenticable.find(this.id) as T
+        const user = await this.authenticable.find(this.id)
+
+        if (!user) {
+            throw new Error(`Could not find a user with id '${this.id}'`)
+        }
+
+        return this.savedUser = user as T
     }
 
     async login(username: string, password: string): Promise<string> {

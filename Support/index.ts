@@ -9,6 +9,7 @@ export type ChildObject<Child, Parent> = Omit<Child, keyof Parent>
 
 // tslint:disable-next-line:no-any
 export type Type<T> = new(...args: any[]) => T
+export type AnyFunction<T = any> = (...args: any[]) => T
 
 export interface Abstract<T> {
     prototype: T;

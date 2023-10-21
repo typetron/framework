@@ -2,7 +2,7 @@ import { suite, test } from '@testdeck/mocha'
 import { Container } from '@Typetron/Container'
 import { Column, Connection, Entity, ID, Query, SqliteDriver } from '@Typetron/Database'
 import { Handler } from '@Typetron/Router/Websockets'
-import { Type } from '@Typetron/Support'
+import { AnyFunction, Type } from '@Typetron/Support'
 import { Http, Request, Response } from '@Typetron/Router/Http'
 import { anyOfClass, instance, mock, when } from 'ts-mockito'
 import { EntityResolver } from '@Typetron/Framework/Resolvers/EntityResolver'
@@ -33,7 +33,7 @@ class EntityResolverTest {
         }
 
         const handler = container.get(Handler)
-        handler.addEvent('read', Controller, 'read', [User as unknown as Type<Function>, User as unknown as Type<Function>])
+        handler.addAction('read', Controller, 'read', [User as unknown as Type<AnyFunction>, User as unknown as Type<AnyFunction>])
 
         const request = new Request('read', Http.Method.GET)
         request.parameters = {

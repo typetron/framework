@@ -1,5 +1,5 @@
 import { WebSocket as uWebSocket } from 'uWebSockets.js'
-import { EventResponse, WebsocketMessageStatus } from './types'
+import { ActionResponse, WebsocketMessageStatus } from './types'
 import { Container } from '@Typetron/Container'
 
 export * from './Handler'
@@ -27,9 +27,9 @@ export class WebSocket {
     }
 
     // tslint:disable-next-line:no-any
-    publish(topic: string, event: string, body?: unknown) {
-        const sentResponse: EventResponse<unknown> = {
-            event,
+    publish(topic: string, action: string, body?: unknown) {
+        const sentResponse: ActionResponse<unknown> = {
+            action,
             message: body,
             status: WebsocketMessageStatus.OK,
         }
@@ -37,15 +37,15 @@ export class WebSocket {
     }
 
     // tslint:disable-next-line:no-any
-    publishAndSend(topic: string, event: string, body?: unknown) {
-        this.publish(topic, event, body)
-        this.send(event, body)
+    publishAndSend(topic: string, action: string, body?: unknown) {
+        this.publish(topic, action, body)
+        this.send(action, body)
     }
 
     // tslint:disable-next-line:no-any
-    send(event: string, body?: unknown) {
-        const sentResponse: EventResponse<unknown> = {
-            event,
+    send(action: string, body?: unknown) {
+        const sentResponse: ActionResponse<unknown> = {
+            action,
             message: body,
             status: WebsocketMessageStatus.OK,
         }

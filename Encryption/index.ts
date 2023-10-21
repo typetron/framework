@@ -41,8 +41,8 @@ export class JWT {
                     ...options,
                     complete: true
                 },
-                (error: VerifyErrors | null, decoded?: object) => {
-                    error ? reject(error) : resolve(decoded as JWToken<T>)
+                (error: VerifyErrors | null, decoded) => {
+                    error ? reject(error) : resolve(decoded?.payload as any as JWToken<T>)
                 }
             )
         })

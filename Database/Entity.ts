@@ -145,7 +145,7 @@ export abstract class Entity {
     }
 
     static create<T extends Entity>(this: EntityConstructor<T>, data?: ChildObject<T, Entity> | {}): Promise<T> {
-        return this.new(data as object).save()
+        return this.new(data ?? {}).save()
     }
 
     static async insert<T extends Entity>(this: EntityConstructor<T>, data: (ChildObject<T, Entity> | {})[]): Promise<void> {

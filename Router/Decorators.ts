@@ -1,23 +1,21 @@
-import { App, Application } from '../Framework'
+import { App } from '../Framework'
 import { Abstract, Constructor, Type } from '../Support'
 import { MiddlewareInterface } from './Middleware'
-import { ControllerMetadata, EventMetadata, RouteMetadata } from './Metadata'
+import { ActionMetadata, ControllerMetadata, ControllerOptions, MethodMetadata, RouteMetadata } from './Metadata'
 import { Guard } from './Guard'
-import { Handler as HttpHandler, Http, Request } from './Http'
+import { Handler as HttpHandler, Http, Request as HttpRequest } from './Http'
+import { Request } from './Request'
 import { Handler as WebsocketsHandler } from './Websockets'
-import { WebsocketEvent } from './Websockets/WebsocketEvent'
+import { WebsocketRoute } from './Websockets/WebsocketRoute'
+import { Container } from '@Typetron/Container'
 
-class ControllerOptions {
-    prefix?: string
-}
-
-export function Controller(path = '', options = new ControllerOptions) {
+export function Controller(path = '', options?: ControllerOptions) {
     return (target: object) => {
         const metadata = ControllerMetadata.get(target)
-        const prefix = options.prefix || path ? path + '.' : ''
+        const prefix = options?.prefix || path ? path + '.' : ''
 
-        const httpHandler = App.get(HttpHandler)
-        const websocketHandler = App.get(WebsocketsHandler)
+        const httpHandler = Container.getInstance().get(HttpHandler)
+        const websocketHandler = Container.getInstance().get(WebsocketsHandler)
 
         Object.keys(metadata.routes).forEach(action => {
             const routeMetadata = metadata.routes[action]
@@ -33,57 +31,63 @@ export function Controller(path = '', options = new ControllerOptions) {
             route.guards = routeMetadata.guards
         })
 
-        Object.keys(metadata.events).forEach(action => {
-            const eventMetadata = metadata.events[action]
-            const name = prefix + (eventMetadata.name || action)
-            const event = websocketHandler.addEvent(
+        Object.keys(metadata.actions).forEach(actionName => {
+            const actionMetadata = metadata.actions[actionName]
+            const name = prefix + (actionMetadata.name || actionName)
+            const action = websocketHandler.addAction(
                 name,
                 target as Constructor,
-                action,
-                eventMetadata.parametersTypes,
-                metadata.middleware.concat(eventMetadata.middleware)
+                actionName,
+                actionMetadata.parametersTypes,
+                metadata.middleware.concat(actionMetadata.middleware)
             )
-            event.guards = eventMetadata.guards
+            action.guards = actionMetadata.guards
         })
     }
 }
 
-function addEvent(controller: Constructor, action: string, name: string) {
+function addAction(controller: Constructor, methodName: string, name: string) {
     const metadata = ControllerMetadata.get(controller)
 
-    const event = metadata.events[action] || new EventMetadata
-    event.parametersTypes = Reflect.getMetadata('design:paramtypes', controller.prototype, action)
-    event.name = name
+    const methodMetadata = metadata.methods[methodName]
+    const action = new ActionMetadata()
+    Object.assign(action, methodMetadata)
 
-    metadata.events[action] = event
+    action.parametersTypes = Reflect.getMetadata('design:paramtypes', controller.prototype, methodName)
+    action.name = name
+
+    metadata.actions[methodName] = action
 
     ControllerMetadata.set(metadata, controller)
 }
 
-function addRoute(controller: Constructor, action: string, method: Http.Method, path: string, name: string) {
+function addRoute(controller: Constructor, methodName: string, method: Http.Method, path: string, name: string) {
     const metadata = ControllerMetadata.get(controller)
 
-    const route = metadata.routes[action] || new RouteMetadata
-    route.parametersTypes = Reflect.getMetadata('design:paramtypes', controller.prototype, action)
+    const methodMetadata = metadata.methods[methodName]
+    const route = new RouteMetadata()
+    Object.assign(route, methodMetadata)
+
+    route.parametersTypes = Reflect.getMetadata('design:paramtypes', controller.prototype, methodName)
     route.path = path
     route.name = name
     route.method = method
 
-    metadata.routes[action] = route
+    metadata.routes[methodName] = route
 
     ControllerMetadata.set(metadata, controller)
 }
 
-export function Event(name = '') {
+export function Action(name = '') {
     return (target: object, action: string) => {
-        addEvent(target.constructor as Constructor, action, name)
+        addAction(target.constructor as Constructor, action, name)
     }
 }
 
 export function OnOpen(target: object, action: string) {
     const websocketHandler = App.get(WebsocketsHandler)
 
-    websocketHandler.onOpen = new WebsocketEvent(
+    websocketHandler.onOpen = new WebsocketRoute(
         '',
         target.constructor as Constructor,
         action,
@@ -94,7 +98,7 @@ export function OnOpen(target: object, action: string) {
 export function OnClose(target: object, action: string) {
     const websocketHandler = App.get(WebsocketsHandler)
 
-    websocketHandler.onClose = new WebsocketEvent(
+    websocketHandler.onClose = new WebsocketRoute(
         '',
         target.constructor as Constructor,
         action,
@@ -104,7 +108,7 @@ export function OnClose(target: object, action: string) {
 
 export function Arg(name: string) {
     return function(target: object, action: string, parameterIndex: number) {
-        // addEvent(target.constructor as Constructor, action, name)
+        // addAction(target.constructor as Constructor, action, name)
     }
 }
 
@@ -147,9 +151,9 @@ export function Middleware(...middleware: Abstract<MiddlewareInterface>[]) {
         const metadata = ControllerMetadata.get(target)
 
         if (action) {
-            const route = metadata.routes[action] || new RouteMetadata
+            const route = metadata.methods[action] || new MethodMetadata()
             route.middleware = route.middleware.concat(middleware)
-            metadata.routes[action] = route
+            metadata.methods[action] = route
         } else {
             metadata.middleware = metadata.middleware.concat(middleware)
         }
@@ -167,9 +171,9 @@ export function AllowIf(...guards: Type<Guard>[]) {
         const metadata = ControllerMetadata.get(target)
 
         if (action) {
-            const route = metadata.routes[action] || new RouteMetadata
+            const route = metadata.methods[action] || new MethodMetadata()
             route.guards = route.guards.concat(guards)
-            metadata.routes[action] = route
+            metadata.methods[action] = route
         } else {
             metadata.guards = metadata.guards.concat(guards)
         }
@@ -183,9 +187,9 @@ export function Query(name: string) {
         const metadata = ControllerMetadata.get(target.constructor)
         const parametersTypes = Reflect.getMetadata('design:paramtypes', target, action)
 
-        const route = metadata.routes[action] || new RouteMetadata()
-        route.parametersOverrides[parameterIndex] = function(container: Application) {
-            const request = container.get(Request)
+        const route = metadata.methods[action] || new MethodMetadata()
+        route.parametersOverrides[parameterIndex] = function(container: Container) {
+            const request = container.get(HttpRequest)
             const value = request.query[name]
 
             if (parametersTypes[parameterIndex].name === 'Number') {
@@ -194,7 +198,7 @@ export function Query(name: string) {
             return value
         }
 
-        metadata.routes[action] = route
+        metadata.methods[action] = route
         ControllerMetadata.set(metadata, target.constructor)
     }
 }
@@ -202,19 +206,19 @@ export function Query(name: string) {
 export function Body() {
     return function(target: object, action: string, parameterIndex: number) {
         const metadata = ControllerMetadata.get(target.constructor)
-
-        const route = metadata.events[action] || new RouteMetadata()
-        route.parametersOverrides[parameterIndex] = function(container: Application) {
+        const route = metadata.methods[action] || new MethodMetadata()
+        route.parametersOverrides[parameterIndex] = function(container: Container) {
             const request = container.get(Request)
 
-            if (!request.body) {
-                throw new Error(`There is no data in the 'body' of the request`)
-            }
+            // TODO: should the framework throw error or return undefined?
+            // if (!request.body) {
+            //     throw new Error(`There is no data in the 'body' of the request`)
+            // }
 
             return request.body
         }
 
-        metadata.events[action] = route
+        metadata.methods[action] = route
         ControllerMetadata.set(metadata, target.constructor)
     }
 }

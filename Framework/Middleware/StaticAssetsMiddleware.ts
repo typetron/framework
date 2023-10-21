@@ -20,6 +20,7 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
         'html': 'text/html',
         'css': 'text/css',
         'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
         'png': 'image/png',
         'webp': 'image/webp',
         'gif': 'image/gif',
@@ -29,7 +30,7 @@ export class StaticAssetsMiddleware implements MiddlewareInterface {
         try {
             return await next(request)
         } catch (error) {
-            if (request.method === Http.Method.GET && error instanceof RouteNotFoundError) {
+            if (request.method.toLowerCase() === Http.Method.GET.toLowerCase() && error instanceof RouteNotFoundError) {
                 return this.loadStaticAsset(error, request)
             }
             throw error

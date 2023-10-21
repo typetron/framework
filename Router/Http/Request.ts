@@ -9,33 +9,28 @@ import * as os from 'os'
 import * as fs from 'fs'
 import * as Url from 'fast-url-parser'
 import { Readable } from 'stream'
+import { Request as BaseRequest } from '@Typetron/Router/Request'
 
 const cacheURLs = new Array<{url: string, instance: URL}>(100)
 
-export class Request {
+export class Request extends BaseRequest {
     // static methodField = '_method'
 
     public parameters: Record<string, string | number> = {}
 
-    private raw: {
+    protected raw: BaseRequest['raw'] & {
         urlOrUri: string,
         method: Http.Method,
         query?: string | ParsedUrlQuery,
-        cookies?: Parameters | string,
-        body?: string | object,
-        files?: Record<string, File | File[]>,
     }
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    private details: {
+    protected details: BaseRequest['details'] & {
         url: string,
         uri: string,
         method: Http.Method,
         query: ParsedUrlQuery,
-        cookies: Parameters,
-        body: string | object | undefined,
-        files: Record<string, File | File[]>,
     } = {}
 
     getHeader: <T extends string | string[]>(name: keyof IncomingHttpHeaders | string) => T | undefined
@@ -48,14 +43,10 @@ export class Request {
         body?: string | object,
         files?: Record<string, File | File[]>,
     ) {
-        this.raw = {
-            urlOrUri,
-            method,
-            query,
-            cookies,
-            body,
-            files,
-        }
+        super(urlOrUri, body, cookies, files)
+        this.raw.urlOrUri = urlOrUri
+        this.raw.method = method
+        this.raw.query = query
     }
 
     get headers(): IncomingHttpHeaders {

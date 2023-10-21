@@ -3,9 +3,10 @@ import { Container, Inject } from '../../Container'
 import { AppConfig } from '../Config'
 import { App, DEDICATED_COMPRESSOR_3KB, WebSocket as uWebSocket } from 'uWebSockets.js'
 import { TextDecoder } from 'util'
-import { ErrorHandlerInterface, Http, Request, Response } from '../../Router/Http'
-import { EventErrorResponse, Handler, WebSocket } from '../../Router/Websockets'
-import { EventRequest, EventResponse } from '@Typetron/Router/Websockets'
+import { ErrorHandlerInterface, Response } from '../../Router/Http'
+import { ActionErrorResponse, Handler, WebSocket } from '../../Router/Websockets'
+import { ActionRequest, ActionResponse } from '@Typetron/Router/Websockets'
+import { Request } from '@Typetron/Router/Websockets/Request'
 
 enum WebsocketMessageStatus {
     OK = 'OK',
@@ -47,13 +48,15 @@ export class WebsocketsProvider extends Provider {
                 this.handler.onOpen?.run(socketWrapper.connection.container, {})
             },
             close: async (socket: uWebSocket) => {
-                await this.handler.onClose?.run(socket.container, {})
+                await this.handler.onClose?.run(socket.container, {}).catch(error => {
+                    console.log('socket close error  ->', error)
+                })
             },
 
-            /* For brevity we skip the other events (upgrade, open, ping, pong, close) */
+            /* For brevity we skip the other actions (upgrade, open, ping, pong, close) */
             message: async (socket, message, isBinary) => {
                 const jsonData = stringDecoder.decode(message)
-                let data: EventRequest
+                let data: ActionRequest
                 try {
                     data = JSON.parse(jsonData)
                 } catch {
@@ -61,10 +64,10 @@ export class WebsocketsProvider extends Provider {
                 }
 
                 try {
-                    const response = await this.handleEvent(socket.container, data)
-                    const event = data.event
-                    const sentResponse: EventResponse<unknown> = {
-                        event,
+                    const response = await this.handleAction(socket.container, data)
+                    const action = data.action
+                    const sentResponse: ActionResponse<unknown> = {
+                        action,
                         message: response.body,
                         status: WebsocketMessageStatus.OK,
                     }
@@ -77,12 +80,12 @@ export class WebsocketsProvider extends Provider {
                     socket.send(JSON.stringify(sentResponse), isBinary, true)
 
                 } catch (error) {
-                    const errorMessage: EventErrorResponse = {
+                    const errorMessage: ActionErrorResponse = {
                         message: {
                             message: error.content ?? error.message,
                             stack: error.stack.split('\n')
                         },
-                        event: data.event,
+                        action: data.action,
                         status: WebsocketMessageStatus.Error
                     }
                     if (errorMessage.message) {
@@ -101,15 +104,8 @@ export class WebsocketsProvider extends Provider {
         })
     }
 
-    private async handleEvent(container: Container, {event, message}: EventRequest) {
-        const request = new Request(
-            event,
-            Http.Method.GET,
-            {},
-            {},
-            message?.body as object ?? {},
-            {},
-        )
+    private async handleAction(container: Container, {action, message}: ActionRequest) {
+        const request = new Request(action, message?.body)
 
         // TODO find a way to save parameters so they can be retrieved easily in the Resolvers (check routeEntity resolver for example)
         message?.parameters?.forEach(parameter => {

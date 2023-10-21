@@ -1,50 +1,52 @@
 import { Container, Inject } from '../../Container'
 import { MiddlewareInterface, RequestHandler, Router } from '../../Router'
-import { Request, Response } from '../Http'
+import { Response } from '../Http'
+import { Request as BaseRequest } from '../Request'
 import { Abstract, Constructor, Type } from '../../Support'
-import { WebsocketEvent } from './WebsocketEvent'
+import { WebsocketRoute } from './WebsocketRoute'
+import { Request } from '@Typetron/Router/Websockets/Request'
 
 export class Handler {
     @Inject()
     router: Router
 
-    onOpen?: WebsocketEvent
-    onClose?: WebsocketEvent
+    onOpen?: WebsocketRoute
+    onClose?: WebsocketRoute
 
-    addEvent(
+    addAction(
         name: string,
         controller: Constructor,
-        action: string,
-        parametersTypes: (Type<Function> | FunctionConstructor)[] = [],
+        actionName: string,
+        parametersTypes: (Type<(...args: any[]) => any> | FunctionConstructor)[] = [],
         middleware: Abstract<MiddlewareInterface>[] = []
     ) {
-        const event = new WebsocketEvent(
+        const action = new WebsocketRoute(
             name,
             controller,
-            action,
+            actionName,
             parametersTypes,
             middleware
         )
-        if (this.router.events.has(name)) {
-            throw new Error(`There is already an event with the same name: '${name}'`)
+        if (this.router.actions.has(name)) {
+            throw new Error(`There is already an action with the same name: '${name}'`)
         }
-        this.router.events.set(name, event)
-        return event
+        this.router.actions.set(name, action)
+        return action
     }
 
     async handle<T = unknown>(container: Container, request: Request): Promise<Response<T>> {
 
+        container.set(BaseRequest, request)
         container.set(Request, request)
 
         let stack: RequestHandler = async () => {
-            const route = this.router.events.get(request.uri)
+            const route = this.router.actions.get(request.name)
 
             if (!route) {
-                throw new Error(`Event '${request.uri}' not found`)
+                throw new Error(`Action '${request.name}' not found`)
             }
 
-            // TODO - add the Websocket route in the container
-            // container.set(Route, route)
+            container.set(WebsocketRoute, route)
 
             let routeStack: RequestHandler = async () => {
                 const content = await route.run(container, request.parameters)
@@ -71,5 +73,4 @@ export class Handler {
 
         return await stack(request) as Response<T>
     }
-
 }

@@ -1,7 +1,8 @@
 import { BaseResolver, ClassResolver, Container } from '../../Container'
 import { Constructor } from '../../Support'
 import { Form, FormFields } from '../../Forms'
-import { Http, HttpError, Request } from '../../Router/Http'
+import { Http, HttpError } from '../../Router/Http'
+import { Request } from '../../Router/Request'
 
 export class FormResolver extends BaseResolver {
 

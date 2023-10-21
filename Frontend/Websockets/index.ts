@@ -1,15 +1,14 @@
 import { Observable, of, ReplaySubject, Subject, throwError } from 'rxjs'
 import { filter, map, switchMap, take } from 'rxjs/operators'
-import { EventErrorResponse, EventRequest, EventResponse, WebsocketMessageStatus } from '@typetron/framework/Router/Websockets/types'
+import { ActionErrorResponse, ActionRequest, ActionResponse, WebsocketMessageStatus } from '@typetron/framework/Router/Websockets/types'
 
 export class Websocket {
     socket?: WebSocket
 
-    eventMessages$ = new Subject<EventResponse<unknown>>()
-    queuedEvents$ = new ReplaySubject<EventRequest>()
-    // @ts-ignore
-    errors$ = new Subject<EventErrorResponse>()
-    onConnectCallback: Function
+    actionMessages$ = new Subject<ActionResponse<unknown>>()
+    queuedActions$ = new ReplaySubject<ActionRequest>()
+    errors$ = new Subject<ActionErrorResponse>()
+    onConnectCallback: () => void
 
     constructor(public url: string, public protocols?: string | string[]) {
         this.connect(url, protocols)
@@ -23,24 +22,24 @@ export class Websocket {
         const socket = new WebSocket(url ?? this.url, protocols ?? this.protocols)
         this.socket = socket
 
-        socket.onmessage = (event) => {
-            const message = JSON.parse(event.data)
-            this.eventMessages$.next(message)
+        socket.onmessage = (action) => {
+            const message = JSON.parse(action.data)
+            this.actionMessages$.next(message)
         }
         socket.onopen = () => {
             this.onConnectCallback?.()
-            this.queuedEvents$.subscribe(message => {
+            this.queuedActions$.subscribe(message => {
                 socket.send(JSON.stringify(message))
             })
         }
 
-        socket.onclose = (event) => {
-            this.queuedEvents$ = new ReplaySubject<EventRequest>()
+        socket.onclose = (action) => {
+            this.queuedActions$ = new ReplaySubject<ActionRequest>()
             this.reconnect()
         }
     }
 
-    onConnect(callback: Function) {
+    onConnect(callback: () => void) {
         this.onConnectCallback = callback
     }
 
@@ -52,34 +51,33 @@ export class Websocket {
         }
     }
 
-    emit<T>(event: string, request?: EventRequest['message']): void {
-        const eventMessage: EventRequest = {event, message: request}
-        this.queuedEvents$.next(eventMessage)
+    emit<T>(action: string, request?: ActionRequest['message']): void {
+        const actionMessage: ActionRequest = {action, message: request}
+        this.queuedActions$.next(actionMessage)
     }
 
-    on<T>(event: string): Observable<T> {
-        return this.eventMessages$.pipe(
-            filter(eventMessage => eventMessage.event === event),
-            switchMap(eventMessage => {
-                if (eventMessage.status === WebsocketMessageStatus.Error) {
-                    // @ts-ignore
-                    this.errors$.next(eventMessage as EventErrorResponse)
-                    return throwError(eventMessage)
+    on<T>(action: string): Observable<T> {
+        return this.actionMessages$.pipe(
+            filter(actionMessage => actionMessage.action === action),
+            switchMap(actionMessage => {
+                if (actionMessage.status === WebsocketMessageStatus.Error) {
+                    this.errors$.next(actionMessage as ActionErrorResponse)
+                    return throwError(actionMessage)
                 }
-                return of(eventMessage)
+                return of(actionMessage)
             }),
-            map(eventMessage => eventMessage.message)
+            map(actionMessage => actionMessage.message)
         ) as Observable<T>
     }
 
-    onError({except}: {except?: string[]}): Observable<EventResponse<unknown>> {
-        return this.errors$.pipe(filter(eventMessage => !(except || []).includes(eventMessage.event)))
+    onError({except}: {except?: string[]}): Observable<ActionResponse<unknown>> {
+        return this.errors$.pipe(filter(actionMessage => !(except || []).includes(actionMessage.action)))
     }
 
-    async request<T>(event: string, message?: EventRequest['message']): Promise<T> {
-        this.emit(event, message)
+    async request<T>(action: string, message?: ActionRequest['message']): Promise<T> {
+        this.emit(action, message)
         return new Promise((resolve, reject) => {
-            this.on<T>(event).pipe(take(1)).subscribe({
+            this.on<T>(action).pipe(take(1)).subscribe({
                 next: resolve,
                 error: reject
             })

@@ -1,8 +1,10 @@
 import { Container, Inject } from '../../Container'
-import { MiddlewareInterface, RequestHandler, Route, RouteNotFoundError, Router } from '../'
+import { MiddlewareInterface, RequestHandler, RouteNotFoundError, Router } from '../'
 import { ErrorHandlerInterface, Http, Response } from './'
 import { Request } from './Request'
+import { HttpRoute as Route } from './HttpRoute'
 import { AppConfig } from '../../Framework'
+import { Request as BaseRequest } from '../Request'
 import { Abstract, Constructor, Type } from '@Typetron/Support'
 import { AppServer, nodeServer, uNetworkingServer } from '@Typetron/Router/Servers'
 
@@ -26,11 +28,11 @@ export class Handler {
         controller: Constructor,
         action: string,
         name: string,
-        parametersTypes: (Type<Function> | FunctionConstructor)[] = [],
+        parametersTypes: (Type<(...args: any[]) => any> | FunctionConstructor)[] = [],
         middleware: Abstract<MiddlewareInterface>[] = []
     ): Route {
         uri = this.prepareUri(uri)
-        const route = new Route(uri, method, controller, action, name, parametersTypes, middleware)
+        const route = new Route(uri, method, name, controller, action, parametersTypes, middleware)
         if (this.router.routes.find(item => item.uri === uri && item.method === method)) {
             throw new Error(`There is already a route with the same url: [${method}] '${uri}'`)
         }
@@ -62,6 +64,7 @@ export class Handler {
     async handle(app: Container, request: Request): Promise<Response> {
         const container = app.createChildContainer()
 
+        container.set(BaseRequest, request)
         container.set(Request, request)
 
         let stack: RequestHandler = async () => {

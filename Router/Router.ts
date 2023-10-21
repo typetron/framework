@@ -2,16 +2,16 @@ import { Container, Inject } from '../Container'
 import { Storage } from '../Storage'
 import { Abstract } from '../Support'
 import { MiddlewareInterface } from './Middleware'
-import { Route } from './Route'
-import { WebsocketEvent } from './Websockets/WebsocketEvent'
+import { WebsocketRoute } from './Websockets/WebsocketRoute'
+import { HttpRoute } from '@Typetron/Router/Http/HttpRoute'
 
 export class Router {
 
     @Inject()
     app: Container
 
-    routes: Route[] = []
-    events = new Map<string, WebsocketEvent>()
+    routes: HttpRoute[] = []
+    actions = new Map<string, WebsocketRoute>()
 
     middleware: Abstract<MiddlewareInterface>[] = []
 

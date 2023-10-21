@@ -56,8 +56,11 @@ export class SqliteDriver implements DatabaseDriver {
     }
 
     async truncate(table: string) {
+        await this.run(`DELETE
+                        FROM ${table}`)
         return this.run(`DELETE
-                         FROM ${table}`)
+                         FROM SQLITE_SEQUENCE
+                         WHERE name = '${table}'`)
     }
 
     async lastInsertedId(): Promise<number> {

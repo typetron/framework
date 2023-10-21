@@ -1,25 +1,15 @@
 import { Container } from '../../Container'
-import { Abstract, Constructor, Type } from '../../Support'
-import { MiddlewareInterface } from '../Middleware'
-import { ControllerMetadata, EventMetadata } from '../Metadata'
-import { Guard } from '../Guard'
+import { AnyFunction, Constructor, Type } from '../../Support'
+import { ControllerMetadata, MethodMetadata } from '../Metadata'
+import { Route } from '@Typetron/Router'
 
-export class WebsocketEvent {
-    guards: (typeof Guard)[] = []
-
-    constructor(
-        public name = '',
-        public controller: Constructor,
-        public action: string,
-        public parametersTypes: (Type<Function> | FunctionConstructor)[] = [],
-        public middleware: Abstract<MiddlewareInterface>[] = []
-    ) {}
+export class WebsocketRoute extends Route {
 
     async run(container: Container, requestParameters: Record<string, unknown>): Promise<object | string> {
         const controller = await container.get(this.controller)
 
         try {
-            const metadata: EventMetadata | undefined = ControllerMetadata.get(this.controller).events[this.action]
+            const metadata: MethodMetadata | undefined = ControllerMetadata.get(this.controller).actions[this.controllerMethod]
             const parameters = await this.resolveParameters(
                 requestParameters,
                 this.parametersTypes,
@@ -34,17 +24,17 @@ export class WebsocketEvent {
                 }
             }
 
-            return (controller[this.action as keyof Constructor] as Function).apply(controller, parameters)
+            return (controller[this.controllerMethod as keyof Constructor] as AnyFunction).apply(controller, parameters)
         } catch (error) {
-            error.stack = `Controller: ${controller.constructor.name}.${this.action} \n at ` + error.stack
+            error.stack = `Controller: ${controller.constructor.name}.${this.controllerMethod} \n at ` + error.stack
             throw error
         }
     }
 
     private async resolveParameters(
         requestParameters: Record<string, unknown>,
-        parametersTypes: Type<Function>[],
-        overrides: Function[],
+        parametersTypes: (Type<AnyFunction> | FunctionConstructor)[],
+        overrides: AnyFunction[],
         container: Container
     ) {
         let parameterIndex = 0

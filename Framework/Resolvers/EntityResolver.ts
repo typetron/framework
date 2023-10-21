@@ -1,6 +1,6 @@
 import { Constructor } from '../../Support'
 import { Entity, EntityConstructor } from '../../Database'
-import { Request } from '../../Router/Http'
+import { Request } from '../../Router/Request'
 import { BaseResolver, Container, InjectableMetadata, Scope } from '../../Container'
 import { EntityNotFoundError } from '../../Database/EntityNotFoundError'
 
