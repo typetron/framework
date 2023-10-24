@@ -77,13 +77,14 @@ export class Storage {
     }
 
     async delete(filePath: string): Promise<void> {
+        if (!(await this.exists(filePath))) {
+            return
+        }
+
         if ((await fileSystem.stat(filePath)).isDirectory()) {
             throw new Error('Can not delete because this path leads to a directory and not a file.')
         }
 
-        if (!(await this.exists(filePath))) {
-            return
-        }
         await fileSystem.unlink(filePath)
     }
 

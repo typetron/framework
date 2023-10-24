@@ -10,7 +10,7 @@
 		"realtime"
 	],
 	"license": "MIT",
-    "version": "0.4.0-rc8",
+    "version": "0.4.0-rc9",
 	"author": {
 		"email": "ionel@typetron.org",
 		"name": "Ionel Lupu"
@@ -25,7 +25,7 @@
         "rxjs": "~7.8.1"
 	},
 	"dependencies": {
-        "@typetron/framework": "0.4.0-rc8"
+        "@typetron/framework": "0.4.0-rc9"
 	},
 	"devDependencies": {
         "typescript": "5.2.2"
