@@ -1,5 +1,5 @@
 import { Container, Inject } from '../../Container'
-import { MiddlewareInterface, RequestHandler, RouteNotFoundError, Router } from '../'
+import { RequestHandler, RouteNotFoundError, Router } from '../'
 import { ErrorHandlerInterface, Http, Response } from './'
 import { Request } from './Request'
 import { HttpRoute as Route } from './HttpRoute'
@@ -7,6 +7,7 @@ import { AppConfig } from '../../Framework'
 import { Request as BaseRequest } from '../Request'
 import { Abstract, Constructor, Type } from '@Typetron/Support'
 import { AppServer, nodeServer, uNetworkingServer } from '@Typetron/Router/Servers'
+import { HttpMiddleware } from '@Typetron/Router/Http/Middleware'
 
 const httpServers: Record<AppConfig['server'], AppServer> = {
     node: nodeServer,
@@ -20,7 +21,7 @@ export class Handler {
     @Inject()
     errorHandler: ErrorHandlerInterface
 
-    cachedRoutes: Record<string, number> = {}
+    cachedRoutes: Record<string, [Route, Record<string, string>]> = {}
 
     addRoute(
         uri: string,
@@ -29,7 +30,7 @@ export class Handler {
         action: string,
         name: string,
         parametersTypes: (Type<(...args: any[]) => any> | FunctionConstructor)[] = [],
-        middleware: Abstract<MiddlewareInterface>[] = []
+        middleware: Abstract<HttpMiddleware>[] = []
     ): Route {
         uri = this.prepareUri(uri)
         const route = new Route(uri, method, name, controller, action, parametersTypes, middleware)
@@ -68,16 +69,15 @@ export class Handler {
         container.set(Request, request)
 
         let stack: RequestHandler = async () => {
-            const routeIndex = this.cachedRoutes[`${request.method} ${request.uri}`]
-                ?? this.findRouteIndex(request.uri ?? '', request.method)
-
-            const route = this.router.routes[routeIndex]
+            const [route, parameters] = this.cachedRoutes[`${request.method} ${request.uri}`]
+            ?? this.findRouteIndex(request.uri ?? '', request.method)
 
             container.set(Route, route)
-            request.parameters = route.parameters
+            request.parameters = parameters
 
             let routeStack: RequestHandler = async () => {
-                const content = await route.run(container)
+
+                const content = await route.run(container, request.parameters)
 
                 if (content instanceof Response) {
                     return content
@@ -94,7 +94,12 @@ export class Handler {
             return routeStack(request)
         }
 
-        this.router.middleware.forEach(middlewareClass => {
+        this.router.middleware.global?.forEach(middlewareClass => {
+            const middleware = container.get(middlewareClass)
+            stack = middleware.handle.bind(middleware, request, stack)
+        })
+
+        this.router.middleware.http?.forEach(middlewareClass => {
             const middleware = container.get(middlewareClass)
             stack = middleware.handle.bind(middleware, request, stack)
         })
@@ -102,21 +107,47 @@ export class Handler {
         return stack(request)
     }
 
-    private findRouteIndex(uri: string, method: string): number {
-        const preparedUri = this.prepareUri(uri)
+    matches(uri: string, route: Route) {
+        const uriParts = uri.split('/') // ex: ['users', '1', 'posts'];
+        let part
+        let parameterTypeIndex = 0
+        const parameters: Record<string, string> = {}
+        for (part = 0; part < uriParts.length; part++) {
+            if (!route.uriParts[part]) {
+                return false
+            }
+            if (route.uriParts[part].type === 'parameter' && route.hasCorrectPrimitiveType(parameterTypeIndex, uriParts[part])) {
+                parameterTypeIndex++
+                parameters[route.uriParts[part].name] = uriParts[part]
+                continue
+            }
 
-        const index = this.router.routes.findIndex(route => {
-            return route.method.toLowerCase() === method.toLowerCase() && route.matches(preparedUri)
-        })
-
-        if (index === -1) {
-            throw new RouteNotFoundError(`[${method}] ${uri}`)
+            if (route.uriParts[part].name !== uriParts[part]) {
+                return false
+            }
         }
 
-        this.cachedRoutes[`${method} ${uri}`] = index
+        if (part !== route.uriParts.length) {
+            return false
+        }
+        return parameters
+    }
 
-        return index
+    private findRouteIndex(uri: string, method: string): [Route, Record<string, string> | undefined] {
+        const preparedUri = this.prepareUri(uri)
 
+        for (const route of this.router.routes) {
+            if (route.method.toLowerCase() === method.toLowerCase()) {
+                const parameters = this.matches(preparedUri, route)
+
+                if (parameters) {
+                    this.cachedRoutes[`${method} ${uri}`] = [route, parameters]
+                    return [route, parameters]
+                }
+            }
+        }
+
+        throw new RouteNotFoundError(`[${method}] ${uri}`)
         // return this.routes
         //     .where('uri', uri)
         //     .findWhere('method', method) || this.routeNotFound(uri);

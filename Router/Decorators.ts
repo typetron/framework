@@ -1,6 +1,6 @@
 import { App } from '../Framework'
 import { Abstract, Constructor, Type } from '../Support'
-import { MiddlewareInterface } from './Middleware'
+import { GlobalMiddleware } from './Middleware'
 import { ActionMetadata, ControllerMetadata, ControllerOptions, MethodMetadata, RouteMetadata } from './Metadata'
 import { Guard } from './Guard'
 import { Handler as HttpHandler, Http, Request as HttpRequest } from './Http'
@@ -142,7 +142,7 @@ export function Delete(path: string = '', name = '') {
     }
 }
 
-export function Middleware(...middleware: Abstract<MiddlewareInterface>[]) {
+export function Middleware(...middleware: Abstract<GlobalMiddleware>[]) {
     return (target: object, action?: string) => {
         if (action) {
             target = target.constructor

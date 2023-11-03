@@ -83,11 +83,11 @@ Array.prototype.remove = function <T>(...items: T[]) {
 }
 
 Array.prototype.where = function <T, K extends keyof T>(property: K, value?: T[K]) {
-    return this.filter(item => value ? item[property] === value : item[property])
+    return this.filter(item => value !== undefined ? item[property] === value : item[property])
 }
 
 Array.prototype.whereNot = function <T, K extends keyof T>(property: K, value?: T[K]) {
-    return this.filter(item => value ? item[property] !== value : !item[property])
+    return this.filter(item => value !== undefined ? item[property] !== value : !item[property])
 }
 
 Array.prototype.whereIn = function <T, K extends keyof T>(property: K, values: (T[K])[]) {

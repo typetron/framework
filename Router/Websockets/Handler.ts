@@ -1,10 +1,11 @@
 import { Container, Inject } from '../../Container'
-import { MiddlewareInterface, RequestHandler, Router } from '../../Router'
+import { RequestHandler, Router } from '../../Router'
 import { Response } from '../Http'
 import { Request as BaseRequest } from '../Request'
 import { Abstract, Constructor, Type } from '../../Support'
 import { WebsocketRoute } from './WebsocketRoute'
 import { Request } from '@Typetron/Router/Websockets/Request'
+import { WebsocketMiddleware } from '@Typetron/Router/Websockets/Middleware'
 
 export class Handler {
     @Inject()
@@ -18,7 +19,7 @@ export class Handler {
         controller: Constructor,
         actionName: string,
         parametersTypes: (Type<(...args: any[]) => any> | FunctionConstructor)[] = [],
-        middleware: Abstract<MiddlewareInterface>[] = []
+        middleware: Abstract<WebsocketMiddleware>[] = []
     ) {
         const action = new WebsocketRoute(
             name,
@@ -66,7 +67,12 @@ export class Handler {
             return await routeStack(request)
         }
 
-        this.router.middleware.forEach(middlewareClass => {
+        this.router.middleware.global?.forEach(middlewareClass => {
+            const middleware = container.get(middlewareClass)
+            stack = middleware.handle.bind(middleware, request, stack)
+        })
+
+        this.router.middleware.websocket?.forEach(middlewareClass => {
             const middleware = container.get(middlewareClass)
             stack = middleware.handle.bind(middleware, request, stack)
         })

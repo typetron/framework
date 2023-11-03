@@ -99,7 +99,7 @@ export class Application extends Container {
         await this.checkAppSecret()
 
         if (appConfig.staticAssets) {
-            appConfig.middleware.unshift(StaticAssetsMiddleware)
+            appConfig.middleware.http.unshift(StaticAssetsMiddleware)
         }
 
         this.registerResolvers()

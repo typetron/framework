@@ -92,6 +92,7 @@ export class WebsocketsProvider extends Provider {
                         const response = await this.errorHandler.handle(error) as Response<Error>
                         errorMessage.message.message = response.body.message
                     }
+                    console.error(errorMessage)
                     socket.send(JSON.stringify(errorMessage), isBinary, true)
                 }
 

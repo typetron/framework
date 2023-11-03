@@ -23,7 +23,7 @@ class StaticAssetsMiddlewareTest {
             ]
         })
         const router = container.get(Router)
-        router.middleware.push(StaticAssetsMiddleware)
+        router.middleware.http.push(StaticAssetsMiddleware)
 
         const handler = container.get(Handler)
         const request = new Request('assets/styles.css', Http.Method.GET)
@@ -46,7 +46,7 @@ class StaticAssetsMiddlewareTest {
             ]
         })
         const router = container.get(Router)
-        router.middleware.push(StaticAssetsMiddleware)
+        router.middleware.http.push(StaticAssetsMiddleware)
 
         const handler = container.get(Handler)
         const request = new Request('my-article.html', Http.Method.GET)
@@ -69,7 +69,7 @@ class StaticAssetsMiddlewareTest {
             ]
         })
         const router = container.get(Router)
-        router.middleware.push(StaticAssetsMiddleware)
+        router.middleware.http.push(StaticAssetsMiddleware)
 
         const handler = container.get(Handler)
         const request = new Request('some-directory', Http.Method.GET)
@@ -93,7 +93,7 @@ class StaticAssetsMiddlewareTest {
             ]
         })
         const router = container.get(Router)
-        router.middleware.push(StaticAssetsMiddleware)
+        router.middleware.http.push(StaticAssetsMiddleware)
 
         const handler = container.get(Handler)
         const request = new Request('test', Http.Method.GET)
@@ -117,7 +117,7 @@ class StaticAssetsMiddlewareTest {
             ]
         })
         const router = container.get(Router)
-        router.middleware.push(StaticAssetsMiddleware)
+        router.middleware.http.push(StaticAssetsMiddleware)
 
         const handler = container.get(Handler)
         const request = new Request('styles.css', Http.Method.GET)

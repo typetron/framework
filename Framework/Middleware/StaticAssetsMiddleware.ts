@@ -1,12 +1,13 @@
 import { Inject, Injectable } from '../../Container'
-import { MiddlewareInterface, RequestHandler, RouteNotFoundError } from '../../Router'
+import { RequestHandler, RouteNotFoundError } from '../../Router'
 import { Storage } from '../../Storage'
 import { Http, Request, Response } from '../../Router/Http'
 import { AppConfig } from '../Config'
 import * as path from 'path'
+import { HttpMiddleware } from '@Typetron/Router/Http/Middleware'
 
 @Injectable()
-export class StaticAssetsMiddleware implements MiddlewareInterface {
+export class StaticAssetsMiddleware extends HttpMiddleware {
 
     @Inject()
     appConfig: AppConfig

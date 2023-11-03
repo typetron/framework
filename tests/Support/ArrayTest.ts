@@ -59,11 +59,13 @@ class ArrayTest {
     @test
     where() {
         expect(this.users.where('name', this.joe.name)).to.have.members([this.joe])
+        expect([this.joe].where('admin', false)).to.have.length(1)
     }
 
     @test
     whereNot() {
         expect(this.users.whereNot('name', this.joe.name)).to.have.members([this.doe])
+        expect([this.doe].whereNot('admin', false)).to.have.length(1)
     }
 
     @test

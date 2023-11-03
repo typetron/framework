@@ -15,7 +15,7 @@
         "node": ">= 18.12.0"
 	},
 	"dependencies": {
-        "@typetron/framework": "^0.4.0-rc1"
+        "@typetron/framework": "^0.4.0-rc9"
 	},
 	"peerDependencies": {
         "@angular/common": "^16.2.4",
@@ -23,7 +23,7 @@
         "@angular/forms": "^16.2.4"
 	},
 	"devDependencies": {
-		"typescript": "4.1.6"
+        "typescript": "5.2.2"
 	},
 	"repository": {
 		"type": "git",

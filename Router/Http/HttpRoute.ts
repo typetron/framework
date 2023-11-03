@@ -1,13 +1,13 @@
 import { Container } from '../../Container'
 import { Abstract, Constructor, Type } from '../../Support'
-import { MiddlewareInterface } from './../Middleware'
 import { ControllerMetadata } from './../Metadata'
 import { Route } from '@Typetron/Router'
 import { AnyFunction } from '@Typetron/Support'
+import { HttpMiddleware } from '@Typetron/Router/Http/Middleware'
 
 export class HttpRoute extends Route {
 
-    private readonly uriParts: {name: string, type: 'part' | 'parameter'}[] = []
+    public readonly uriParts: {name: string, type: 'part' | 'parameter'}[] = []
 
     constructor(
         public uri: string,
@@ -16,18 +16,23 @@ export class HttpRoute extends Route {
         public controller: Constructor,
         public controllerMethod: string,
         public parametersTypes: (Type<AnyFunction> | FunctionConstructor)[] = [],
-        public middleware: Abstract<MiddlewareInterface>[] = []
+        public middleware: Abstract<HttpMiddleware>[] = []
     ) {
         super(name, controller, controllerMethod, parametersTypes, middleware)
         this.splitUriParts()
     }
 
-    async run(container: Container): Promise<object | string> {
+    async run(container: Container, requestParameters: Record<string, string | number>): Promise<object | string> {
         const controller = await container.get(this.controller)
 
         try {
             const metadata = ControllerMetadata.get(this.controller).routes[this.controllerMethod]
-            const parameters = await this.resolveParameters(metadata.parametersTypes, metadata.parametersOverrides, container)
+            const parameters = await this.resolveParameters(
+                requestParameters,
+                metadata.parametersTypes,
+                metadata.parametersOverrides,
+                container
+            )
 
             for await (const guardClass of this.guards) {
                 const guard = container.get(guardClass)
@@ -41,31 +46,6 @@ export class HttpRoute extends Route {
             error.stack = `Controller: ${controller.constructor.name}.${this.controllerMethod} \n at ` + error.stack
             throw error
         }
-    }
-
-    matches(uri: string) {
-        const uriParts = uri.split('/') // ex: ['users', '1', 'posts'];
-        let part
-        let parameterTypeIndex = 0
-        for (part = 0; part < uriParts.length; part++) {
-            if (!this.uriParts[part]) {
-                return false
-            }
-            if (this.uriParts[part].type === 'parameter' && this.hasCorrectPrimitiveType(parameterTypeIndex, uriParts[part])) {
-                parameterTypeIndex++
-                this.parameters[this.uriParts[part].name] = uriParts[part]
-                continue
-            }
-
-            if (this.uriParts[part].name !== uriParts[part]) {
-                return false
-            }
-        }
-
-        if (part !== this.uriParts.length) {
-            return false
-        }
-        return true
     }
 
     splitUriParts() {
@@ -85,22 +65,28 @@ export class HttpRoute extends Route {
         })
     }
 
-    getUrl(): string {
+    getUrl(parameters: Record<string, string>): string {
         return this.uriParts.map(part => {
             if (part.type === 'parameter') {
-                return this.parameters[part.name]
+                return parameters[part.name]
             }
             return part.name
         }).filter(Boolean).join('/')
     }
 
+    hasCorrectPrimitiveType(parameterTypeIndex: number, uriPart: string) {
+        const parameterType = this.parametersTypes[parameterTypeIndex]
+        return (primitiveTypes[parameterType.name] || (value => value))(uriPart)
+    }
+
     private async resolveParameters(
+        requestParameters: Record<string, string | number>,
         parameters: (Type<(...args: any[]) => any> | FunctionConstructor)[],
         overrides: ((container: Container) => unknown)[],
         container: Container
     ) {
         let parameterIndex = 0
-        const routeParameters = Object.values(this.parameters)
+        const routeParameters = Object.values(requestParameters)
         return parameters.mapAsync(async (parameter, index) => {
             const newValueFunction = overrides[index]
             if (newValueFunction) {
@@ -115,11 +101,6 @@ export class HttpRoute extends Route {
             }
             return container.get(parameter)
         })
-    }
-
-    private hasCorrectPrimitiveType(parameterTypeIndex: number, uriPart: string) {
-        const parameterType = this.parametersTypes[parameterTypeIndex]
-        return (primitiveTypes[parameterType.name] || (value => value))(uriPart)
     }
 }
 

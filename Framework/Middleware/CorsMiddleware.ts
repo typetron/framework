@@ -1,16 +1,17 @@
 import { Inject, Injectable } from '../../Container'
-import { MiddlewareInterface, RequestHandler } from '../../Router'
+import { RequestHandler } from '../../Router'
 import { ErrorHandlerInterface, Request, Response } from '../../Router/Http'
+import { HttpMiddleware } from '@Typetron/Router/Http/Middleware'
 
 @Injectable()
-export class CorsMiddleware implements MiddlewareInterface {
+export class CorsMiddleware extends HttpMiddleware {
 
     @Inject()
     errorHandler: ErrorHandlerInterface
 
     async handle(request: Request, next: RequestHandler) {
         let response: Response
-        if (request.method === 'OPTIONS') {
+        if (request.method.toLowerCase() === 'options') {
             response = new Response(undefined)
             response.setHeaders({
                 'Access-Control-Allow-Methods': 'GET, PUT, PATCH, POST, DELETE',

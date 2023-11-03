@@ -4,7 +4,11 @@ import { Auth, AuthUserIdentifier } from '../Auth'
 export class AuthResolver extends BaseResolver {
 
     async resolve<T>(abstract: symbol, parameters: object[]): Promise<T> {
-        return await this.container.get(Auth).user() as unknown as T
+        const auth = this.container.get(Auth)
+        if (!auth.id) {
+            return undefined as unknown as T
+        }
+        return await auth.user() as unknown as T
     }
 
     canResolve<T>(abstract: symbol): boolean {

@@ -1,4 +1,4 @@
-import { OutgoingHttpHeaders, ServerResponse } from 'http'
+import { OutgoingHttpHeaders } from 'http'
 import { Http } from '.'
 import { Buffer } from 'buffer'
 
@@ -23,23 +23,6 @@ export class Response<T = unknown> {
 
     static badRequest(content: string | object) {
         return new Response(content, Http.Status.BAD_REQUEST)
-    }
-
-    static send(serverResponse: ServerResponse, status: Http.Status, content: Content, headers?: OutgoingHttpHeaders) {
-        if (!(content instanceof Buffer)) {
-            if (content instanceof Object) {
-                content = JSON.stringify(content)
-                serverResponse.setHeader('Content-Type', 'application/json')
-            }
-            content = String(content ?? '')
-        }
-
-        for (const header in headers) {
-            serverResponse.setHeader(header, headers[header] || '')
-        }
-
-        serverResponse.statusCode = status
-        serverResponse.end(content)
     }
 
     setHeader(name: string, value: string) {

@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '../../Container'
-import { MiddlewareInterface, RequestHandler } from '../../Router'
+import { RequestHandler } from '../../Router'
 import { Http, HttpError, Request } from '../../Router/Http'
 import * as jwt from 'jsonwebtoken'
 import { Auth } from '../Auth'
+import { HttpMiddleware } from '@Typetron/Router/Http/Middleware'
 
 @Injectable()
-export class AuthMiddleware implements MiddlewareInterface {
+export class AuthMiddleware implements HttpMiddleware {
 
     @Inject()
     auth: Auth

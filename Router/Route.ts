@@ -1,9 +1,8 @@
 import { Abstract, AnyFunction, Constructor, Type } from '../Support'
-import { MiddlewareInterface } from './Middleware'
+import { GlobalMiddleware } from './Middleware'
 import { Guard } from './Guard'
 
 export abstract class Route {
-    parameters: Record<string, string> = {}
     guards: (typeof Guard)[] = []
 
     constructor(
@@ -11,7 +10,7 @@ export abstract class Route {
         public controller: Constructor,
         public controllerMethod: string,
         public parametersTypes: (Type<AnyFunction> | FunctionConstructor)[] = [],
-        public middleware: Abstract<MiddlewareInterface>[] = []
+        public middleware: Abstract<GlobalMiddleware>[] = []
     ) {
     }
 }

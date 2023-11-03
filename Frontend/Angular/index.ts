@@ -4,10 +4,10 @@ import type { Form, FormField } from '@Typetron/Forms'
 import { Constructor } from '@Typetron/Support'
 
 export class FormBuilder {
-    static build(form: typeof Form & Constructor<Form>): FormGroup {
+    static build<T extends Form>(form: typeof Form & Constructor<T>): FormGroup {
         const controls: Record<string, AbstractControl> = {}
         const formFields = Object.values(form.fields()) as FormField[]
-        const instance = new form()
+        const instance = new (form as unknown as Constructor<T>)()
         Object.values(formFields).forEach(field => {
             controls[field.name] = new FormControl(
                 instance[field.name as keyof Form],
@@ -21,3 +21,4 @@ export class FormBuilder {
         return control => field.validate(control.value) as unknown as ValidatorFn
     }
 }
+
