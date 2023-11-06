@@ -149,7 +149,7 @@ export abstract class TestCase {
         if (!route) {
             throw new Error(`Route '${routeName}' not found`)
         }
-        route.parameters = this.convertRouteParametersToString(routeParameters) || {}
+        const parameters = this.convertRouteParametersToString(routeParameters) || {}
 
         const auth = this.app.get(Auth)
         if (auth.id) {
@@ -157,7 +157,7 @@ export abstract class TestCase {
             headers.authorization = `Bearer ${token}`
         }
 
-        const request = new HttpRequest(route.getUrl(), method, {}, {}, content)
+        const request = new HttpRequest(route.getUrl(parameters), method, {}, {}, content)
 
         request.setHeadersLoader(() => {
             return headers
