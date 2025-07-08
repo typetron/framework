@@ -21,7 +21,7 @@ export class CorsMiddleware extends HttpMiddleware {
             try {
                 response = await next(request)
             } catch (error) {
-                response = await this.errorHandler.handle(error, request)
+                response = await this.errorHandler.handle(error as Error, request)
             }
         }
 

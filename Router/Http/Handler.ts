@@ -57,7 +57,7 @@ export class Handler {
             try {
                 return await this.handle(app, request)
             } catch (error) {
-                return this.errorHandler.handle(error)
+                return this.errorHandler.handle(error as Error)
             }
         })
     }

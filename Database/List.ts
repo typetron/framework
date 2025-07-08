@@ -62,12 +62,9 @@ export abstract class List<E extends Entity, P extends Entity = Entity> extends 
 }
 
 export class ListProxyHandler<E extends Entity, P extends Entity> {
-    constructor() {
-    }
-
-    get(target: List<E, P>, property: string | number) {
+    get(target: List<E, P>, property: string | symbol) {
         if (Number.isInteger(Number(property.toString()))) {
-            return target.items[property as number]
+            return target.items[property as unknown as number]
         }
         return target[property as keyof List<E, P>]
     }

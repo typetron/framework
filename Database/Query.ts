@@ -74,7 +74,7 @@ export class Query<T = {}> extends Expression {
     }
 
     async run<K extends keyof T>(): Promise<void> {
-        await Query.connection.run(this)
+        await Query.connection.run(this as Query<{}>)
     }
 
     table(table: string) {
@@ -342,7 +342,7 @@ export class Query<T = {}> extends Expression {
 
         this.components.insert = [data]
 
-        return await Query.connection.insertOne(this)
+        return await Query.connection.insertOne(this as Query<{}>)
     }
 
     async delete() {

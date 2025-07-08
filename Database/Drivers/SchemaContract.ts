@@ -6,6 +6,6 @@ export abstract class SchemaContract {
 
     abstract create(table: string, columns: ColumnField<Entity>[]): Promise<void>
 
-    abstract synchronize(entitiesMetadata: EntityMetadata<Entity>[]): Promise<void>
+    abstract synchronize(entitiesMetadata: EntityMetadata<Entity, Entity>[]): Promise<void>
 
 }

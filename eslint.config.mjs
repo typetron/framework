@@ -55,7 +55,7 @@ export default [
             'curly' : 'error',
             'eqeqeq' : ['error', 'always', { null : 'ignore' }],
             'no-bitwise' : 'error',
-            'no-console' : ['error', { allow : ['warn', 'error'] }],
+            'no-console' : ['error', { allow : ['warn', 'error', 'info'] }],
             'no-debugger' : 'error',
             'no-eval' : 'error',
             'no-throw-literal' : 'error',

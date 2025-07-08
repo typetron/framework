@@ -25,7 +25,8 @@ export class WebsocketRoute extends Route {
             }
 
             return (controller[this.controllerMethod as keyof Constructor] as AnyFunction).apply(controller, parameters)
-        } catch (error) {
+        } catch (unknownError) {
+            const error = unknownError as Error
             error.stack = `Controller: ${controller.constructor.name}.${this.controllerMethod} \n at ` + error.stack
             throw error
         }

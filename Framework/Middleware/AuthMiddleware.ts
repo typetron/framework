@@ -24,7 +24,7 @@ export class AuthMiddleware implements HttpMiddleware {
             if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
                 throw new HttpError('Unauthenticated', Http.Status.UNAUTHORIZED)
             }
-            throw new HttpError(error.message, Http.Status.BAD_REQUEST)
+            throw new HttpError((error as Error).message, Http.Status.BAD_REQUEST)
         }
     }
 

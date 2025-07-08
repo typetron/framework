@@ -352,7 +352,7 @@ export class BelongsToField<T extends Entity, R extends Entity> extends Relation
     async save(items: Partial<EntityObject<R> | R>[], parent: T) {
         const entities: R[] = []
         for await (const item of items) {
-            const entity = item instanceof Entity ? item : this.entity.new(item)
+            const entity = item instanceof Entity ? item : this.related.new(item)
 
             entity.fill({
                 [this.property]: parent
@@ -415,11 +415,11 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
     }
 
     getParentForeignKey() {
-        return this.parentColumn || `${this.entity.name.toLocaleLowerCase()}${(this.entity.getPrimaryKey() as string).capitalize()}`
+        return this.parentColumn || `${this.entity.name.toLowerCase()}${(this.entity.getPrimaryKey() as string).capitalize()}`
     }
 
     getRelatedForeignKey() {
-        return this.relatedColumn || `${this.related.name.toLocaleLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`
+        return this.relatedColumn || `${this.related.name.toLowerCase()}${(this.related.getPrimaryKey() as string).capitalize()}`
     }
 
     async getRelatedCount(relatedEntities: R[], customQuery?: (query: Query) => void) {
@@ -468,8 +468,7 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
                 if (related instanceof Entity) {
                     return related
                 }
-                const instance = new this.related()
-                instance[instance.getPrimaryKey() as keyof R] = related as R[keyof R]
+                const instance = this.related.new({[this.related.getPrimaryKey()]: related})
                 return instance
             }) as unknown as T[K]
         }
@@ -532,7 +531,7 @@ export class BelongsTo<T extends Entity, P extends Entity = Entity> extends Base
     }
 
     static relationship<T extends Entity, R extends Entity>(
-        metadata: EntityMetadata<T>,
+        metadata: EntityMetadata<T, R>,
         entityClass: EntityConstructor<T>,
         property: keyof T,
         type: () => EntityConstructor<R>,
@@ -592,7 +591,7 @@ export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRel
     private instance?: T
 
     static relationship<T extends Entity, R extends Entity>(
-        metadata: EntityMetadata<T>,
+        metadata: EntityMetadata<T, R>,
         entityClass: EntityConstructor<T>,
         property: keyof T,
         type: () => EntityConstructor<R>,
@@ -653,14 +652,14 @@ export class HasMany<T extends Entity, P extends Entity = Entity> extends List<T
     }
 
     static relationship<T extends Entity, R extends Entity>(
-        metadata: EntityMetadata<T>,
+        metadata: EntityMetadata<T, R>,
         entityClass: EntityConstructor<T>,
         property: keyof T,
         type: () => EntityConstructor<R>,
         inverseBy: keyof R,
         options?: EntityFieldOptions
     ) {
-        metadata.inverseRelationships[property as string] = new HasManyField(
+        metadata.inverseRelationships[property as string] = new HasManyField<T, R>(
             entityClass,
             property as string,
             type,
@@ -702,7 +701,7 @@ export class BelongsToMany<T extends Entity, P extends Entity = Entity> extends 
     }
 
     static relationship<T extends Entity, R extends Entity>(
-        metadata: EntityMetadata<T>,
+        metadata: EntityMetadata<T, R>,
         entityClass: EntityConstructor<T>,
         property: keyof T,
         type: () => EntityConstructor<R>,

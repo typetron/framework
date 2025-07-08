@@ -22,7 +22,7 @@ export abstract class Schema extends SchemaContract {
     //         ADD ${this.getColumnSql(column)}(6)`)
     // }
 
-    async synchronize(entitiesMetadata: EntityMetadata<Entity>[]) {
+    async synchronize(entitiesMetadata: EntityMetadata<Entity, Entity>[]) {
         const pivotTables = new Map<string, ColumnField<Entity>[]>()
         for await(const metadata of entitiesMetadata) {
             const table = metadata.table as string

@@ -3,7 +3,7 @@ import { Container, Inject } from '../../Container'
 import { AppConfig } from '../Config'
 import { App, DEDICATED_COMPRESSOR_3KB, WebSocket as uWebSocket } from 'uWebSockets.js'
 import { TextDecoder } from 'util'
-import { ErrorHandlerInterface, Response } from '../../Router/Http'
+import { ErrorHandlerInterface, HttpError, Response } from '../../Router/Http'
 import { ActionErrorResponse, Handler, WebSocket } from '../../Router/Websockets'
 import { ActionRequest, ActionResponse } from '@Typetron/Router/Websockets'
 import { Request } from '@Typetron/Router/Websockets/Request'
@@ -50,7 +50,7 @@ export class WebsocketsProvider extends Provider {
             close: async (socket: uWebSocket<any>) => {
                 const extendedSocket = socket as uWebSocket<any> & {container: Container}
                 await this.handler.onClose?.run(extendedSocket.container, {}).catch(error => {
-                    console.log('socket close error  ->', error)
+                    console.info('socket close error  ->', error)
                 })
             },
 
@@ -81,11 +81,12 @@ export class WebsocketsProvider extends Provider {
 
                     socket.send(JSON.stringify(sentResponse), isBinary, true)
 
-                } catch (error) {
+                } catch (err) {
+                    const error = err as HttpError
                     const errorMessage: ActionErrorResponse = {
                         message: {
-                            message: error.content ?? error.message,
-                            stack: error.stack.split('\n')
+                            message: String(error.content ?? error.message),
+                            stack: error.stack ?? '<could not generate stack>'
                         },
                         action: data.action,
                         status: WebsocketMessageStatus.Error
@@ -102,7 +103,7 @@ export class WebsocketsProvider extends Provider {
 
         }).listen(port, (listenSocket) => {
             if (listenSocket) {
-                console.log(`Websocket server started on port ${port}`)
+                console.info(`Websocket server started on port ${port}`)
             }
         })
     }

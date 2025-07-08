@@ -27,10 +27,10 @@ export class EntityOptions<T extends Entity> {
     touch?: KeysOfType<T, Entity | List<T, Entity>>[]
 }
 
-export class EntityMetadata<T extends Entity> extends EntityOptions<T> {
+export class EntityMetadata<T extends Entity, R extends Entity> extends EntityOptions<T> {
     columns: Record<string, ColumnField<T>> = {}
-    relationships: Record<string, RelationshipField<T, Entity>> = {}
-    inverseRelationships: Record<string, BelongsToManyField<T, Entity> | HasManyField<T, Entity> | HasOneField<T, Entity>> = {}
+    relationships: Record<string, RelationshipField<T, R>> = {}
+    inverseRelationships: Record<string, BelongsToManyField<T, R> | HasManyField<T, R> | HasOneField<T, R>> = {}
     createdAtColumn?: string
     updatedAtColumn?: string
 
@@ -38,8 +38,8 @@ export class EntityMetadata<T extends Entity> extends EntityOptions<T> {
         return {...this.relationships, ...this.inverseRelationships}
     }
 
-    static get<T extends Entity>(entity: T) {
-        const metadata: EntityMetadata<T> = Reflect.getMetadata(EntityMetadataKey, entity) || new this()
+    static get<T extends Entity, R extends Entity>(entity: T) {
+        const metadata: EntityMetadata<T, R> = Reflect.getMetadata(EntityMetadataKey, entity) || new this()
         metadata.table = metadata?.table || entity.constructor.name.toLowerCase()
         return metadata
     }
@@ -61,11 +61,6 @@ function setField<T extends Entity>(entity: T, field: ColumnField<T>) {
     Reflect.defineMetadata(EntityMetadataKey, entityMetadata, entity)
 }
 
-// tslint:disable-next-line:no-any
-export function Column<T extends Entity>(column?: string | {type: any}): PropertyDecorator;
-// tslint:disable-next-line:no-any
-export function Column<T extends Entity>(column: string, options?: {type: any}): PropertyDecorator;
-// tslint:disable-next-line:no-any
 export function Column<T extends Entity>(column?: string | {type: any}, options?: {type: any}): PropertyDecorator {
     return function(entity: Object, name: string | symbol) {
         const actualColumn: string | undefined = typeof column === 'string' ? column : undefined

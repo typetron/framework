@@ -29,11 +29,11 @@ export abstract class Entity {
         return proxy
     }
 
-    static get metadata(): EntityMetadata<Entity> {
-        return Reflect.getMetadata(EntityMetadataKey, this.prototype) ?? new EntityMetadata<Entity>()
+    static get metadata(): EntityMetadata<Entity, Entity> {
+        return Reflect.getMetadata(EntityMetadataKey, this.prototype) ?? new EntityMetadata<Entity, Entity>()
     }
 
-    get metadata(): EntityMetadata<Entity> {
+    get metadata(): EntityMetadata<Entity, Entity> {
         return this.static.metadata
     }
 
@@ -137,7 +137,7 @@ export abstract class Entity {
         data: Partial<ChildObject<T, Entity>> | {},
         exists = false
     ): T {
-        const instance = new this()
+        const instance = new (this as any)()
         instance.fill(instance.original = data)
         instance.exists = exists
 
@@ -150,7 +150,7 @@ export abstract class Entity {
 
     static async insert<T extends Entity>(this: EntityConstructor<T>, data: (ChildObject<T, Entity> | {})[]): Promise<void> {
         const dataToSave = data.map(piece => {
-            const instance = new this()
+            const instance = this.new(piece)
             return instance.getDataToSave(piece)
         })
 
@@ -211,7 +211,7 @@ export abstract class Entity {
     }
 
     static newQuery<T extends Entity>(this: EntityConstructor<T>): EntityQuery<T> {
-        return (new EntityQuery(this)).table(this.getTable())
+        return (new EntityQuery(this)).table(this.getTable()) as EntityQuery<T>
     }
 
     getTable(): string {
@@ -267,7 +267,7 @@ export abstract class Entity {
         return dataToSave
     }
 
-    hydrateWithRelationships() {
+    hydrateWithRelationships<T extends Entity>() {
         const relationships = this.metadata.allRelationships
         Object.keys(relationships).forEach(key => {
             if (!this[key as keyof this]) {
@@ -334,7 +334,7 @@ export abstract class Entity {
     toJSON() {
         return Object.keys({...this.metadata.columns, ...this.metadata.allRelationships})
             .reduce((obj, key) => {
-                if (this.hasOwnProperty(key)) {
+                if (Object.prototype.hasOwnProperty.call(this, key)) {
                     obj[key as keyof this] = this[key as keyof this]
                 }
                 return obj
