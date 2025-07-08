@@ -7,9 +7,11 @@ export * from './types'
 
 export class WebSocket {
 
+    public connection: uWebSocket<any> & {container: Container}
     id?: number | string
 
-    constructor(public connection: uWebSocket, public container: Container) {
+    constructor(connection: uWebSocket<any>, public container: Container) {
+        this.connection = Object.assign(connection, {container})
         this.reset(container)
     }
 
@@ -22,7 +24,7 @@ export class WebSocket {
     }
 
     reset(container?: Container) {
-        this.connection.container = container || this.connection.container.parent.createChildContainer()
+        this.connection.container = container || this.connection.container.parent?.createChildContainer() || new Container()
         this.connection.container.set(WebSocket, this)
     }
 

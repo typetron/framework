@@ -25,7 +25,6 @@ export function nodeServer(port: number, handler: (request: Request) => Promise<
             // request.method = Http.Method[overwrittenMethod.toUpperCase() as Http.Method] || request.method
         }
 
-
         const response = await handler(request)
 
         let content = response.body

@@ -43,12 +43,13 @@ export class WebsocketsProvider extends Provider {
             maxPayloadLength: 1024 * 1000 * 5,
             compression: DEDICATED_COMPRESSOR_3KB,
 
-            open: (socket: uWebSocket) => {
+            open: (socket: uWebSocket<any>) => {
                 const socketWrapper = new WebSocket(socket, this.app.createChildContainer())
                 this.handler.onOpen?.run(socketWrapper.connection.container, {})
             },
-            close: async (socket: uWebSocket) => {
-                await this.handler.onClose?.run(socket.container, {}).catch(error => {
+            close: async (socket: uWebSocket<any>) => {
+                const extendedSocket = socket as uWebSocket<any> & {container: Container}
+                await this.handler.onClose?.run(extendedSocket.container, {}).catch(error => {
                     console.log('socket close error  ->', error)
                 })
             },
@@ -64,7 +65,8 @@ export class WebsocketsProvider extends Provider {
                 }
 
                 try {
-                    const response = await this.handleAction(socket.container, data)
+                    const extendedSocket = socket as uWebSocket<any> & {container: Container}
+                    const response = await this.handleAction(extendedSocket.container, data)
                     const action = data.action
                     const sentResponse: ActionResponse<unknown> = {
                         action,

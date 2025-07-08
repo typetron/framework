@@ -15,7 +15,7 @@ export class Container {
     // tslint:disable-next-line:no-any
     protected instances = new Map<ServiceIdentifier<any>, any>()
 
-    private parent?: Container
+    public parent?: Container
 
     static getInstance() {
         if (!Container.instance) {
@@ -40,7 +40,7 @@ export class Container {
     /**
      * @deprecated
      */
-    forceSet<T>(abstract: ServiceIdentifier<T>, concrete: T | Type<T> | Function) {
+    forceSet<T>(abstract: ServiceIdentifier<T>, concrete: T | Type<T> | (() => any)) {
         this.set(abstract, concrete)
     }
 
