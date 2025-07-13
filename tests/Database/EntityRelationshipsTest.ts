@@ -208,7 +208,7 @@ class EntityRelationshipsTest {
         await user.articles.saveMany(
             {
                 title: 'title',
-                content: `joe's content`,
+                content: 'joe\'s content',
             },
             {
                 title: 'other title',
@@ -218,14 +218,14 @@ class EntityRelationshipsTest {
         const doe = await User.create(this.doe)
         await doe.articles.save({
             title: 'title',
-            content: `doe's content`,
+            content: 'doe\'s content',
         })
 
         const articles = await user.articles.where('title', 'title').get()
         expect(articles).to.have.length(1)
         expect(user.articles[0]).to.deep.include({
             title: 'title',
-            content: `joe's content`,
+            content: 'joe\'s content',
         })
     }
 

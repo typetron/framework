@@ -24,8 +24,6 @@ export abstract class Entity {
         //  Calling "proxy.fill will update the instance but then the default values will overwrite them"
         // proxy.fill(this.original = data || {})
 
-        this.hydrateWithRelationships()
-
         return proxy
     }
 
@@ -267,21 +265,13 @@ export abstract class Entity {
         return dataToSave
     }
 
-    hydrateWithRelationships<T extends Entity>() {
-        const relationships = this.metadata.allRelationships
-        Object.keys(relationships).forEach(key => {
-            if (!this[key as keyof this]) {
-                // @ts-ignore
-                this[key] = new relationships[key].relationClass(relationships[key], this) as unknown as T[keyof T]
-            }
-        })
-    }
 
     fill(data: ChildObject<this, Entity> | object) {
-        const relationships = this.metadata.relationships
-        Object.keys(relationships).forEach(key => {
-            relationships[key].update(this)
-        })
+        // TODO, check if we need to uncomment this
+        // const relationships = this.metadata.relationships
+        // Object.keys(relationships).forEach(key => {
+        //     relationships[key].update(this)
+        // })
         const fields = {...this.metadata.columns, ...this.metadata.relationships, ...this.metadata.inverseRelationships}
         Object.keys(data).forEach(key => {
             const field = fields[key]

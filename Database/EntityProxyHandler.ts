@@ -23,7 +23,18 @@ export class EntityProxyHandler<T extends Entity> {
             }
         }
 
-        return target[property as keyof T]
+        const value = target[property as keyof T]
+
+        if (!value) {
+            const relationships = target.metadata.allRelationships
+            if (relationships[property]) {
+                const relationship = new (relationships[property] as any)
+                const relationshipClass = relationship.relationClass(relationships[property], target) as unknown as T[keyof T]
+                return target[property as keyof T] = relationshipClass
+            }
+        }
+
+        return value
         // if (typeof value === 'function') {
         //     return value.bind(target);
         // }
