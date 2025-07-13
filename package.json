@@ -2,7 +2,7 @@
     "name": "@typetron/framework",
     "description": "Modern Node.js framework for modern apps written in Typescript",
     "license": "MIT",
-    "version": "0.5.0-rc1",
+    "version": "0.5.3",
     "keywords": [
         "typetron",
         "framework",
@@ -20,6 +20,7 @@
         "test": "mocha",
         "test:watch": "mocha --watch",
         "preversion": "npm test",
+        "publish": "npm publish ./build",
         "lint": "eslint ."
     },
     "engines": {
@@ -33,7 +34,7 @@
         "jsonwebtoken": "^9.0.2",
         "mysql": "^2.18.1",
         "sqlite3": "^5.1.7",
-        "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.74.0",
+        "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.52.0",
         "reflect-metadata": "^0.2.2"
     },
     "devDependencies": {

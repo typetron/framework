@@ -28,8 +28,8 @@ export class EntityProxyHandler<T extends Entity> {
         if (!value) {
             const relationships = target.metadata.allRelationships
             if (relationships[property]) {
-                const relationship = new (relationships[property] as any)
-                const relationshipClass = relationship.relationClass(relationships[property], target) as unknown as T[keyof T]
+                const relationship = (relationships[property] as any)
+                const relationshipClass = new relationship.relationClass(relationships[property], target) as unknown as T[keyof T]
                 return target[property as keyof T] = relationshipClass
             }
         }
