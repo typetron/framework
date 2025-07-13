@@ -587,7 +587,7 @@ export class BelongsTo<T extends Entity, P extends Entity = Entity> extends Base
 
 export class HasOne<T extends Entity, P extends Entity = Entity> extends BaseRelationship<T, P> {
 
-    public relationship: RelationshipField<P, T>
+    declare public relationship: RelationshipField<P, T>
     private instance?: T
 
     static relationship<T extends Entity, R extends Entity>(

@@ -18,7 +18,7 @@ export class Request extends BaseRequest {
 
     public parameters: Record<string, string | number> = {}
 
-    protected raw: BaseRequest['raw'] & {
+    declare protected raw: BaseRequest['raw'] & {
         urlOrUri: string,
         method: Http.Method,
         query?: string | ParsedUrlQuery,

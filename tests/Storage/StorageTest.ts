@@ -88,7 +88,8 @@ class StorageTest {
             // Attempt to delete a directory instead of a file
             await this.storage.delete(directory)
             throw new Error('Expected an error to be thrown, but none was thrown.')
-        } catch (error) {
+        } catch (unknownError) {
+            const error = unknownError as Error
             expect(error).to.be.instanceOf(Error)
             expect(error.message).to.equal('Can not delete because this path leads to a directory and not a file.')
         }

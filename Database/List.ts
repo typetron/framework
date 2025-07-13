@@ -9,7 +9,7 @@ export abstract class List<E extends Entity, P extends Entity = Entity> extends 
 
     items: E[] = []
 
-    public relationship: HasManyField<P, E> | BelongsToManyField<P, E>
+    declare public relationship: HasManyField<P, E> | BelongsToManyField<P, E>
 
     protected constructor(
         relationship: HasManyField<P, E> | BelongsToManyField<P, E>,
