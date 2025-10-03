@@ -50,9 +50,9 @@ export class EntityQuery<T extends Entity> extends Query<T> {
 
             const results = await relation.getRelatedValue(entities, otherRelations, fieldQueryFunction as (query: Query) => void)
 
-            if (results.length) {
+            // if (results.length) {
                 entities = relation.match(entities, results) as T[]
-            }
+            // }
         })
         // await this.eagerLoad.forEachAsync(async (field) => {
         //     // tslint:disable-next-line:no-any

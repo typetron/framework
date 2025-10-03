@@ -72,8 +72,8 @@ export class Handler {
             stack = middleware.handle.bind(middleware, request, stack)
         })
 
-        this.router.middleware.websocket?.forEach(middlewareClass => {
-            const middleware = container.get(middlewareClass)
+        await this.router.middleware.websocket?.forEachAsync(async middlewareClass => {
+            const middleware = await container.get(middlewareClass)
             stack = middleware.handle.bind(middleware, request, stack)
         })
 

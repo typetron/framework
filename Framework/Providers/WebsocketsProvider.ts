@@ -1,7 +1,7 @@
 import { Provider } from '../Provider'
 import { Container, Inject } from '../../Container'
 import { AppConfig } from '../Config'
-import { App, DEDICATED_COMPRESSOR_3KB, WebSocket as uWebSocket } from 'uWebSockets.js'
+import { App, WebSocket as uWebSocket } from 'uWebSockets.js'
 import { TextDecoder } from 'util'
 import { ErrorHandlerInterface, HttpError, Response } from '../../Router/Http'
 import { ActionErrorResponse, Handler, WebSocket } from '../../Router/Websockets'
@@ -35,33 +35,47 @@ export class WebsocketsProvider extends Provider {
 
         const stringDecoder = new TextDecoder()
 
-        const app = App().ws('/', {
+        const app = App().get('/*', res => {
+            res.end('Typetron Websockets server. Please do not use this url. Work in progress')
+        }).ws('/', {
 
             /* There are many common helper features */
             idleTimeout: 40,
-            maxBackpressure: 1024,
-            maxPayloadLength: 1024 * 1000 * 5,
-            compression: DEDICATED_COMPRESSOR_3KB,
+            maxBackpressure: 1024 * 1000 * 5,   // 5 MB tolerance is safer
+            // maxPayloadLength: 1024 * 1000 * 20, // 20 MB per message
+            // compression: DEDICATED_COMPRESSOR_3KB,
+            // compression: DISABLED,
+            maxPayloadLength: 64 * 1024 * 1024,
 
             open: (socket: uWebSocket<any>) => {
                 const socketWrapper = new WebSocket(socket, this.app.createChildContainer())
                 this.handler.onOpen?.run(socketWrapper.connection.container, {})
             },
-            close: async (socket: uWebSocket<any>) => {
+            close: async (socket: uWebSocket<any>, code, message) => {
+                console.info('connection closed', code, Buffer.from(message).toString())
                 const extendedSocket = socket as uWebSocket<any> & {container: Container}
                 await this.handler.onClose?.run(extendedSocket.container, {}).catch(error => {
-                    console.info('socket close error  ->', error)
+                    console.info('socket close error ->', error)
                 })
             },
 
             /* For brevity we skip the other actions (upgrade, open, ping, pong, close) */
             message: async (socket, message, isBinary) => {
-                const jsonData = stringDecoder.decode(message)
                 let data: ActionRequest
                 try {
+                    const jsonData = stringDecoder.decode(message)
                     data = JSON.parse(jsonData)
-                } catch {
-                    throw new Error(`Invalid Websocket message sent: ${jsonData}`)
+                } catch (_error) {
+                    const error = _error as Error
+                    const errorMessage = {
+                        message: {
+                            message: error.message,
+                            stack: error.stack?.split('\n') ?? ['<could not generate stack>']
+                        },
+                        status: WebsocketMessageStatus.Error
+                    }
+                    socket.send(JSON.stringify(errorMessage), isBinary, true)
+                    return
                 }
 
                 try {
@@ -86,7 +100,7 @@ export class WebsocketsProvider extends Provider {
                     const errorMessage: ActionErrorResponse = {
                         message: {
                             message: String(error.content ?? error.message),
-                            stack: error.stack ?? '<could not generate stack>'
+                            stack: error.stack?.split('\n') ?? ['could not generate stack']
                         },
                         action: data.action,
                         status: WebsocketMessageStatus.Error
@@ -99,6 +113,9 @@ export class WebsocketsProvider extends Provider {
                     socket.send(JSON.stringify(errorMessage), isBinary, true)
                 }
 
+            },
+            dropped: (ws, message) => {
+                console.info('socket dropped', ws.getUserData(), new TextDecoder().decode(message))
             }
 
         }).listen(port, (listenSocket) => {

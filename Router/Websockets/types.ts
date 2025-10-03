@@ -20,4 +20,4 @@ export interface ActionResponse<T> extends Action<T> {
     status: WebsocketMessageStatus
 }
 
-export type ActionErrorResponse<T extends string = string> = ActionResponse<{message: T, stack: string}>
+export type ActionErrorResponse<T extends string = string> = ActionResponse<{message: T, stack: string[]}>

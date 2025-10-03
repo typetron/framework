@@ -10,25 +10,23 @@
 		"realtime"
 	],
 	"license": "MIT",
-    "version": "0.4.0-rc9",
+    "version": "0.5.0",
 	"author": {
 		"email": "ionel@typetron.org",
 		"name": "Ionel Lupu"
 	},
 	"scripts": {
-		"build": "tsc"
+        "build": "tsc && cp package.json build/ && cp Readme.md build/ && cp package-lock.json build/"
 	},
 	"engines": {
-		"node": ">= 12.13.0"
-	},
-	"peerDependencies": {
-        "rxjs": "~7.8.1"
+        "node": ">= 20.12.0"
 	},
 	"dependencies": {
-        "@typetron/framework": "0.4.0-rc9"
+        "rxjs": "~7.8.1",
+        "@typetron/framework": "0.5.9"
 	},
 	"devDependencies": {
-        "typescript": "5.2.2"
+        "typescript": "5.8.3"
 	},
 	"repository": {
 		"type": "git",

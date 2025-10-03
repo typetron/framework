@@ -9,6 +9,7 @@ export class Websocket {
     queuedActions$ = new ReplaySubject<ActionRequest>()
     errors$ = new Subject<ActionErrorResponse>()
     onConnectCallback: () => void
+    onDisconnectCallback: () => void
 
     constructor(public url: string, public protocols?: string | string[]) {
         this.connect(url, protocols)
@@ -34,6 +35,7 @@ export class Websocket {
         }
 
         socket.onclose = (action) => {
+            this.onDisconnectCallback?.()
             this.queuedActions$ = new ReplaySubject<ActionRequest>()
             this.reconnect()
         }
@@ -41,6 +43,10 @@ export class Websocket {
 
     onConnect(callback: () => void) {
         this.onConnectCallback = callback
+    }
+
+    onDisconnect(callback: () => void) {
+        this.onDisconnectCallback = callback
     }
 
     reconnect(): void {
