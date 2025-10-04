@@ -12,7 +12,7 @@ export class AuthMiddleware implements HttpMiddleware {
     auth: Auth
 
     async handle(request: Request, next: RequestHandler) {
-        if (this.auth.id && this.auth.expiresAt > new Date()) {
+        if (this.auth.identifier && this.auth.expiresAt > new Date()) {
             return next(request)
         }
         const authHeader = request.headers.authorization || (request.body as Record<string, string>)?.token || ''

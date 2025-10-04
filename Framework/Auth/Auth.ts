@@ -1,14 +1,14 @@
 import { Inject, Injectable, Scope } from '../../Container'
 import { User } from './User'
 import { AuthConfig } from '../Config'
-import { EntityKeys, ID } from '../../Database'
+import { EntityKeys } from '../../Database'
 import { Crypt, JWT, JWToken } from '@Typetron/Encryption'
 
 @Injectable(Scope.REQUEST)
 export class Auth {
 
     @Inject()
-    authConfig: AuthConfig
+    authConfig: AuthConfig<User>
 
     @Inject()
     jwt: JWT
@@ -16,7 +16,7 @@ export class Auth {
     @Inject()
     crypt: Crypt
 
-    id?: ID
+    identifier?: string | number
 
     /**
      * This is primarily used in websocket connections so we don't need to pass the auth token for each weboscket message
@@ -50,14 +50,14 @@ export class Auth {
         //     return this.savedUser as T
         // }
 
-        if (!this.id) {
+        if (!this.identifier) {
             throw new Error('You tried to use the Auth service without authenticating the user. Please use the AuthMiddleware or authenticate the user before using this route')
         }
 
-        const user = await this.authenticable.find(this.id)
+        const user = await this.authenticable.where(this.authConfig.identityColumn as EntityKeys<User> || 'id', this.identifier).first()
 
         if (!user) {
-            throw new Error(`Could not find a user with id '${this.id}'`)
+            throw new Error(`Could not find a user with id '${this.identifier}'`)
         }
 
         return this.savedUser = user as T
@@ -70,18 +70,18 @@ export class Auth {
         }
 
         delete this.savedUser
-        return this.sign(this.id = user.id)
+        return this.sign(this.identifier = (user[this.authConfig.identityColumn as EntityKeys<User>] as string))
     }
 
-    loginById(id: ID): Promise<string> {
+    loginById(id: string | number): Promise<string> {
         return this.sign(id)
     }
 
     loginUser(authenticable: User): Promise<string> {
-        return this.loginById(authenticable[authenticable.getId()])
+        return this.loginById(authenticable[this.authConfig.identityColumn as EntityKeys<User>] as string)
     }
 
-    sign(id: ID, expiresAtTimestampInSeconds?: number): Promise<string> {
+    sign(id: string | number, expiresAtTimestampInSeconds?: number): Promise<string> {
         return this.jwt.sign(
             {
                 sub: this.set(id, expiresAtTimestampInSeconds)
@@ -108,7 +108,7 @@ export class Auth {
         return payload
     }
 
-    private set(id: ID, expiresAtTimestampInSeconds?: number): ID {
+    private set(id: string | number, expiresAtTimestampInSeconds?: number): string | number {
         if (expiresAtTimestampInSeconds) {
             this.expiresAt = new Date(expiresAtTimestampInSeconds * 1000)
         } else {
@@ -116,7 +116,7 @@ export class Auth {
             this.expiresAt.setSeconds(this.expiresAt.getSeconds() + this.authConfig.duration)
         }
 
-        return this.id = id
+        return this.identifier = id
     }
 
 }

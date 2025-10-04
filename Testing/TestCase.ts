@@ -152,8 +152,8 @@ export abstract class TestCase {
         const parameters = this.convertRouteParametersToString(routeParameters) || {}
 
         const auth = this.app.get(Auth)
-        if (auth.id) {
-            const token = await auth.sign(auth.id)
+        if (auth.identifier) {
+            const token = await auth.sign(auth.identifier)
             headers.authorization = `Bearer ${token}`
         }
 
