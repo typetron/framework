@@ -31,6 +31,7 @@ export class WebSocket {
     // tslint:disable-next-line:no-any
     publish(topic: string, action: string, body?: unknown) {
         const sentResponse: ActionResponse<unknown> = {
+            $id: 'todo',
             action,
             message: body,
             status: WebsocketMessageStatus.OK,
@@ -47,6 +48,7 @@ export class WebSocket {
     // tslint:disable-next-line:no-any
     send(action: string, body?: unknown) {
         const sentResponse: ActionResponse<unknown> = {
+            $id: 'todo',
             action,
             message: body,
             status: WebsocketMessageStatus.OK,

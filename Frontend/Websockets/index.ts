@@ -19,6 +19,10 @@ export class Websocket {
         return this.socket?.readyState === WebSocket.OPEN
     }
 
+    getRequestId() {
+        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    }
+
     connect(url?: string, protocols?: string | string[]): void {
         const socket = new WebSocket(url ?? this.url, protocols ?? this.protocols)
         this.socket = socket
@@ -30,6 +34,7 @@ export class Websocket {
         socket.onopen = () => {
             this.onConnectCallback?.()
             this.queuedActions$.subscribe(message => {
+                message.$id = this.getRequestId()
                 socket.send(JSON.stringify(message))
             })
         }
@@ -58,7 +63,7 @@ export class Websocket {
     }
 
     emit<T>(action: string, request?: ActionRequest['message']): void {
-        const actionMessage: ActionRequest = {action, message: request}
+        const actionMessage: ActionRequest = {$id: this.getRequestId(), action, message: request}
         this.queuedActions$.next(actionMessage)
     }
 

@@ -83,6 +83,7 @@ export class WebsocketsProvider extends Provider {
                     const response = await this.handleAction(extendedSocket.container, data)
                     const action = data.action
                     const sentResponse: ActionResponse<unknown> = {
+                        $id: data.$id,
                         action,
                         message: response.body,
                         status: WebsocketMessageStatus.OK,
@@ -98,6 +99,7 @@ export class WebsocketsProvider extends Provider {
                 } catch (err) {
                     const error = err as HttpError
                     const errorMessage: ActionErrorResponse = {
+                        $id: data.$id,
                         message: {
                             message: String(error.content ?? error.message),
                             stack: error.stack?.split('\n') ?? ['could not generate stack']
