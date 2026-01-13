@@ -76,11 +76,11 @@ export class Application extends Container {
             .files(configsPath)
             .whereIn('extension', ['ts'])
             .forEach((file) => {
-                const configItem = require(file.path).default as BaseConfig<{}>
-                if (configItem && configItem.constructor) {
+                const configItem = require(file.path).default
+                if (configItem && configItem instanceof BaseConfig) {
                     configItem.applyNewValues()
-                    this.set(configItem.constructor, configItem)
                 }
+                this.set(configItem.constructor, configItem)
             })
     }
 
@@ -112,7 +112,7 @@ export class Application extends Container {
     private async checkAppSecret() {
         const authConfig = this.get(AuthConfig)
         if (!authConfig.signature) {
-            throw new Error(`APP_SECRET is not setup in your '.env' file.`)
+            throw new Error('APP_SECRET is not setup in your \'.env\' file.')
         }
     }
 }

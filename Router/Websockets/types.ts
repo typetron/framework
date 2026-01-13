@@ -4,6 +4,7 @@ export enum WebsocketMessageStatus {
 }
 
 export interface Action<T> {
+    $id: string
     action: string
     message?: T
 }
