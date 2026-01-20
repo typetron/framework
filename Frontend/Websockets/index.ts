@@ -1,6 +1,6 @@
 import { Observable, of, ReplaySubject, Subject, throwError } from 'rxjs'
 import { filter, map, switchMap, take } from 'rxjs/operators'
-import { ActionErrorResponse, ActionRequest, ActionResponse, WebsocketMessageStatus } from '@typetron/framework/Router/Websockets/types'
+import type { ActionErrorResponse, ActionRequest, ActionResponse } from '@Typetron/Router/Websockets'
 
 export class Websocket {
     socket?: WebSocket
@@ -34,7 +34,7 @@ export class Websocket {
         socket.onopen = () => {
             this.onConnectCallback?.()
             this.queuedActions$.subscribe(message => {
-                message.$id = this.getRequestId()
+                message['$id'] = this.getRequestId()
                 socket.send(JSON.stringify(message))
             })
         }
@@ -62,16 +62,18 @@ export class Websocket {
         }
     }
 
-    emit<T>(action: string, request?: ActionRequest['message']): void {
-        const actionMessage: ActionRequest = {$id: this.getRequestId(), action, message: request}
+    emit(action: string, request?: ActionRequest['message']) {
+        const actionMessage: ActionRequest = {action, message: request, '$id': this.getRequestId(),}
         this.queuedActions$.next(actionMessage)
+
+        return actionMessage
     }
 
-    on<T>(action: string): Observable<T> {
+    on<T>(action: string, id?: string): Observable<T> {
         return this.actionMessages$.pipe(
-            filter(actionMessage => actionMessage.action === action),
+            filter(actionMessage => actionMessage.action === action && (!id || actionMessage['$id'] === id)),
             switchMap(actionMessage => {
-                if (actionMessage.status === WebsocketMessageStatus.Error) {
+                if (actionMessage.status === 'Error') {
                     this.errors$.next(actionMessage as ActionErrorResponse)
                     return throwError(actionMessage)
                 }
@@ -86,9 +88,9 @@ export class Websocket {
     }
 
     async request<T>(action: string, message?: ActionRequest['message']): Promise<T> {
-        this.emit(action, message)
+        const actionMessage = this.emit(action, message)
         return new Promise((resolve, reject) => {
-            this.on<T>(action).pipe(take(1)).subscribe({
+            this.on<T>(action, actionMessage['$id']).pipe(take(1)).subscribe({
                 next: resolve,
                 error: reject
             })

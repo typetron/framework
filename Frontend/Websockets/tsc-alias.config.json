@@ -1,0 +1,7 @@
+{
+    "resolveFullPaths": true,
+    "configFile": "tsconfig.json",
+    "replacers": {
+        "@Typetron/*": "@typetron/framework/build/*"
+    }
+}
