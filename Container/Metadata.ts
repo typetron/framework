@@ -6,6 +6,7 @@ export enum Scope {
     TRANSIENT = 'TRANSIENT',
     SINGLETON = 'SINGLETON',
     REQUEST = 'REQUEST',
+    CONNECTION = 'CONNECTION',
 }
 
 export class InjectableMetadata extends MetadataKey('injectable') {

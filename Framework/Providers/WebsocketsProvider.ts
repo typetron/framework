@@ -24,8 +24,6 @@ export class WebsocketsProvider extends Provider {
     @Inject()
     errorHandler: ErrorHandlerInterface
 
-    sockets = new Map<string | number, WebSocket>()
-
     register(): void | Promise<void> {
         const port = this.appConfig.websocketsPort
 
@@ -48,7 +46,7 @@ export class WebsocketsProvider extends Provider {
             maxPayloadLength: 64 * 1024 * 1024,
 
             open: (socket: uWebSocket<any>) => {
-                const socketWrapper = new WebSocket(socket, this.app.createChildContainer())
+                const socketWrapper = new WebSocket(socket, this.app.createChildContainer('connection'))
                 this.handler.onOpen?.run(socketWrapper.connection.container, {})
             },
             close: async (socket: uWebSocket<any>, code, message) => {
@@ -101,13 +99,13 @@ export class WebsocketsProvider extends Provider {
                 } catch (err) {
                     const error = err as HttpError
                     const errorMessage: ActionErrorResponse = {
-                        '$id': data['$id'],
+                        action: data.action,
+                        status: WebsocketMessageStatus.Error,
                         message: {
                             message: String(error.content ?? error.message),
                             stack: error.stack?.split('\n') ?? ['could not generate stack']
                         },
-                        action: data.action,
-                        status: WebsocketMessageStatus.Error
+                        '$id': data['$id'],
                     }
                     if (errorMessage.message) {
                         const response = await this.errorHandler.handle(error) as Response<Error>

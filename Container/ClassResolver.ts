@@ -95,7 +95,7 @@ export class ClassResolver extends BaseResolver {
                 continue
             }
             const dependencyMetadata = InjectableMetadata.get(dependency)
-            if (dependencyMetadata.scope === Scope.REQUEST) {
+            if (dependencyMetadata.scope === Scope.REQUEST || dependencyMetadata.scope === Scope.CONNECTION) {
                 concrete[dependencyName as keyof T] = container.get(
                     dependency
                 ) as T[keyof T]

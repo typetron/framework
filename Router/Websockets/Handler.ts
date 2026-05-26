@@ -36,7 +36,7 @@ export class Handler {
     }
 
     async handle<T = unknown>(connectionContainer: Container, request: Request): Promise<Response<T>> {
-        const container = connectionContainer.createChildContainer()
+        const container = connectionContainer.createChildContainer('request')
 
         container.set(BaseRequest, request)
         container.set(Request, request)

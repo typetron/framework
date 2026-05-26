@@ -4,6 +4,8 @@ import { EntityQuery } from './EntityQuery'
 import { BooleanOperator, Operator, WhereValue } from './Types'
 import { BelongsToManyField, HasManyField } from './Fields'
 import { BaseRelationship as Relationship } from './ORM/BaseRelationship'
+import { ID } from './Decorators'
+import { EntityNotFoundError } from './EntityNotFoundError'
 
 export abstract class List<E extends Entity, P extends Entity = Entity> extends Relationship<E, P> implements Iterable<E>, ArrayLike<E> {
 
@@ -52,8 +54,21 @@ export abstract class List<E extends Entity, P extends Entity = Entity> extends 
         return this.relationship.getQuery(this.parent).where(column, operator, value, boolean)
     }
 
-    findWhere(name: string, value: string): E | undefined {
-        return undefined
+    async find(key: ID): Promise<E | undefined> {
+        const primaryKey = this.relationship.type().getPrimaryKey()
+
+        return this.where(primaryKey, key).first()
+    }
+
+    async findOrFail(key: ID): Promise<E> {
+        const entity = this.relationship.type()
+        const instance = await this.find(key)
+
+        if (!instance) {
+            throw new EntityNotFoundError(entity, `No records found for entity '${entity.name}' when querying with parameters [${key}]`)
+        }
+
+        return instance
     }
 
     toJSON() {

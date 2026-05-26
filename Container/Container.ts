@@ -16,6 +16,7 @@ export class Container {
     protected instances = new Map<ServiceIdentifier<any>, any>()
 
     public parent?: Container
+    public containerType?: 'app' | 'connection' | 'request'
 
     static getInstance() {
         if (!Container.instance) {
@@ -63,8 +64,16 @@ export class Container {
         //     return concrete
         // }
 
-        if (this.parent && metadata.scope !== Scope.REQUEST && (concrete = this.parent.getInstance(abstract))) {
-            return concrete
+        if (this.parent && this.containerType === 'request' && metadata.scope === Scope.CONNECTION) {
+            // // Check immediate parent's cache
+            // concrete = this.parent.instances.get(abstract)
+            // if (concrete) return concrete
+
+            // Not in parent cache yet - delegate to parent if we're a request container
+            // This ensures CONNECTION services are created and cached in connection container
+            return this.parent.get(abstract, parameters)
+            // If we're the connection container, fall through to resolve locally
+            // REQUEST scope: don't check parent (isolated to current container)
         }
 
         if (typeof abstract === 'string') {
@@ -80,9 +89,10 @@ export class Container {
         return concrete
     }
 
-    createChildContainer(): Container {
+    createChildContainer(type?: 'connection' | 'request'): Container {
         const childContainer = new Container()
         childContainer.parent = this
+        childContainer.containerType = type
         childContainer.set(Container, childContainer)
         // TODO performance: get rid of this
         childContainer.resolvers = this.resolvers.map(resolver => {

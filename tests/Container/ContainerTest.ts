@@ -333,4 +333,91 @@ class ContainerTest {
     //     expect(controller.database).to.be.instanceof(Database);
     //     expect(controller.database.debug).to.equal(true);
     // }
+
+    @test
+    connectionScope() {
+        @Injectable(Scope.CONNECTION)
+        class ConnectionService {
+            counter = 0
+        }
+
+        const appContainer = new Container()
+        const connectionContainer = appContainer.createChildContainer('connection')
+        const requestContainer1 = connectionContainer.createChildContainer('request')
+        const requestContainer2 = connectionContainer.createChildContainer('request')
+
+        const service1 = requestContainer1.get(ConnectionService)
+        const service2 = requestContainer2.get(ConnectionService)
+
+        // Same instance across requests in same connection
+        expect(service1).to.equal(service2)
+
+        // Cached in connection container, not in app or request containers
+        expect(appContainer.getInstances().has(ConnectionService)).to.be.false
+        expect(connectionContainer.getInstances().has(ConnectionService)).to.be.true
+        expect(requestContainer1.getInstances().has(ConnectionService)).to.be.false
+    }
+
+    @test
+    connectionScopeIsolation() {
+        @Injectable(Scope.CONNECTION)
+        class ConnectionService {
+            counter = 0
+        }
+
+        const appContainer = new Container()
+        const connection1 = appContainer.createChildContainer('connection')
+        const connection2 = appContainer.createChildContainer('connection')
+
+        const service1 = connection1.createChildContainer('request').get(ConnectionService)
+        const service2 = connection2.createChildContainer('request').get(ConnectionService)
+
+        service1.counter = 42
+
+        // Isolated between connections
+        expect(service2.counter).to.equal(0)
+        expect(service1).not.to.equal(service2)
+    }
+
+    @test
+    connectionScopeWithSingletonDependency() {
+        @Injectable(Scope.SINGLETON)
+        class Database {}
+
+        @Injectable(Scope.CONNECTION)
+        class Session {
+            identifier?: string
+            @Inject()
+            db: Database
+        }
+
+        @Injectable()
+        class Controller {
+            @Inject()
+            session: Session
+        }
+
+        const appContainer = new Container()
+        const connection1 = appContainer.createChildContainer('connection')
+        const connection2 = appContainer.createChildContainer('connection')
+
+        const request1 = connection1.createChildContainer('request')
+        const request2 = connection1.createChildContainer('request')
+
+        const session1 = request1.get(Session)
+        const session2 = connection2.createChildContainer('request').get(Session)
+
+        // Different sessions but same database
+        expect(session1).not.to.equal(session2)
+
+        // SINGLETON controller with CONNECTION dependency
+        const controller1 = request1.get(Controller)
+        controller1.session.identifier = 'user-123'
+
+        const controller2 = request2.get(Controller)
+
+        // Session is shared within connection (CONNECTION scope)
+        expect(controller1.session).to.equal(controller2.session)
+        expect(controller2.session.identifier).to.equal('user-123')
+    }
 }

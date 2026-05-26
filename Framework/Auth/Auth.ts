@@ -4,7 +4,7 @@ import { AuthConfig } from '../Config'
 import { EntityKeys } from '../../Database'
 import { Crypt, JWT, JWToken } from '@Typetron/Encryption'
 
-@Injectable(Scope.REQUEST)
+@Injectable(Scope.CONNECTION)
 export class Auth {
 
     @Inject()

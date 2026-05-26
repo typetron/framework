@@ -6,6 +6,7 @@ import { Role } from './Entities/Role'
 import { Profile } from './Entities/Profile'
 import { expect } from 'chai'
 import { BelongsTo, BelongsToMany, HasMany, HasOne } from '../../Database/Fields'
+import { EntityNotFoundError } from '../../Database/EntityNotFoundError'
 
 @suite
 class EntityRelationshipsTest {
@@ -227,6 +228,36 @@ class EntityRelationshipsTest {
             title: 'title',
             content: 'joe\'s content',
         })
+    }
+
+    @test
+    async hasManyFind() {
+        const user = await User.create(this.joe)
+        const article = await user.articles.save({
+            title: 'title',
+            content: 'content',
+        } as Article)
+        const missingId = article.id + 1000
+
+        expect(await user.articles.find(article.id)).to.deep.include({
+            id: article.id,
+            title: article.title,
+            content: article.content,
+        })
+        expect(await user.articles.find(missingId)).to.be.equal(undefined)
+        expect(await user.articles.findOrFail(article.id)).to.deep.include({
+            id: article.id,
+            title: article.title,
+            content: article.content,
+        })
+
+        let error: unknown
+        try {
+            await user.articles.findOrFail(missingId)
+        } catch (exception) {
+            error = exception
+        }
+        expect(error).to.be.instanceOf(EntityNotFoundError)
     }
 
     @test
