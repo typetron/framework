@@ -25,12 +25,12 @@
         "node": ">= 20.12.0"
 	},
 	"dependencies": {
-        "@typetron/framework": "0.5.24",
-        "rxjs": "~7.8.1"
+        "@typetron/framework": "0.5.26",
+        "rxjs": "~7.8.2"
 	},
 	"devDependencies": {
-        "tsc-alias": "^1.8.16",
-        "typescript": "5.8.3"
+        "tsc-alias": "^1.8.17",
+        "typescript": "6.0.3"
 	},
 	"repository": {
 		"type": "git",
