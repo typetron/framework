@@ -25,7 +25,12 @@ export class ColumnField<T extends Entity> implements EntityField<T> {
     }
 
     set(target: T, value: T[keyof T]) {
-        target[this.property as keyof T] = value
+        target[this.property as keyof T] = this.cast(value) as T[keyof T]
+    }
+
+    protected cast(value: unknown): unknown {
+        const caster = casters.get(this.type())
+        return caster ? caster(value as never) : value
     }
 }
 
@@ -35,10 +40,16 @@ export class JSONField<T extends Entity> extends ColumnField<T> {
         return JSON.stringify(entity[key as K])
     }
 
-    set(target: T, value: T[keyof T]) {
-        target[this.property as keyof T] = typeof value === 'string' ? JSON.parse(value) : undefined
+    // fill() runs for both DB hydration (string -> parse) and code assignment (object -> keep as-is)
+    protected cast(value: unknown): unknown {
+        return typeof value === 'string' ? JSON.parse(value) : value
     }
 }
+
+const casters: Map<Function, (value: never) => unknown> = new Map()
+casters.set(Date, (value: number | string) => value ? new Date(value) : value)
+casters.set(String, (value: object) => value ? String(value) : value)
+casters.set(Boolean, (value: string) => Boolean(value))
 
 export abstract class InverseField<T extends Entity> implements EntityField<T> {
     protected constructor(

@@ -3,7 +3,7 @@ import { EntityQuery } from './EntityQuery'
 import { ChildObject, KeysOfType } from '../Support'
 import { EntityMetadata, EntityMetadataKey, ID } from './Decorators'
 import { EntityNotFoundError } from './EntityNotFoundError'
-import { BelongsTo, BelongsToMany, ColumnField, HasMany, HasOne, InverseField } from './Fields'
+import { BelongsTo, BelongsToMany, HasMany, HasOne } from './Fields'
 import { BooleanOperator, Direction, Operator, WhereFunction, WhereValue } from './Types'
 import { DotNotationProperties, EntityConstructor, EntityKeys, EntityObject } from './index'
 import { Query } from './Query'
@@ -276,8 +276,7 @@ export abstract class Entity {
         Object.keys(data).forEach(key => {
             const field = fields[key]
             if (field) {
-                const value = data[key as keyof object]
-                field.set(this, this.convertValueByType(value, field))
+                field.set(this, data[key as keyof object])
             }
         })
 
@@ -349,17 +348,7 @@ export abstract class Entity {
 
         this.fill(columnsToFill)
     }
-
-    private convertValueByType(value: unknown, property: ColumnField<Entity> | InverseField<Entity>) {
-        const converter = types.get(property.type()) || (() => value)
-        return converter(value)
-    }
 }
-
-const types: Map<Function, Function> = new Map()
-types.set(Date, (value: number | string) => value ? new Date(value) : value)
-types.set(String, (value: object) => value ? String(value) : value)
-types.set(Boolean, (value: string) => Boolean(value))
 
 // let handler = {
 // 	set: (target, prop, value) => {
