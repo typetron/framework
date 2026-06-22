@@ -38,23 +38,25 @@ async function handleRequest(serverResponse: HttpResponse, serverRequest: HttpRe
         const response = await handler(request)
         let content = response.body as string | object | number | Array<any> | Buffer
 
-        serverResponse.writeStatus(response.status.toString())
+        serverResponse.cork(() => {
+            serverResponse.writeStatus(response.status.toString())
 
-        if (!(content instanceof Buffer)) {
-            if (content instanceof Object) {
-                content = JSON.stringify(content)
-                serverResponse.writeHeader('Content-Type', 'application/json')
+            if (!(content instanceof Buffer)) {
+                if (content instanceof Object) {
+                    content = JSON.stringify(content)
+                    serverResponse.writeHeader('Content-Type', 'application/json')
+                }
+                content = String(content ?? '')
             }
-            content = String(content ?? '')
-        }
 
-        Object.keys(response.headers).forEach(header => {
-            const headerValue = response.headers[header]
-            if (headerValue) {
-                serverResponse.writeHeader(header, String(headerValue))
-            }
+            Object.keys(response.headers).forEach(header => {
+                const headerValue = response.headers[header]
+                if (headerValue) {
+                    serverResponse.writeHeader(header, String(headerValue))
+                }
+            })
+            serverResponse.end(content)
         })
-        serverResponse.end(content)
     } catch (error) {
         console.log('error ->', error)
     }

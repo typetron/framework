@@ -34,7 +34,9 @@ export class WebsocketsProvider extends Provider {
         const stringDecoder = new TextDecoder()
 
         const app = App().get('/*', res => {
-            res.end('Typetron Websockets server. Please do not use this url. Work in progress')
+            res.cork(() => {
+                res.end('Typetron Websockets server. Please do not use this url. Work in progress')
+            })
         }).ws('/', {
 
             /* There are many common helper features */
@@ -72,7 +74,9 @@ export class WebsocketsProvider extends Provider {
                         },
                         status: WebsocketMessageStatus.Error
                     }
-                    socket.send(JSON.stringify(errorMessage), isBinary, true)
+                    socket.cork(() => {
+                        socket.send(JSON.stringify(errorMessage), isBinary, true)
+                    })
                     return
                 }
 
@@ -94,7 +98,9 @@ export class WebsocketsProvider extends Provider {
                         sentResponse.status = WebsocketMessageStatus.Error
                     }
 
-                    socket.send(JSON.stringify(sentResponse), isBinary, true)
+                    socket.cork(() => {
+                        socket.send(JSON.stringify(sentResponse), isBinary, true)
+                    })
 
                 } catch (err) {
                     const error = err as HttpError
@@ -112,7 +118,9 @@ export class WebsocketsProvider extends Provider {
                         errorMessage.message.message = response.body.message
                     }
                     console.error(errorMessage)
-                    socket.send(JSON.stringify(errorMessage), isBinary, true)
+                    socket.cork(() => {
+                        socket.send(JSON.stringify(errorMessage), isBinary, true)
+                    })
                 }
 
             },
