@@ -1,9 +1,10 @@
 import { suite, test } from '@testdeck/mocha'
 import { expect } from 'chai'
-import { File, Storage } from '../../../Storage'
+import { File, Filesystem } from '../../../Storage'
 import { Connection, Query, SqliteDriver } from '../../../Database'
 import { MigrationHistory, Migrator } from '../../../Database/Migrations'
 import { anything, instance, mock, when } from 'ts-mockito'
+import path from 'node:path'
 
 @suite
 class RunnerTest {
@@ -17,7 +18,7 @@ class RunnerTest {
         // Query.connection = new Connection(new MysqlDriver({
         //     host: 'localhost', user: 'root', password: 'root', database: 'typetron_test'
         // }))
-        this.runner = new Migrator(new Storage(), Query.connection, this.migrationsPath)
+        this.runner = new Migrator(new Filesystem(), Query.connection, this.migrationsPath)
     }
 
     async after() {
@@ -84,10 +85,10 @@ class RunnerTest {
     }
 
     private async migrateInBatches() {
-        const mockStorage = mock(Storage)
+        const mockStorage = mock(Filesystem)
         when(mockStorage.files(anything(), anything()))
-            .thenReturn([new File(this.migrationFiles[0], this.migrationsPath)])
-            .thenReturn([new File(this.migrationFiles[1], this.migrationsPath)])
+            .thenReturn([new File(path.join(this.migrationsPath, this.migrationFiles[0]))])
+            .thenReturn([new File(path.join(this.migrationsPath, this.migrationFiles[1]))])
 
         this.runner.storage = instance(mockStorage)
         await this.runner.migrate()

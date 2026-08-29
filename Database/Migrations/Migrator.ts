@@ -1,7 +1,7 @@
 import { MigrationHistory } from './MigrationHistory'
 import { Migration } from './Migration'
 import * as path from 'path'
-import { File, Storage } from '@Typetron/Storage'
+import { File, Filesystem } from '@Typetron/Storage'
 import { Connection } from '..'
 import { Constructor } from '@Typetron/Support'
 
@@ -12,7 +12,7 @@ interface MigrateOptions {
 export class Migrator {
 
     constructor(
-        public storage: Storage,
+        public storage: Filesystem,
         public connection: Connection,
         public directory: string
     ) {}

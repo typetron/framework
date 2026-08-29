@@ -1,10 +1,10 @@
-import { Storage } from "@Typetron/Storage"
-import { Constructor } from "@Typetron/Support"
-import { Seeder } from "./Seeder"
+import { Filesystem } from '@Typetron/Storage'
+import { Constructor } from '@Typetron/Support'
+import { Seeder } from './Seeder'
 
 export class SeederManager {
     constructor(
-        public storage: Storage,
+        public storage: Filesystem,
         public directory: string
     ) {}
 

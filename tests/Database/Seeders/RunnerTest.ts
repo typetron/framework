@@ -2,7 +2,7 @@ import { suite, test } from '@testdeck/mocha'
 import { SeederManager } from '@Typetron/Database/Seeders'
 import { expect } from 'chai'
 import { Connection, Query, SqliteDriver } from '../../../Database'
-import { Storage } from '../../../Storage'
+import { Filesystem } from '../../../Storage'
 
 @suite
 class RunnerTest {
@@ -16,7 +16,7 @@ class RunnerTest {
         // }))
         await Query.connection.runRaw('CREATE TABLE random_table (col1 varchar)')
 
-        this.runner = new SeederManager(new Storage(), this.seedsPath)
+        this.runner = new SeederManager(new Filesystem(), this.seedsPath)
     }
 
     @test

@@ -3,12 +3,13 @@ import { Http } from '.'
 import { Parameters } from './Contracts'
 import * as querystring from 'querystring'
 import { ParsedUrlQuery } from 'querystring'
-import { File } from '../../Storage'
+import { File, UploadedFile } from '../../Storage'
 import busboy, { FileInfo } from 'busboy'
 import * as os from 'os'
 import * as fs from 'fs'
 import * as Url from 'fast-url-parser'
 import { Readable } from 'stream'
+import path from 'node:path'
 import { Request as BaseRequest } from '@Typetron/Router/Request'
 
 const cacheURLs = new Array<{url: string, instance: URL}>(100)
@@ -113,11 +114,8 @@ export class Request extends BaseRequest {
 
             formDataParser.on('file', function(fieldName: string, file: Readable, {filename, encoding, mimeType}: FileInfo) {
                 const extension = filename.split('.').pop()
-                const fileInstance = new File(`upload_${new Date().getTime().toString()}_${String.randomAlphaNum(9)}.${extension}`)
-
-                fileInstance.originalName = filename
-                fileInstance.directory = os.tmpdir()
-                fileInstance.saved = true
+                const temporaryPath = path.join(os.tmpdir(), `upload_${new Date().getTime().toString()}_${String.randomAlphaNum(9)}.${extension}`)
+                const fileInstance = new UploadedFile(temporaryPath, filename, mimeType)
 
                 const stream = fs.createWriteStream(fileInstance.path)
                 stream.on('error', reject)

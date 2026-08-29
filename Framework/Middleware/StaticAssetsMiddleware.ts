@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '../../Container'
 import { RequestHandler, RouteNotFoundError } from '../../Router'
-import { Storage } from '../../Storage'
+import { Filesystem } from '../../Storage'
 import { Http, Request, Response } from '../../Router/Http'
 import { AppConfig } from '../Config'
 import * as path from 'path'
@@ -13,7 +13,7 @@ export class StaticAssetsMiddleware extends HttpMiddleware {
     appConfig: AppConfig
 
     @Inject()
-    storage: Storage
+    storage: Filesystem
 
     mimeTypes: {[key: string]: string} = {
         'txt': 'text/plain',
@@ -73,4 +73,3 @@ export class StaticAssetsMiddleware extends HttpMiddleware {
         return new Response(file, Http.Status.OK, {'Content-type': contentType})
     }
 }
-

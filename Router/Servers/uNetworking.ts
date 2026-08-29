@@ -4,10 +4,11 @@ import { Buffer } from 'buffer'
 import { IncomingHttpHeaders } from 'http'
 import * as console from 'console'
 import busboy, { FileInfo } from 'busboy'
-import { File } from '@Typetron/Storage'
+import { File, UploadedFile } from '@Typetron/Storage'
 import { Readable } from 'stream'
 import os from 'os'
 import fs from 'fs'
+import path from 'node:path'
 
 async function handleRequest(serverResponse: HttpResponse, serverRequest: HttpRequest, handler: (request: Request) => Promise<Response>) {
     serverResponse.onAborted(() => {
@@ -116,11 +117,8 @@ function readForm(response: HttpResponse, headers: any): Promise<[string | objec
 
         formDataParser.on('file', function(fieldName: string, file: Readable, {filename, encoding, mimeType}: FileInfo) {
             const extension = filename.split('.').pop()
-            const fileInstance = new File(`upload_${new Date().getTime().toString()}_${String.randomAlphaNum(9)}.${extension}`)
-
-            fileInstance.originalName = filename
-            fileInstance.directory = os.tmpdir()
-            fileInstance.saved = true
+            const temporaryPath = path.join(os.tmpdir(), `upload_${new Date().getTime().toString()}_${String.randomAlphaNum(9)}.${extension}`)
+            const fileInstance = new UploadedFile(temporaryPath, filename, mimeType)
 
             const stream = fs.createWriteStream(fileInstance.path)
             stream.on('error', reject)

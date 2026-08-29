@@ -25,6 +25,7 @@ import {
     CacheProvider,
     DatabaseProvider,
     MailProvider,
+    StorageProvider,
 } from '@Typetron/Framework'
 import { User } from './Entities/User'
 
@@ -32,7 +33,7 @@ export const appConfig = new AppConfig({
     environment: 'development',
     server: 'node',
     port: 3000,
-    providers: [DatabaseProvider, CacheProvider, MailProvider],
+    providers: [DatabaseProvider, CacheProvider, MailProvider, StorageProvider],
 })
 
 export const authConfig = new AuthConfig({
@@ -52,7 +53,8 @@ In a real application, each config instance is the default export of a TypeScrip
 
 ## Configuration
 
-The module includes `AppConfig`, `AuthConfig`, `CacheConfig`, `DatabaseConfig`, and `MailConfig`. Constructor values replace defaults when
+The module includes `AppConfig`, `AuthConfig`, `CacheConfig`, `DatabaseConfig`, `MailConfig`, and `StorageConfig`. Constructor values
+replace defaults when
 the application loads each file.
 
 `AppConfig.server` selects the Node or uWebSockets HTTP server. A configured `websocketsPort` starts the separate WebSocket provider. Static
@@ -98,8 +100,11 @@ export const config = new AppConfig({
 })
 ```
 
-Typetron includes providers for database, cache, mail, and WebSockets, together with `AuthMiddleware`, `CorsMiddleware`, and
+Typetron includes providers for database, cache, mail, storage, and WebSockets, together with `AuthMiddleware`, `CorsMiddleware`, and
 `StaticAssetsMiddleware`.
+
+Framework bootstrap and source discovery use an internal host `Filesystem` before application storage configuration is available. This is
+not the application storage API; application services should depend on `Storage` and select configured disks with `storage.disk(name)`.
 
 ## Authentication
 

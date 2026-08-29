@@ -2,7 +2,7 @@ import { Provider } from '../Provider'
 import { DatabaseConfig } from '../Config'
 import { Inject } from '../../Container'
 import { Connection, Entity, Query } from '@Typetron/Database'
-import { Storage } from '../../Storage'
+import { Filesystem } from '../../Storage'
 
 export class DatabaseProvider extends Provider {
 
@@ -10,7 +10,7 @@ export class DatabaseProvider extends Provider {
     databaseConfig: DatabaseConfig
 
     @Inject()
-    storage: Storage
+    storage: Filesystem
 
     async register() {
         const driver = this.databaseConfig.drivers[this.databaseConfig.driver]

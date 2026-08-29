@@ -8,7 +8,7 @@ import { EntityResolver } from './Resolvers/EntityResolver'
 import { RootDir } from './RootDir'
 import { StaticAssetsMiddleware } from './Middleware/StaticAssetsMiddleware'
 import { ErrorHandler, ErrorHandlerInterface, Handler as HttpHandler, } from '../Router/Http'
-import { Storage } from '../Storage'
+import { Filesystem } from '../Storage'
 import { AuthResolver } from './Resolvers/AuthResolver'
 import fileSystem from 'fs'
 import path from 'path'
@@ -64,7 +64,7 @@ export class Application extends Container {
     private async loadConfig(configDirectory: string) {
         const configsPath = path.join(this.directory, configDirectory)
 
-        const storage = this.get(Storage)
+        const storage = this.get(Filesystem)
 
         if (!(await storage.exists(configsPath))) {
             console.warn(

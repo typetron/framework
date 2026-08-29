@@ -2,13 +2,13 @@
 
 import { Container, Inject } from '@Typetron/Container'
 import { Cache, DatabaseStore, FileStore, MemoryStore } from '@Typetron/Cache'
-import { Storage } from '@Typetron/Storage'
+import { Filesystem } from '@Typetron/Storage'
 import { Provider } from '../Provider'
 import { CacheConfig, CacheStoreKey } from '../Config'
 
 const cacheStores: Record<CacheStoreKey, (...args: any[]) => Cache> = {
     file: (app: Container, config: CacheConfig) => {
-        return new FileStore(app.get(Storage), config.drivers.file.path)
+        return new FileStore(app.get(Filesystem), config.drivers.file.path)
     },
     memory: () => {
         return new MemoryStore()

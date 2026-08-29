@@ -1,97 +1,106 @@
 import { suite, test } from '@testdeck/mocha'
-import { File, Storage } from '../../Storage'
+import { Filesystem, InvalidStorageKey, MemoryDriver, ReadOnlyStorage, Storage, StorageDisk, UploadedFile, } from '../../Storage'
 import { expect } from 'chai'
-import * as path from 'path'
 
 const directory = './tests/Storage/.storage'
 
 @suite
 class StorageTest {
-    storage = new Storage()
+    storage = new Storage({
+        default: 'local',
+        disks: {
+            local: {driver: 'local', root: directory, url: '/storage'},
+            memory: {driver: 'memory'},
+            scoped: {driver: 'scoped', disk: 'memory', prefix: 'users'},
+            readonly: {driver: 'read-only', disk: 'memory'},
+        },
+    })
 
-    @test
-    async canReadFiles() {
-        const file = new File('testFile.txt')
-        file.directory = directory
-        // Create the file before trying to save it
-        await this.storage.put(path.join(directory, file.name), 'test content')
-
-        const content = await this.storage.read(path.join(directory, file.name))
-        expect(content).to.be.instanceOf(Buffer)
-        expect(content.toString()).to.equal('test content')
+    static async after() {
+        await new Filesystem().deleteDirectory(directory)
     }
 
     @test
-    async canCheckIfFileExists() {
-        const file = new File('testFile.txt')
-        file.directory = directory
-        // Create the file before trying to save it
-        await this.storage.put(path.join(directory, file.name), 'test content')
-
-        const exists = await this.storage.exists(path.join(directory, file.name))
-        expect(exists).to.be.true
+    async writesReadsAndDescribesLocalFiles() {
+        const file = await this.storage.put('users/1.txt', 'John', {visibility: 'public'})
+        expect(file.key).to.equal('users/1.txt')
+        expect(file.name).to.equal('1.txt')
+        expect(file.extension).to.equal('txt')
+        expect((await this.storage.read(file.key)).toString()).to.equal('John')
+        expect(await this.storage.exists(file.key)).to.be.true
+        expect((await this.storage.stat(file.key)).size).to.equal(4)
+        expect(await this.storage.visibility(file.key)).to.equal('public')
+        expect(this.storage.url(file.key)).to.equal('/storage/users/1.txt')
     }
 
     @test
-    async canSaveFiles() {
-        const file = new File('testFile.txt')
-        file.directory = directory
-        // Create the file before trying to save it
-        await this.storage.put(path.join(directory, file.name), 'test content')
-        const savedFile = await this.storage.save(file, './tests/Storage/.storage/alternative.txt')
-        expect(savedFile).to.be.instanceOf(File)
-        expect(savedFile.name).to.equal(file.name)
-        expect(await this.storage.exists(savedFile.path)).to.be.true
+    async listsCopiesMovesAndDeletesByPrefix() {
+        await this.storage.put('documents/a.txt', 'A')
+        await this.storage.put('documents/nested/b.txt', 'B')
+        expect((await this.storage.files('documents')).map(file => file.key)).to.deep.equal(['documents/a.txt'])
+        expect((await this.storage.files('documents', {recursive: true})).map(file => file.key)).to.deep.equal([
+            'documents/a.txt', 'documents/nested/b.txt',
+        ])
+        await this.storage.copy('documents/a.txt', 'documents/c.txt')
+        await this.storage.move('documents/c.txt', 'documents/d.txt')
+        expect(await this.storage.exists('documents/c.txt')).to.be.false
+        expect(await this.storage.exists('documents/d.txt')).to.be.true
+        await this.storage.deleteDirectory('documents')
+        expect(await this.storage.exists('documents/a.txt')).to.be.false
     }
 
     @test
-    async canWriteToFile() {
-        const filePath = path.join(directory, 'testFile.txt')
-        const file = await this.storage.put(filePath, 'test content')
-        expect(file).to.be.instanceOf(File)
-        expect(file.name).to.equal('testFile.txt')
-        const content = await this.storage.read(path.join(directory, file.name))
-        expect(content).to.be.instanceOf(Buffer)
-        expect(content.toString()).to.equal('test content')
+    async resolvesAndCachesNamedAndOnDemandDisks() {
+        expect(this.storage.disk('memory')).to.equal(this.storage.disk('memory'))
+        const onDemand = this.storage.build({driver: 'memory'})
+        expect(onDemand).to.be.instanceOf(StorageDisk)
+        await onDemand.put('temporary.txt', 'data')
+        expect(await onDemand.exists('temporary.txt')).to.be.true
+
+        const custom = this.storage.extend('custom', () => new MemoryDriver()).build({driver: 'custom'})
+        await custom.put('custom.txt', 'data')
+        expect(await custom.exists('custom.txt')).to.be.true
     }
 
     @test
-    async canCreateDirectory() {
-        await this.storage.makeDirectory(directory)
-        const exists = await this.storage.exists(directory)
-        expect(exists).to.be.true
+    async scopesAndMakesDisksReadOnly() {
+        await this.storage.disk('scoped').put('1.txt', 'John')
+        expect(await this.storage.disk('memory').exists('users/1.txt')).to.be.true
+        expect((await this.storage.disk('scoped').files()).map(file => file.key)).to.deep.equal(['1.txt'])
+        await this.expectError(this.storage.disk('readonly').put('x.txt', 'x'), ReadOnlyStorage)
     }
 
     @test
-    async canDeleteDirectory() {
-        await this.storage.makeDirectory(directory)
-        await this.storage.deleteDirectory(directory)
-        const exists = await this.storage.exists(directory)
-        expect(exists).to.be.false
+    async providesFakeDisksWithAssertions() {
+        const fake = this.storage.fake('memory')
+        await fake.put('users/1.txt', 'John')
+        await fake.assertExists('users/1.txt')
+        await fake.assertMissing('users/2.txt')
+        await fake.assertCount('users', 1)
     }
 
     @test
-    async canDeleteFile() {
-        const file = new File('testFile.txt')
-        file.directory = directory
-        // Create the file before trying to save it
-        await this.storage.put(path.join(directory, file.name), 'test content')
-
-        await this.storage.delete(path.join(directory, file.name))
-        const exists = await this.storage.exists(path.join(directory, file.name))
-        expect(exists).to.be.false
+    async streamsUploadedFilesIntoAnyDisk() {
+        const temporaryPath = `${directory}/upload.txt`
+        await new Filesystem().put(temporaryPath, 'uploaded')
+        const upload = new UploadedFile(temporaryPath, 'original.txt', 'text/plain')
+        const memory = this.storage.disk('memory')
+        await memory.putFile('uploads/1.txt', upload)
+        expect((await memory.read('uploads/1.txt')).toString()).to.equal('uploaded')
     }
 
     @test
-    async cannotDeleteWithoutFileName() {
+    async rejectsTraversalAndEmptyPrefixDeletion() {
+        await this.expectError(this.storage.put('../escape.txt', 'x'), InvalidStorageKey)
+        await this.expectError(this.storage.deleteDirectory(''), InvalidStorageKey)
+    }
+
+    private async expectError(promise: Promise<unknown>, type: new (...args: any[]) => Error) {
         try {
-            // Attempt to delete a directory instead of a file
-            await this.storage.delete(directory)
-            throw new Error('Expected an error to be thrown, but none was thrown.')
-        } catch (unknownError) {
-            const error = unknownError as Error
-            expect(error).to.be.instanceOf(Error)
-            expect(error.message).to.equal('Can not delete because this path leads to a directory and not a file.')
+            await promise
+            throw new Error(`Expected ${type.name} to be thrown.`)
+        } catch (error) {
+            expect(error).to.be.instanceOf(type)
         }
     }
 }

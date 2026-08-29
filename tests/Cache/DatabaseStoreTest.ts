@@ -3,7 +3,7 @@ import { CacheItem, DatabaseStore } from '@Typetron/Cache'
 import { expect } from 'chai'
 import { createHash } from 'crypto'
 import { Connection, Query, SqliteDriver } from '@Typetron/Database'
-import { Storage } from '@Typetron/Storage'
+import { Filesystem } from '@Typetron/Storage'
 
 const tableName = 'cache'
 const databaseFilePath = './tests/Cache/database.sqlite'
@@ -18,7 +18,7 @@ class DatabaseStoreTest {
     }
 
     static async after() {
-        await new Storage().deleteDirectory(databaseFilePath)
+        await new Filesystem().deleteDirectory(databaseFilePath)
     }
 
     private getCacheRecord(name: string) {

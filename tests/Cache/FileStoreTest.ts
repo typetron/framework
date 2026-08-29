@@ -1,17 +1,17 @@
 import { suite, test } from '@testdeck/mocha'
 import { FileStore } from '@Typetron/Cache'
-import { Storage } from '@Typetron/Storage'
+import { Filesystem } from '@Typetron/Storage'
 import { expect } from 'chai'
 
 const directory = './tests/Cache/.cache'
 
 @suite
 class FileStoreTest {
-    storage = new Storage()
+    storage = new Filesystem()
     fileStore = new FileStore(this.storage, directory)
 
     static async after() {
-        const storage = new Storage()
+        const storage = new Filesystem()
         if (await storage.exists(directory)) {
             await storage.deleteDirectory(directory)
         }

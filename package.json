@@ -2,7 +2,7 @@
     "name": "@typetron/framework",
     "description": "Modern Node.js framework for modern apps written in Typescript",
     "license": "MIT",
-    "version": "0.5.30",
+    "version": "0.5.31",
     "keywords": [
         "typetron",
         "framework",
@@ -32,7 +32,7 @@
         "lint": "eslint ."
     },
     "engines": {
-        "node": ">= 12.13.0"
+        "node": ">=20.0.0"
     },
     "dependencies": {
         "@sendgrid/mail": "^8.1.6",
@@ -46,6 +46,8 @@
         "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.68.0"
     },
     "devDependencies": {
+        "@aws-sdk/client-s3": "^3.1121.0",
+        "@aws-sdk/s3-request-presigner": "^3.1121.0",
         "@eslint/js": "^10.0.1",
         "@testdeck/mocha": "^0.3.3",
         "@types/bcryptjs": "^3.0.0",
@@ -68,11 +70,41 @@
         "tsconfig-paths": "^4.2.0",
         "typescript": "6.0.3"
     },
+    "peerDependencies": {
+        "@aws-sdk/client-s3": "^3.1121.0",
+        "@aws-sdk/s3-request-presigner": "^3.1121.0"
+    },
+    "peerDependenciesMeta": {
+        "@aws-sdk/client-s3": {
+            "optional": true
+        },
+        "@aws-sdk/s3-request-presigner": {
+            "optional": true
+        }
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/typetron/framework.git"
     },
     "files": [
-        "build"
+        "build",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "Readme.md",
+        "Cache/Readme.md",
+        "Container/Readme.md",
+        "Database/Readme.md",
+        "Encryption/Readme.md",
+        "Forms/Readme.md",
+        "Framework/Readme.md",
+        "Mail/Readme.md",
+        "Models/Readme.md",
+        "Router/Readme.md",
+        "Storage/Readme.md",
+        "Support/Readme.md",
+        "Testing/Readme.md",
+        "Validation/Readme.md",
+        "Frontend/Angular/Readme.md",
+        "Frontend/Websockets/Readme.md"
     ]
 }

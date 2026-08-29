@@ -1,12 +1,12 @@
 import { Cache } from '@Typetron/Cache'
-import { Storage } from '@Typetron/Storage'
+import { Filesystem } from '@Typetron/Storage'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { JSONSafeParse } from '@Typetron/Support/utils'
 import { CacheItem } from '@Typetron/Cache/types'
 
 export class FileStore extends Cache {
-    constructor(public storage: Storage, public directory: string) {
+    constructor(public storage: Filesystem, public directory: string) {
         super()
     }
 
