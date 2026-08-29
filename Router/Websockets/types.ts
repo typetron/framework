@@ -4,7 +4,6 @@ export enum WebsocketMessageStatus {
 }
 
 export interface Action<T> {
-    '$id': string,
     action: string
     message?: T
 }
@@ -15,9 +14,12 @@ export interface ActionRequestMessage {
     body?: any
 }
 
-export type ActionRequest = Action<ActionRequestMessage>
+export interface ActionRequest extends Action<ActionRequestMessage> {
+    '$id': string
+}
 
 export interface ActionResponse<T> extends Action<T> {
+    '$id'?: string
     status: WebsocketMessageStatus
 }
 

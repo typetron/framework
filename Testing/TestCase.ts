@@ -106,11 +106,12 @@ export abstract class TestCase {
             const callback = this.actionListeners.get(calledActon)
             callback?.(message)
         })
+        when(socketMock.forRequest(anything())).thenReturn(instance(socketMock))
 
         const container = this.app.createChildContainer()
         container.set(WebSocket, instance(socketMock))
 
-        const request = new Request(action, content?.body)
+        const request = new Request(action, content?.body, String.random(15))
 
         // TODO find a way to save parameters so they can be retrieved easily in the Resolvers (check EntityResolver for example)
         content?.parameters?.forEach(parameter => {

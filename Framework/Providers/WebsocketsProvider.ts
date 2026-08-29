@@ -135,8 +135,8 @@ export class WebsocketsProvider extends Provider {
         })
     }
 
-    private async handleAction(container: Container, {action, message}: ActionRequest) {
-        const request = new Request(action, message?.body)
+    private async handleAction(container: Container, {action, message, '$id': id}: ActionRequest) {
+        const request = new Request(action, message?.body, id)
 
         // TODO find a way to save parameters so they can be retrieved easily in the Resolvers (check routeEntity resolver for example)
         message?.parameters?.forEach(parameter => {

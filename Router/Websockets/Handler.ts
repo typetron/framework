@@ -6,6 +6,7 @@ import { Abstract, Constructor, Type } from '../../Support'
 import { WebsocketRoute } from './WebsocketRoute'
 import { Request } from '@Typetron/Router/Websockets/Request'
 import { WebsocketMiddleware } from '@Typetron/Router/Websockets/Middleware'
+import { WebSocket } from './WebSocket'
 
 export class Handler {
     @Inject()
@@ -37,9 +38,13 @@ export class Handler {
 
     async handle<T = unknown>(connectionContainer: Container, request: Request): Promise<Response<T>> {
         const container = connectionContainer.createChildContainer('request')
+        const connectionSocket = connectionContainer.getInstances().get(WebSocket) as WebSocket | undefined
 
         container.set(BaseRequest, request)
         container.set(Request, request)
+        if (connectionSocket) {
+            container.set(WebSocket, connectionSocket.forRequest(request.id))
+        }
 
         let stack: RequestHandler = async () => {
             const route = this.router.actions.get(request.name)

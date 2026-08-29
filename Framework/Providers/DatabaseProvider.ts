@@ -28,7 +28,7 @@ export class DatabaseProvider extends Provider {
         const entitiesImports: (typeof Entity)[] = await Promise.all(
             entityFiles.map(file => import(file.path))
         )
-        const entitiesMetadata = entitiesImports.flatMap(item => Object.values(item).pluck('metadata'))
+        const entitiesMetadata = entitiesImports.flatMap(item => Object.values(item).pluck('metadata')).filter(Boolean)
 
         await connection.driver.schema.synchronize(entitiesMetadata)
     }

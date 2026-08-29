@@ -8,3 +8,4 @@ tsconfig.tsbuildinfo
 .nyc_output
 build
 tests/Storage/.storage
+.npmrc

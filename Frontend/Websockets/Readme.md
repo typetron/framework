@@ -1,86 +1,96 @@
 # Typetron WebSockets
 
-This library is used to easily listen and emit WebSockets action from the browser client to a Typetron app.
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Using the Connection](#using-the-connection)
+- [Errors and Reconnection](#errors-and-reconnection)
+- [Message Format](#message-format)
 
-#### Installation
+## Introduction
+
+The `@typetron/websockets` package is a browser client for Typetron WebSocket actions. It queues outgoing actions until the connection
+opens, exposes responses as RxJS observables, and correlates requests by ID.
+
+## Installation
+
+Install the package and RxJS:
 
 ```bash
-$ npm install @typetron/websockets
+npm install @typetron/websockets rxjs
 ```
 
-Note: you need to have a module loader in your app for this to work (webpack, rollup, babel, parcel, etc.)
+The client requires the browser `WebSocket` API and a module-aware frontend build.
 
-#### Listening for actions
+## Using the Connection
 
-You can listen to a WebSocket action sent from the server using the _on('Action name')_ method like this on the socket
-connection:
+Construct `Websocket` with the server URL. Use `on` for a response stream, `emit` for a one-way action, or `request` to await one correlated
+response:
 
 ```ts
-socket.on('actionName').subscribe(response => {
-    console.log('Backend response', response)
+import { Websocket } from '@typetron/websockets'
+
+interface User {
+    id: number
+    name: string
+}
+
+const socket = new Websocket('ws://localhost:3001')
+
+const subscription = socket.on<User>('users.updated').subscribe(user => {
+    console.log(user.name)
 })
-socket.on<User>('user.update').subscribe(user => {
-    console.log('User updated', user)
+
+socket.emit('users.save', {
+    body: {name: 'John'},
 })
+
+const user = await socket.request<User>('users.save', {
+    body: {name: 'John'},
+})
+
+socket.onError({except: ['health.check']}).subscribe(response => {
+    console.error(response.action, response.message)
+})
+
+socket.onConnect(() => console.log('connected'))
+socket.onDisconnect(() => console.log('disconnected'))
 ```
 
-The _on_ method will return an observable (see [RxJS](https://rxjs.dev/) for more details) that you can use to subscribe
-to.
+The optional message may contain `body` and `parameters`. Actions emitted before the connection opens remain queued. `request` resolves with
+the response's `message`, while an error response rejects it. Unsubscribe from RxJS listeners when they are no longer needed.
 
-#### Emitting actions
+## Errors and Reconnection
 
-If you want to signal the server with an action or when you want to send some data to it, you can use the _emit('action
-name', data)_ method:
+Action errors reach the corresponding listener and the shared `onError` stream. The optional `except` list suppresses action names from that
+shared stream.
 
-```ts
-socket.emit('actionName');
-socket.emit('actionName', "my message here");
-socket.emit('actionName', {my: {message: "here"}});
-```
+When the browser socket closes, the client invokes the disconnect callback, resets its outgoing queue, and attempts to reconnect after one
+second. `isConnected` is `true` only while the underlying socket is open.
 
-Be aware that if you are expecting a response from the backend, you need to subscribe to the same action (or the action
-the server is emitting to) using the _.on_ method.
+## Message Format
 
-#### Emitting and listening for server response
-
-If you want to make a single "request" to the server, meaning that you want to emit and wait for a response at the same
-time, you can use the _request('action name', data?)_ method. This will essentially make an _emit_ and listen to its
-response using the _on_ method for you:
-
-```ts
-const users = await socket.request<User[]>('users.list')
-const savedUser = await socket.request<User>('users.save', {name: 'John'})
-```
-
-#### Message format of the WebSocket actions
-
-The Typetron WebSocket server uses a specific message format when exchanging information between it and the clients.
-These message have the following format:
-_When sending a message:_
+Actions sent to the server use this shape:
 
 ```json
 {
-    "action": "action name",
-	"message": {
-		// optional
-		"body": "content sent to the controllers",
-		"parameters": [
-			"param1",
-			"param1"
-		]
-		// controller method parameters (optional)
-	}
+    "$id": "request-id",
+    "action": "users.save",
+    "message": {
+        "body": {"name": "John"},
+        "parameters": [1]
+    }
 }
 ```
 
-_When receiving a message:_
+Responses use the same ID and action name:
 
 ```json
 {
-    "action": "action name",
+    "$id": "request-id",
+    "action": "users.save",
     "status": "OK",
-    // or "Error",
-    "message": "backend response"
-    // optional
+    "message": {"id": 1, "name": "John"}
 }
 ```
+
+The status is `OK` or `Error`.
