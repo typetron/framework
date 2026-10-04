@@ -21,9 +21,7 @@ export class StorageDisk {
     }
 
     read(key: string): Promise<Buffer> { return this.storageDriver.read(key) }
-
     get(key: string): Promise<Buffer> { return this.read(key) }
-
     readStream(key: string) { return this.storageDriver.readStream(key) }
 
     async json<T>(key: string): Promise<T> {
@@ -31,7 +29,6 @@ export class StorageDisk {
     }
 
     exists(key: string): Promise<boolean> { return this.storageDriver.exists(key) }
-
     async missing(key: string): Promise<boolean> { return !(await this.exists(key)) }
 
     async stat(key: string): Promise<File> {
@@ -70,7 +67,6 @@ export class StorageDisk {
     }
 
     delete(key: string): Promise<void> { return this.storageDriver.delete(key) }
-
     deleteDirectory(prefix: string): Promise<void> { return this.storageDriver.deleteDirectory(prefix) }
 
     async copy(source: string, destination: string): Promise<File> {
@@ -84,7 +80,6 @@ export class StorageDisk {
     }
 
     visibility(key: string): Promise<Visibility> { return this.storageDriver.visibility(key) }
-
     setVisibility(key: string, visibility: Visibility): Promise<void> { return this.storageDriver.setVisibility(key, visibility) }
 
     url(key: string): string {

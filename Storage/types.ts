@@ -75,7 +75,6 @@ export interface ReadOnlyDiskConfig {
 
 export interface CustomDiskConfig {
     driver: string
-
     [option: string]: unknown
 }
 

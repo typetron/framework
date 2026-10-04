@@ -9,12 +9,12 @@ export class SeederManager {
     ) {}
 
     async seed() {
-        const files = await this.storage
+        const files = this.storage
             .files(this.directory, true)
-            .where("extension", "ts")
+            .where('extension', 'ts')
             .whenEmpty(() => console.log('Nothing to seed!'))
 
-        files.forEachAsync(async file => {
+        await files.forEachAsync(async file => {
             await this.getSeed(file.path).run()
         })
     }

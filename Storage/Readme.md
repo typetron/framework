@@ -137,30 +137,11 @@ public ACLs.
 
 Composition drivers wrap any named disk without changing its implementation:
 
-```ts
+```
 disks: {
-    s3: {
-        driver: 's3', bucket
-    :
-        'app', region
-    :
-        'eu-central-1'
-    }
-,
-    avatars: {
-        driver: 'scoped', disk
-    :
-        's3', prefix
-    :
-        'users/avatars'
-    }
-,
-    assets: {
-        driver: 'read-only', disk
-    :
-        's3'
-    }
-,
+    s3: {driver: 's3', bucket: 'app', region: 'eu-central-1'},
+    avatars: {driver: 'scoped', disk: 's3', prefix: 'users/avatars'},
+    assets: {driver: 'read-only', disk: 's3'},
 }
 ```
 
