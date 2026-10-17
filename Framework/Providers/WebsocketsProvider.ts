@@ -33,6 +33,10 @@ export class WebsocketsProvider extends Provider {
 
         const stringDecoder = new TextDecoder()
 
+        // When a WebSocket connection closes, actions already in progress may finish, but the provider skips their success and error responses.
+        //     This also applies when the connection closes during error handling. Responses are not retried or sent to a replacement connection.
+        const closedSockets = new WeakSet<uWebSocket<any>>()
+
         const app = App().get('/*', res => {
             res.cork(() => {
                 res.end('Typetron Websockets server. Please do not use this url. Work in progress')
@@ -52,6 +56,7 @@ export class WebsocketsProvider extends Provider {
                 this.handler.onOpen?.run(socketWrapper.connection.container, {})
             },
             close: async (socket: uWebSocket<any>, code, message) => {
+                closedSockets.add(socket)
                 console.info('connection closed', code, Buffer.from(message).toString())
                 const extendedSocket = socket as uWebSocket<any> & {container: Container}
                 await this.handler.onClose?.run(extendedSocket.container, {}).catch(error => {
@@ -73,6 +78,9 @@ export class WebsocketsProvider extends Provider {
                             stack: error.stack?.split('\n') ?? ['<could not generate stack>']
                         },
                         status: WebsocketMessageStatus.Error
+                    }
+                    if (closedSockets.has(socket)) {
+                        return
                     }
                     socket.cork(() => {
                         socket.send(JSON.stringify(errorMessage), isBinary, true)
@@ -98,6 +106,9 @@ export class WebsocketsProvider extends Provider {
                         sentResponse.status = WebsocketMessageStatus.Error
                     }
 
+                    if (closedSockets.has(socket)) {
+                        return
+                    }
                     socket.cork(() => {
                         socket.send(JSON.stringify(sentResponse), isBinary, true)
                     })
@@ -118,6 +129,9 @@ export class WebsocketsProvider extends Provider {
                         errorMessage.message.message = response.body.message
                     }
                     console.error(errorMessage)
+                    if (closedSockets.has(socket)) {
+                        return
+                    }
                     socket.cork(() => {
                         socket.send(JSON.stringify(errorMessage), isBinary, true)
                     })

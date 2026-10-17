@@ -10,6 +10,7 @@ import * as fs from 'fs'
 import * as Url from 'fast-url-parser'
 import { Readable } from 'stream'
 import path from 'node:path'
+import { pipeline } from 'node:stream/promises'
 import { Request as BaseRequest } from '@Typetron/Router/Request'
 
 const cacheURLs = new Array<{url: string, instance: URL}>(100)
@@ -111,21 +112,16 @@ export class Request extends BaseRequest {
             const formDataParser = busboy({headers: incomingMessage.headers})
             const files: Record<string, File | File[]> = {}
             const content: Record<string, string> = {}
+            const writes: Promise<void>[] = []
 
             formDataParser.on('file', function(fieldName: string, file: Readable, {filename, encoding, mimeType}: FileInfo) {
                 const extension = filename.split('.').pop()
                 const temporaryPath = path.join(os.tmpdir(), `upload_${new Date().getTime().toString()}_${String.randomAlphaNum(9)}.${extension}`)
                 const fileInstance = new UploadedFile(temporaryPath, filename, mimeType)
 
-                const stream = fs.createWriteStream(fileInstance.path)
-                stream.on('error', reject)
+                writes.push(pipeline(file, fs.createWriteStream(fileInstance.path)))
 
-                file.on('data', function(data) {
-                    stream.write(data)
-                })
                 file.on('end', function() {
-                    stream.end()
-
                     const field = files[fieldName]
                     files[fieldName] = field instanceof Array ? [...field, fileInstance] : field ? [field, fileInstance] : fileInstance
                 })
@@ -134,7 +130,7 @@ export class Request extends BaseRequest {
                 content[fieldName] = value
             })
             formDataParser.on('finish', function() {
-                resolve([content, files])
+                Promise.all(writes).then(() => resolve([content, files]), reject)
             })
 
             incomingMessage.pipe(formDataParser)
