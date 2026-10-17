@@ -28,6 +28,7 @@ export class ClassResolver extends BaseResolver {
         const instance = new abstract(...parameters)
 
         const metadata = InjectableMetadata.get(abstract)
+        this.defineAccessors(instance, metadata)
         let asyncDependencies = 0
         let resolve: (value: T | PromiseLike<T>) => void
         let reject: (reason?: unknown) => void
@@ -62,6 +63,26 @@ export class ClassResolver extends BaseResolver {
         }
 
         return instance
+    }
+
+    /**
+     * Accessor properties resolve on every read so later container changes (e.g. faked disks) are seen.
+     * Defined on the instance so class field declarations can't shadow them. Assigning a value pins it.
+     */
+    private defineAccessors<T>(instance: T, metadata: InjectableMetadata) {
+        const container = this.container
+        for (const property in metadata.accessors) {
+            const accessor = metadata.accessors[property]
+            let pinned: unknown
+            Object.defineProperty(instance, property, {
+                configurable: true,
+                enumerable: true,
+                get: () => pinned ?? accessor(container),
+                set: (value: unknown) => {
+                    pinned = value
+                },
+            })
+        }
     }
 
     // TODO figure out how to use this better

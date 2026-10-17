@@ -149,13 +149,28 @@ A scoped disk exposes only keys below its prefix. Mutating a read-only disk thro
 
 ## Testing
 
-`fake` replaces a named disk with an isolated in-memory driver:
+Services can inject a disk with `@Disk(name)`, or `@Disk()` for the default disk:
+
+```ts
+class AvatarService {
+    @Disk('avatars')
+    avatars: StorageDisk
+
+    async uploadAvatar(userId: number, upload: UploadedFile) {
+        await this.avatars.putFile(`users/${userId}.jpg`, upload)
+    }
+}
+```
+
+`fake` replaces a named disk with an isolated in-memory driver. `@Disk` resolves the disk on every access, so the fake
+also applies to services that were already built:
 
 ```ts
 const avatars = storage.fake('avatars')
-await service.uploadAvatar(upload)
+await app.get(AvatarService).uploadAvatar(1, upload)
 await avatars.assertExists('users/1.jpg')
 await avatars.assertCount('users', 1, true)
+storage.forget('avatars') // back to the configured disk
 ```
 
 ## Custom Drivers

@@ -1,6 +1,10 @@
 import { Resolver } from './Resolver'
 import { ServiceIdentifier } from './Contracts'
 import { MetadataKey } from '../Support/Metadata'
+import type { Container } from './Container'
+
+/** Resolves a property's value each time it is read */
+export type PropertyAccessor = (container: Container) => unknown
 
 export enum Scope {
     TRANSIENT = 'TRANSIENT',
@@ -14,4 +18,5 @@ export class InjectableMetadata extends MetadataKey('injectable') {
 
     scope: Scope = Scope.SINGLETON
     dependencies: {[key: string]: ServiceIdentifier<{}>} = {}
+    accessors: {[key: string]: PropertyAccessor} = {}
 }

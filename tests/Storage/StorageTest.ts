@@ -1,6 +1,8 @@
 import { suite, test } from '@testdeck/mocha'
 import { Filesystem, InvalidStorageKey, MemoryDriver, ReadOnlyStorage, Storage, StorageDisk, UploadedFile, } from '../../Storage'
 import { expect } from 'chai'
+import { Container } from '../../Container'
+import { Disk } from '../../Storage/Decorators'
 
 const directory = './tests/Storage/.storage'
 
@@ -87,6 +89,43 @@ class StorageTest {
         const memory = this.storage.disk('memory')
         await memory.putFile('uploads/1.txt', upload)
         expect((await memory.read('uploads/1.txt')).toString()).to.equal('uploaded')
+    }
+
+    @test
+    async injectsDisksResolvedOnEveryAccess() {
+        class Avatars {
+            @Disk('memory')
+            avatars: StorageDisk
+
+            @Disk()
+            defaultDisk: StorageDisk
+        }
+
+        const container = new Container()
+        container.set(Storage, this.storage)
+        const service = container.get(Avatars)
+        expect(service.avatars).to.equal(this.storage.disk('memory'))
+        expect(service.defaultDisk).to.equal(this.storage.disk('local'))
+
+        const fake = this.storage.fake('memory')
+        expect(service.avatars).to.equal(fake)
+        this.storage.forget('memory')
+        expect(service.avatars).to.not.equal(fake)
+    }
+
+    @test
+    async pinsAssignedDisks() {
+        class Avatars {
+            @Disk('memory')
+            avatars: StorageDisk
+        }
+
+        const container = new Container()
+        container.set(Storage, this.storage)
+        const service = container.get(Avatars)
+        const pinned = this.storage.build({driver: 'memory'})
+        service.avatars = pinned
+        expect(service.avatars).to.equal(pinned)
     }
 
     @test
