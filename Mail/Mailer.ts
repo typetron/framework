@@ -6,7 +6,7 @@ import { MailAddress } from '@Typetron/Mail/MailAddress'
 export class Mailer {
     transport: MailTransport
 
-    constructor(public from: MailAddress, transport?: MailTransport) {
+    constructor(public from: MailAddress, transport?: MailTransport, public replyTo?: Mailable['replyTo']) {
         if (!transport) {
             throw new Error('Please add the MailProvider in your app in order to use the Mailing feature, ' +
                 'or manually add a Mailer instance in the app container ')
@@ -22,6 +22,7 @@ export class Mailer {
     }
 
     async send(message: Mailable) {
+        message.replyTo ??= this.replyTo
         return await this.transport.send(message)
     }
 }

@@ -59,7 +59,7 @@ export class PendingMail {
         mail.subject = this.details.subject
         mail.from = this.details.from
         mail.to = this.details.to
-        mail.replyTo = this.details.replyTo
+        mail.replyTo = this.details.replyTo ?? mail.replyTo
         mail.cc = this.details.cc
         mail.bcc = this.details.bcc
 

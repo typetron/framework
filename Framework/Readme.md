@@ -62,6 +62,7 @@ assets are served when `staticAssets` entries are present.
 
 `MailConfig.default` supports `memory`, `SendGrid`, and `Cloudflare`. Cloudflare requires `mailers.Cloudflare.accountId` and
 `mailers.Cloudflare.apiToken`; see [Mail configuration](../Mail/Readme.md#cloudflare).
+Optional `MailConfig.replyTo` sets the default Reply-To; explicit per-message values override it.
 
 Authentication configuration must provide a signing `signature`. If it is missing, application creation throws an error stating that
 `APP_SECRET` is not set up.

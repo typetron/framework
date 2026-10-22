@@ -1,5 +1,5 @@
 import { BaseConfig } from './BaseConfig'
-import type { CloudflareTransportConfig } from '@Typetron/Mail'
+import type { CloudflareTransportConfig, Mailable } from '@Typetron/Mail'
 
 export type Mailers = keyof MailConfig['mailers']
 
@@ -10,6 +10,8 @@ export class MailConfig extends BaseConfig<MailConfig> {
         email: string,
         name?: string,
     }
+
+    replyTo?: Mailable['replyTo']
 
     mailers: {
         memory: any,

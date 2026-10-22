@@ -33,6 +33,6 @@ export class MailProvider extends Provider {
 
     public register() {
         const transport = mailers[this.config.default]?.(this.app, this.config)
-        this.app.set(Mailer, new Mailer(this.config.from, transport))
+        this.app.set(Mailer, new Mailer(this.config.from, transport, this.config.replyTo))
     }
 }

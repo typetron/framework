@@ -45,4 +45,20 @@ class MailProviderTest {
         const mailer = this.register({default: 'memory', from: {email: 'hello@example.com'}})
         expect(mailer.transport).to.be.instanceOf(MemoryTransport)
     }
+
+    @test
+    async appliesConfiguredReplyToAndAllowsPerMessageOverride() {
+        const replyTo = {email: 'support@example.com', name: 'Support'}
+        const mailer = this.register({default: 'memory', from: {email: 'hello@example.com'}, replyTo})
+
+        expect((await mailer.to('john@example.com').send('Hello')).replyTo).to.deep.equal(replyTo)
+        expect((await mailer.to('john@example.com').replyTo('override@example.com').send('Hello')).replyTo)
+            .to.equal('override@example.com')
+    }
+
+    @test
+    async leavesReplyToUnsetWithoutConfiguration() {
+        const mailer = this.register({default: 'memory', from: {email: 'hello@example.com'}})
+        expect((await mailer.to('john@example.com').send('Hello')).replyTo).to.equal(undefined)
+    }
 }

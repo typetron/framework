@@ -79,4 +79,55 @@ class MailerTest {
             text: `Order #${order.id} shipped`
         })
     }
+
+    @test
+    async appliesDefaultReplyToToFluentAndDirectMessages() {
+        const replyTo = {email: 'support@example.com', name: 'Support'}
+        const mailer = new Mailer(this.mail.from, new MemoryTransport(), replyTo)
+        const fluent = await mailer.to('john@example.com').send('Hello')
+        const direct = await mailer.send(new OrderShipped(new Order(1234)))
+
+        expect(fluent.replyTo).to.deep.equal(replyTo)
+        expect(direct.replyTo).to.deep.equal(replyTo)
+    }
+
+    @test
+    async perMessageReplyToOverridesDefaultWithoutChangingLaterMessages() {
+        const mailer = new Mailer(this.mail.from, new MemoryTransport(), 'default@example.com')
+        const overridden = await mailer.to('john@example.com').replyTo('override@example.com').send('Hello')
+        const following = await mailer.to('jane@example.com').send('Hello')
+
+        expect(overridden.replyTo).to.equal('override@example.com')
+        expect(following.replyTo).to.equal('default@example.com')
+    }
+
+    @test
+    async preservesExplicitMailableReplyToForFluentAndDirectMessages() {
+        const mailer = new Mailer(this.mail.from, new MemoryTransport(), 'default@example.com')
+        for (const fluent of [false, true]) {
+            const message = new OrderShipped(new Order(1234))
+            message.replyTo = ['support@example.com', {email: 'help@example.com', name: 'Help'}]
+            const sent = fluent ? await mailer.to('john@example.com').send(message) : await mailer.send(message)
+            expect(sent.replyTo).to.deep.equal(['support@example.com', {email: 'help@example.com', name: 'Help'}])
+        }
+    }
+
+    @test
+    async fluentReplyToOverridesMailableReplyTo() {
+        const mailer = new Mailer(this.mail.from, new MemoryTransport(), 'default@example.com')
+        const message = new OrderShipped(new Order(1234))
+        message.replyTo = 'mailable@example.com'
+        const sent = await mailer.to('john@example.com').replyTo('override@example.com').send(message)
+
+        expect(sent.replyTo).to.equal('override@example.com')
+    }
+
+    @test
+    async leavesReplyToUnsetWhenNoDefaultIsConfigured() {
+        const fluent = await this.mail.to('john@example.com').send('Hello')
+        const direct = await this.mail.send(new OrderShipped(new Order(1234)))
+
+        expect(fluent.replyTo).to.equal(undefined)
+        expect(direct.replyTo).to.equal(undefined)
+    }
 }

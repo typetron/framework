@@ -18,8 +18,7 @@ performs the delivery.
 ## Configuration
 
 Applications normally register `MailProvider` and configure `MailConfig`. The `default` mailer may be `memory`, `SendGrid`, or `Cloudflare`,
-and `from`
-supplies the default sender.
+and `from` supplies the default sender. Optional `replyTo` supplies the default reply address.
 
 ```ts
 import { MailConfig } from '@Typetron/Framework'
@@ -30,11 +29,18 @@ export default new MailConfig({
         email: 'hello@example.com',
         name: 'Typetron',
     },
+    replyTo: 'support@example.com',
 })
 ```
 
 The SendGrid transport also requires `mailers.SendGrid.key`. Constructing `Mailer` without a transport throws an error instructing the
 application to register `MailProvider` or bind a mailer manually.
+
+`replyTo` accepts an email string, a `{email, name?}` address, or an array of these. It applies to outgoing messages without an explicit
+Reply-To, including messages passed directly to `Mailer.send`. A fluent `.replyTo(...)` overrides the mailable's own `replyTo`, which
+in turn overrides the configured default. Without a default, messages with no explicit Reply-To leave it unset.
+
+For manual setup, pass the default as the third argument: `new Mailer(from, transport, replyTo)`.
 
 ## Defining Mailables
 
