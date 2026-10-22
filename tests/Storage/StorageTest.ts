@@ -1,6 +1,18 @@
 import { suite, test } from '@testdeck/mocha'
-import { Filesystem, InvalidStorageKey, MemoryDriver, ReadOnlyStorage, Storage, StorageDisk, UploadedFile, } from '../../Storage'
+import {
+    Filesystem,
+    InvalidStorageKey,
+    MemoryDriver,
+    ReadOnlyStorage,
+    Storage,
+    StorageDisk,
+    StorageSymbolicLink,
+    UploadedFile,
+} from '../../Storage'
 import { expect } from 'chai'
+import { mkdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { Container } from '../../Container'
 import { Disk } from '../../Storage/Decorators'
 
@@ -126,6 +138,24 @@ class StorageTest {
         const pinned = this.storage.build({driver: 'memory'})
         service.avatars = pinned
         expect(service.avatars).to.equal(pinned)
+    }
+
+    @test
+    async refusesSymbolicLinksInsideLocalRoot() {
+        const outside = path.join(tmpdir(), `typetron-outside-${Date.now()}`)
+        await mkdir(outside, {recursive: true})
+        await writeFile(path.join(outside, 'secret.txt'), 'secret')
+        await mkdir(directory, {recursive: true})
+        await symlink(outside, path.join(directory, 'linked'))
+
+        try {
+            await this.expectError(this.storage.read('linked/secret.txt'), StorageSymbolicLink)
+            await this.expectError(this.storage.put('linked/new.txt', 'x'), StorageSymbolicLink)
+            await this.expectError(this.storage.delete('linked/secret.txt'), StorageSymbolicLink)
+            expect(await this.storage.exists('linked/secret.txt')).to.be.false
+        } finally {
+            await rm(outside, {recursive: true, force: true})
+        }
     }
 
     @test

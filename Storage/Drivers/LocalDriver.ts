@@ -5,7 +5,7 @@ import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
 import { PathPrefixer } from '../PathPrefixer'
 import { StorageDriver } from '../StorageDriver'
-import { StorageFileNotFound, UnsupportedStorageOperation } from '../errors'
+import { StorageFileNotFound, StorageSymbolicLink, UnsupportedStorageOperation } from '../errors'
 import { FileMetadata, ListOptions, LocalDiskConfig, StorageContent, StorageEntry, Visibility, WriteOptions } from '../types'
 
 export class LocalDriver extends StorageDriver {
@@ -16,7 +16,7 @@ export class LocalDriver extends StorageDriver {
     }
 
     async write(key: string, content: StorageContent, options: WriteOptions = {}): Promise<void> {
-        const destination = this.path(key)
+        const destination = await this.path(key)
         await fileSystem.mkdir(path.dirname(destination), {recursive: true})
         if (content instanceof Readable) {
             await pipeline(content, fs.createWriteStream(destination))
@@ -28,7 +28,7 @@ export class LocalDriver extends StorageDriver {
 
     async read(key: string): Promise<Buffer> {
         try {
-            return await fileSystem.readFile(this.path(key))
+            return await fileSystem.readFile(await this.path(key))
         } catch (error) {
             if ((error as {code?: string}).code === 'ENOENT') {
                 throw new StorageFileNotFound(key)
@@ -41,12 +41,12 @@ export class LocalDriver extends StorageDriver {
         if (!(await this.exists(key))) {
             throw new StorageFileNotFound(key)
         }
-        return fs.createReadStream(this.path(key))
+        return fs.createReadStream(await this.path(key))
     }
 
     async exists(key: string): Promise<boolean> {
         try {
-            return (await fileSystem.stat(this.path(key))).isFile()
+            return (await fileSystem.stat(await this.path(key))).isFile()
         } catch {
             return false
         }
@@ -54,7 +54,7 @@ export class LocalDriver extends StorageDriver {
 
     async metadata(key: string): Promise<FileMetadata> {
         try {
-            const stats = await fileSystem.stat(this.path(key))
+            const stats = await fileSystem.stat(await this.path(key))
             if (!stats.isFile()) {
                 throw new StorageFileNotFound(key)
             }
@@ -73,7 +73,7 @@ export class LocalDriver extends StorageDriver {
 
     async* list(prefix = '', options: ListOptions = {}): AsyncIterable<StorageEntry> {
         const normalizedPrefix = this.prefixer.normalize(prefix, true)
-        const directory = normalizedPrefix ? this.path(normalizedPrefix) : path.resolve(this.config.root)
+        const directory = normalizedPrefix ? await this.path(normalizedPrefix) : path.resolve(this.config.root)
         if (!(await fileSystem.stat(directory).catch(() => undefined))?.isDirectory()) {
             return
         }
@@ -81,7 +81,7 @@ export class LocalDriver extends StorageDriver {
     }
 
     async delete(key: string): Promise<void> {
-        await fileSystem.unlink(this.path(key)).catch((error: {code?: string}) => {
+        await fileSystem.unlink(await this.path(key)).catch((error: {code?: string}) => {
             if (error.code !== 'ENOENT') {
                 throw error
             }
@@ -89,14 +89,14 @@ export class LocalDriver extends StorageDriver {
     }
 
     async deleteDirectory(prefix: string): Promise<void> {
-        await fileSystem.rm(this.path(prefix), {recursive: true, force: true})
+        await fileSystem.rm(await this.path(prefix), {recursive: true, force: true})
     }
 
     async copy(source: string, destination: string): Promise<void> {
-        const destinationPath = this.path(destination)
+        const destinationPath = await this.path(destination)
         await fileSystem.mkdir(path.dirname(destinationPath), {recursive: true})
         try {
-            await fileSystem.copyFile(this.path(source), destinationPath)
+            await fileSystem.copyFile(await this.path(source), destinationPath)
         } catch (error) {
             if ((error as {code?: string}).code === 'ENOENT') {
                 throw new StorageFileNotFound(source)
@@ -106,10 +106,10 @@ export class LocalDriver extends StorageDriver {
     }
 
     async move(source: string, destination: string): Promise<void> {
-        const destinationPath = this.path(destination)
+        const destinationPath = await this.path(destination)
         await fileSystem.mkdir(path.dirname(destinationPath), {recursive: true})
         try {
-            await fileSystem.rename(this.path(source), destinationPath)
+            await fileSystem.rename(await this.path(source), destinationPath)
         } catch (error) {
             if ((error as {code?: string}).code === 'ENOENT') {
                 throw new StorageFileNotFound(source)
@@ -120,7 +120,7 @@ export class LocalDriver extends StorageDriver {
 
     async visibility(key: string): Promise<Visibility> {
         try {
-            return this.visibilityFromMode((await fileSystem.stat(this.path(key))).mode)
+            return this.visibilityFromMode((await fileSystem.stat(await this.path(key))).mode)
         } catch (error) {
             if ((error as {code?: string}).code === 'ENOENT') {
                 throw new StorageFileNotFound(key)
@@ -131,7 +131,7 @@ export class LocalDriver extends StorageDriver {
 
     async setVisibility(key: string, visibility: Visibility): Promise<void> {
         try {
-            await fileSystem.chmod(this.path(key), visibility === 'public' ? 0o644 : 0o600)
+            await fileSystem.chmod(await this.path(key), visibility === 'public' ? 0o644 : 0o600)
         } catch (error) {
             if ((error as {code?: string}).code === 'ENOENT') {
                 throw new StorageFileNotFound(key)
@@ -147,8 +147,30 @@ export class LocalDriver extends StorageDriver {
         return `${this.config.url.replace(/\/$/, '')}/${this.encodeKey(key)}`
     }
 
-    private path(key: string): string {
-        return this.prefixer.resolve(this.config.root, key)
+    /**
+     * Resolves a key to its local path and refuses any symbolic link along it, so a link created inside the root
+     * can't redirect reads or writes outside of it.
+     */
+    private async path(key: string): Promise<string> {
+        const resolved = this.prefixer.resolve(this.config.root, key)
+        const root = path.resolve(this.config.root)
+        let current = root
+        for (const segment of path.relative(root, resolved).split(path.sep).filter(Boolean)) {
+            current = path.join(current, segment)
+            const stats = await fileSystem.lstat(current).catch((error: {code?: string}) => {
+                if (error.code === 'ENOENT') {
+                    return undefined
+                }
+                throw error
+            })
+            if (!stats) {
+                break
+            }
+            if (stats.isSymbolicLink()) {
+                throw new StorageSymbolicLink(key)
+            }
+        }
+        return resolved
     }
 
     private async* listDirectory(directory: string, prefix: string, recursive: boolean): AsyncIterable<StorageEntry> {

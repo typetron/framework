@@ -10,6 +10,12 @@ export class SentMessage {
     readonly cc?: string | MailAddress | (string | MailAddress)[]
     readonly bcc?: string | MailAddress | (string | MailAddress)[]
 
+    messageId?: string
+    delivered?: string[]
+    queued?: string[]
+    permanentBounces?: string[]
+    suppressedRecipients?: string[]
+
     constructor(mail: Mailable) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const {content, ...mailDetails} = mail

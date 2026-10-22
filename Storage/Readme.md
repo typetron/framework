@@ -57,6 +57,9 @@ export default new StorageConfig({
 AWS disks use the SDK's default credential chain when `credentials` is omitted. The S3 driver is loaded only when an S3 disk is resolved;
 applications using it must install `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner`.
 
+Local disks refuse keys that pass through a symbolic link inside the root and throw `StorageSymbolicLink`, so a link
+created in the disk can't redirect reads or writes outside of it.
+
 ## Using Disks
 
 Register `StorageProvider`, then inject or resolve `Storage`. Methods on `Storage` target the default disk; `disk` selects another
@@ -108,7 +111,8 @@ Directories are logical prefixes. Writing `users/1/avatar.jpg` creates required 
 
 ## Uploads and Metadata
 
-HTTP multipart parsing produces `UploadedFile` instances backed by temporary local files. `putFile` streams the upload to its destination.
+HTTP multipart parsing produces `UploadedFile` instances backed by temporary local files, with `size` set once the upload is
+written. `putFile` streams the upload to its destination.
 
 ```ts
 const avatar = request.files.avatar as UploadedFile

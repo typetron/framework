@@ -4,7 +4,7 @@ import { Mailable } from '../Mailable'
 import { Inject } from '../../Container'
 import { MailConfig } from '../../Framework'
 import client from '@sendgrid/mail'
-import { HttpError } from '@Typetron/Router/Http'
+import { MailError } from '../MailError'
 
 export class SendGridTransport extends MailTransport {
     messages: SentMessage[] = []
@@ -88,7 +88,19 @@ export class SendGridTransport extends MailTransport {
 
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         /* @ts-ignore */ // SendGrid has TS issues
-        await client.send(sendGridMessage).catch(error => {throw new HttpError(error.response.body.errors, error.code)})
+        const [response] = await client.send(sendGridMessage).catch(error => {
+            throw new MailError('SendGrid mail request failed', {
+                provider: 'SendGrid',
+                status: typeof error.code === 'number' ? error.code : undefined,
+                context: error.response?.body,
+                cause: error,
+            })
+        })
+
+        const messageId = response.headers['x-message-id']
+        if (typeof messageId === 'string') {
+            sentMessage.messageId = messageId
+        }
 
         return sentMessage
     }

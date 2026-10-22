@@ -3,7 +3,7 @@
 import { Container, Inject } from '@Typetron/Container'
 import { Provider } from '../Provider'
 import { MailConfig, Mailers } from '../Config'
-import { Mailer, MemoryTransport } from '@Typetron/Mail'
+import { CloudflareTransport, Mailer, MailError, MemoryTransport } from '@Typetron/Mail'
 import { MailTransport } from '@Typetron/Mail/MailTransport'
 import { SendGridTransport } from '@Typetron/Mail/Transports/SendGridTransport'
 
@@ -12,11 +12,18 @@ const mailers: Partial<Record<Mailers, (...args: any[]) => MailTransport>> = {
         return new MemoryTransport()
     },
     SendGrid: (app: Container, config: MailConfig) => {
-        if (!config.mailers.SendGrid?.key) {
-            throw new Error('SendGrid key is not set')
+        if (!config.mailers?.SendGrid?.key) {
+            throw new MailError('SendGrid key is not set', {provider: 'SendGrid'})
         }
 
         return new SendGridTransport(config.mailers.SendGrid?.key)
+    },
+    Cloudflare: (app: Container, config: MailConfig) => {
+        const options = config.mailers?.Cloudflare
+        if (!options) {
+            throw new MailError('Cloudflare accountId and apiToken are required', {provider: 'Cloudflare'})
+        }
+        return new CloudflareTransport(options)
     },
 }
 

@@ -1,3 +1,6 @@
 export * from './Transports/MemoryTransport'
+export * from './Transports/CloudflareTransport'
+export * from './SentMessage'
+export * from './MailError'
 export * from './Mailer'
 export * from './Mailable'

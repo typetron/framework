@@ -1,8 +1,10 @@
 import { suite, test } from '@testdeck/mocha'
 import { expect } from 'chai'
 import { Http, Request } from '../../Router/Http'
-import { IncomingHttpHeaders } from 'http'
-import { File } from '../../Storage'
+import { IncomingHttpHeaders, IncomingMessage } from 'http'
+import { readFile } from 'node:fs/promises'
+import { Readable } from 'node:stream'
+import { File, UploadedFile } from '../../Storage'
 
 @suite
 class RequestTest {
@@ -73,5 +75,26 @@ class RequestTest {
     'header value is returned'() {
         expect(this.request.getHeader('random header')).to.deep.equal('text/html')
     }
-}
 
+    @test
+    async multipartUploadsAreWrittenWithTheirSize() {
+        const boundary = 'typetron-boundary'
+        const body = [
+            `--${boundary}`,
+            'Content-Disposition: form-data; name="file"; filename="hello.txt"',
+            'Content-Type: text/plain',
+            '',
+            'hello world',
+            `--${boundary}--`,
+            '',
+        ].join('\r\n')
+        const message = Readable.from([Buffer.from(body)]) as unknown as IncomingMessage
+        message.headers = {'content-type': `multipart/form-data; boundary=${boundary}`}
+
+        const [, files] = await Request.loadMultipartContent(message)
+        const file = files.file as UploadedFile
+
+        expect(file.size).to.equal(11)
+        expect((await readFile(file.temporaryPath)).toString()).to.equal('hello world')
+    }
+}

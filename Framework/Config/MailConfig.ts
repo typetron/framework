@@ -1,4 +1,5 @@
 import { BaseConfig } from './BaseConfig'
+import type { CloudflareTransportConfig } from '@Typetron/Mail'
 
 export type Mailers = keyof MailConfig['mailers']
 
@@ -16,6 +17,7 @@ export class MailConfig extends BaseConfig<MailConfig> {
         SendGrid?: {
             key: string,
         },
+        Cloudflare?: CloudflareTransportConfig,
         SES?: {
             // TODO
         },

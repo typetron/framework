@@ -35,3 +35,9 @@ export class ReadOnlyStorage extends StorageError {
         super('The storage disk is read-only.')
     }
 }
+
+export class StorageSymbolicLink extends StorageError {
+    constructor(key: string) {
+        super(`Storage key '${key}' resolves through a symbolic link.`)
+    }
+}

@@ -119,7 +119,9 @@ export class Request extends BaseRequest {
                 const temporaryPath = path.join(os.tmpdir(), `upload_${new Date().getTime().toString()}_${String.randomAlphaNum(9)}.${extension}`)
                 const fileInstance = new UploadedFile(temporaryPath, filename, mimeType)
 
-                writes.push(pipeline(file, fs.createWriteStream(fileInstance.path)))
+                writes.push(pipeline(file, fs.createWriteStream(fileInstance.path)).then(async () => {
+                    fileInstance.size = (await fs.promises.stat(fileInstance.path)).size
+                }))
 
                 file.on('end', function() {
                     const field = files[fieldName]

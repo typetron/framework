@@ -1,5 +1,5 @@
 import { suite, test } from '@testdeck/mocha'
-import { Mailable, Mailer, MemoryTransport } from '@Typetron/Mail'
+import { Mailable, Mailer, MemoryTransport, SentMessage } from '@Typetron/Mail'
 import { expect } from 'chai'
 
 class Order {
@@ -41,6 +41,12 @@ class MailerTest {
         expect(sentMessage.cc).to.equal('moreUsers@example.com')
         expect(sentMessage.bcc).to.equal('evenMoreUsers@example.com')
         expect(sentMessage.body).to.equal('Order #123 shipped')
+        expect(sentMessage).to.be.instanceOf(SentMessage)
+        expect(sentMessage.messageId).to.equal(undefined)
+        expect(sentMessage.delivered).to.equal(undefined)
+        expect(sentMessage.queued).to.equal(undefined)
+        expect(sentMessage.permanentBounces).to.equal(undefined)
+        expect(sentMessage.suppressedRecipients).to.equal(undefined)
     }
 
     @test
