@@ -1,5 +1,5 @@
 import { BaseConfig } from './BaseConfig'
-import { MysqlDriver, SqliteDriver } from '@Typetron/Database'
+import { MysqlDriver, PostgresDriver, SqliteDriver } from '@Typetron/Database'
 import { DatabaseDriver } from '@Typetron/Database/Drivers/DatabaseDriver'
 
 export class DatabaseConfig extends BaseConfig<DatabaseConfig> {
@@ -13,6 +13,13 @@ export class DatabaseConfig extends BaseConfig<DatabaseConfig> {
         sqlite: () => new SqliteDriver(process.env.database ?? 'database.sqlite'),
         mysql: () => new MysqlDriver({
             host: process.env.databaseHost,
+            user: process.env.databaseUser,
+            password: process.env.databasePassword,
+            database: process.env.database,
+        }),
+        postgres: () => new PostgresDriver({
+            host: process.env.databaseHost,
+            port: process.env.databasePort ? Number(process.env.databasePort) : undefined,
             user: process.env.databaseUser,
             password: process.env.databasePassword,
             database: process.env.database,

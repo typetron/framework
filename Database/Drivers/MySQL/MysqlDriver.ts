@@ -1,6 +1,6 @@
-import { DatabaseDriver } from '../DatabaseDriver'
 import { Connection, ConnectionConfig, createConnection, OkPacket } from 'mysql'
 import { SqlValue } from '../../Types'
+import { DatabaseDriver } from '../DatabaseDriver'
 import { Create } from './Create'
 import { Select } from '../SQL/Statements/Select'
 import { Insert } from '../SQL/Statements/Insert'
@@ -75,25 +75,8 @@ export class MysqlDriver extends DatabaseDriver {
         return (await this.runRaw(query, params) as OkPacket).insertId
     }
 
-    tables() {
-        return this.get<{name: string}>(
-            `select TABLE_NAME as name
-             from information_schema.TABLES
-             WHERE table_schema = ?
-            `,
-            [this.connection.config.database]
-        )
-    }
-
-    tableExists(table: string): Promise<boolean> {
-        return this.first(
-            `select *
-             from information_schema.tables
-             where table_name = ?
-               and table_schema = ?
-            `,
-            [table, this.connection.config.database]
-        )
+    protected currentSchema(): [string, SqlValue[]] {
+        return ['?', [this.connection.config.database]]
     }
 
     async tableColumns(table: string) {

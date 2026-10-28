@@ -8,8 +8,8 @@
 
 ## Introduction
 
-The Database module contains Typetron's connection layer, SQL query builder, schema drivers, and entity ORM. SQLite and MySQL use the same
-`Query` and `Entity` APIs.
+The Database module contains Typetron's connection layer, SQL query builder, schema drivers, and entity ORM. SQLite, MySQL, and Postgres use
+the same `Query` and `Entity` APIs.
 
 ## Configuration
 
@@ -29,8 +29,17 @@ export const config = new DatabaseConfig({
 Query.connection = new Connection(new SqliteDriver(':memory:'))
 ```
 
-The built-in SQLite driver reads `process.env.database` and otherwise uses `database.sqlite`. The MySQL driver reads the database host,
-user, password, and database environment values. All queries and entities use the static `Query.connection`.
+The built-in SQLite driver reads `process.env.database` and otherwise uses `database.sqlite`. The MySQL and Postgres drivers read the
+`databaseHost`, `databaseUser`, `databasePassword`, and `database` environment values; Postgres also reads `databasePort`. Select a driver
+with `driver: 'mysql'` or `driver: 'postgres'`, or the `databaseDriver` environment value. All queries and entities use the static
+`Query.connection`.
+
+Postgres notes:
+
+- Query placeholders are written as `?` and translated to `$1`, `$2`, ...; avoid the Postgres `?` JSON operators in raw SQL.
+- `insertOne` reads the id from `lastval()`, so the table needs an identity column. `@PrimaryColumn` creates one when the schema is
+  synchronized.
+- `limit` is not supported on `update` and `delete` queries and throws an error.
 
 ## Queries and Entities
 

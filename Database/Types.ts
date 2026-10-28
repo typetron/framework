@@ -1,6 +1,7 @@
 import { Query } from './Query'
 import { StringExpression } from './StringExpression'
 import { EntityQuery } from './EntityQuery'
+import { wrap } from './Helpers'
 
 export enum Operators {
     '=' = '=',
@@ -109,7 +110,7 @@ class SqlExpression implements SqlClause {
 
 export class WhereExpression extends SqlExpression {
     constructor(public column: string, public expression: SqlExpression, public boolean: BooleanOperator) {
-        super(`${boolean} ${column} ${expression.toSql()}`, expression.getValues())
+        super(`${boolean} ${wrap(column)} ${expression.toSql()}`, expression.getValues())
     }
 }
 

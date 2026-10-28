@@ -395,14 +395,14 @@ export class BelongsToManyField<T extends Entity, R extends Entity> extends Inve
 
     async getRelatedValue(parents: R[], eagerLoad: EntityQuery<T>['eagerLoad'], customQuery?: (query: Query) => void) {
         const parentIds = parents.pluck(this.entity.getPrimaryKey()) as number[]
-        const relatedForeignKey = `${wrap(this.getPivotTable())}.${this.getRelatedForeignKey()}`
-        const parentForeignKey = `${wrap(this.getPivotTable())}.${this.getParentForeignKey()}`
-        const relatedKey = `${wrap(this.related.getTable())}.${this.related.getPrimaryKey()}`
+        const relatedForeignKey = wrap(`${this.getPivotTable()}.${this.getRelatedForeignKey()}`)
+        const parentForeignKey = wrap(`${this.getPivotTable()}.${this.getParentForeignKey()}`)
+        const relatedKey = wrap(`${this.related.getTable()}.${String(this.related.getPrimaryKey())}`)
 
         const query = this.related
             .with(...eagerLoad)
             .addSelect(
-                new StringExpression(`${wrap(this.related.getTable())}.*`),
+                new StringExpression(wrap(`${this.related.getTable()}.*`)),
                 new StringExpression(relatedForeignKey),
                 new StringExpression(parentForeignKey)
             )

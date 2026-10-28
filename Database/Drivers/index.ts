@@ -1,4 +1,5 @@
 export * from './SQLite/SqliteDriver'
 export * from './MySQL/MysqlDriver'
+export * from './Postgres/PostgresDriver'
 export * from './Statement'
 export * from './SchemaContract'

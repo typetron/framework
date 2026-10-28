@@ -23,7 +23,7 @@ export abstract class BaseStatement extends Statement {
 
     get joins() {
         return this.components.joins.map(join => {
-            return `${join.type} JOIN ${wrap(join.table)} ON ${join.first} ${join.operator} ${join.second}`
+            return `${join.type} JOIN ${wrap(join.table)} ON ${wrap(join.first)} ${join.operator} ${wrap(join.second)}`
         }).join(' ')
     }
 

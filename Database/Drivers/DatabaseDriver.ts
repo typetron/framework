@@ -25,13 +25,40 @@ export abstract class DatabaseDriver {
 
     abstract insertOne(query: string, params: SqlValue[]): Promise<number>
 
-    abstract get<T>(query: string, params: SqlValue[]): Promise<T | T[]>
+    abstract get<T>(query: string, params?: SqlValue[]): Promise<T[]>
 
     abstract first<T>(query: string, params: SqlValue[]): Promise<T | undefined>
 
-    abstract tables(): Promise<{name: string}[]>
+    tables(): Promise<{name: string}[]> {
+        const [schemaCondition, params] = this.currentSchema()
+        return this.get<{name: string}>(
+            `select table_name as name
+             from information_schema.tables
+             where table_schema = ${schemaCondition}
+            `,
+            params
+        )
+    }
 
-    abstract tableExists(table: string): Promise<boolean>
+    async tableExists(table: string): Promise<boolean> {
+        const [schemaCondition, params] = this.currentSchema()
+        return Boolean(await this.first(
+            `select *
+             from information_schema.tables
+             where table_name = ?
+               and table_schema = ${schemaCondition}
+            `,
+            [table, ...params]
+        ))
+    }
+
+    /**
+     * SQL condition matching `table_schema` to the connection's schema, with its bindings.
+     * Defaults to the SQL standard `current_schema()`.
+     */
+    protected currentSchema(): [string, SqlValue[]] {
+        return ['current_schema()', []]
+    }
 
     abstract tableColumns(table: string): Promise<ColumnDefinitionOptions[]>
 }

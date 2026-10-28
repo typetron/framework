@@ -19,7 +19,7 @@ interface ColumnInfo {
     pk: string
 }
 
-export class SqliteDriver implements DatabaseDriver {
+export class SqliteDriver extends DatabaseDriver {
     database: Database
 
     schema: SchemaContract = new Schema(this)
@@ -34,6 +34,7 @@ export class SqliteDriver implements DatabaseDriver {
     }
 
     constructor(databaseFilePath: string) {
+        super()
         this.database = new Database(databaseFilePath)
     }
 

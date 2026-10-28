@@ -1,3 +1,4 @@
+import { wrap } from '../../../Helpers'
 import { BaseStatement } from './BaseStatement'
 
 export class Update extends BaseStatement {
@@ -16,7 +17,7 @@ export class Update extends BaseStatement {
         for (const column in values) {
             if (values.hasOwnProperty(column)) {
                 this.bindings.push(values[column])
-                columns.push(`${column} = ?`)
+                columns.push(`${wrap(column)} = ?`)
             }
         }
         return columns.join(', ')

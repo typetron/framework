@@ -304,6 +304,10 @@ export abstract class Entity {
             delete dataToSave[this.getPrimaryKey() as string]
             await query.where(this.getPrimaryKey(), this[this.getPrimaryKey()]).update(dataToSave)
         } else {
+            // A missing key is left to the database to generate; Postgres rejects an explicit NULL
+            if (dataToSave[this.getPrimaryKey() as string] == null) {
+                delete dataToSave[this.getPrimaryKey() as string]
+            }
             const id = await query.insertOne(dataToSave)
             this.exists = true
             this.fill({id})
