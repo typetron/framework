@@ -105,8 +105,10 @@ class SqliteDriverTest {
 
         await this.schema.synchronize([User].pluck('metadata'))
 
-        expect(queries).to.have.length(4)
-        expectQuery(queries[0]).toEqual(`
+        expect(queries).to.have.length(7)
+        expectQuery(queries[0]).toEqual('BEGIN IMMEDIATE')
+        expectQuery(queries[1]).toEqual('DROP TABLE IF EXISTS user_alter_tmp')
+        expectQuery(queries[2]).toEqual(`
             CREATE TABLE user_alter_tmp
             (
                 column1 integer,
@@ -114,13 +116,14 @@ class SqliteDriverTest {
             )
         `)
 
-        expectQuery(queries[1]).toEqual(`
+        expectQuery(queries[3]).toEqual(`
             INSERT INTO user_alter_tmp(column2)
             SELECT column2
             FROM user
         `)
 
-        expectQuery(queries[2]).toEqual(`DROP TABLE user`)
-        expectQuery(queries[3]).toEqual(`ALTER TABLE user_alter_tmp RENAME TO user`)
+        expectQuery(queries[4]).toEqual(`DROP TABLE user`)
+        expectQuery(queries[5]).toEqual(`ALTER TABLE user_alter_tmp RENAME TO user`)
+        expectQuery(queries[6]).toEqual('COMMIT')
     }
 }

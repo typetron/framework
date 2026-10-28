@@ -139,7 +139,15 @@ export class WebsocketsProvider extends Provider {
 
             },
             dropped: (ws, message) => {
-                console.info('socket dropped', ws.getUserData(), new TextDecoder().decode(message))
+                const decodedMessage = stringDecoder.decode(message)
+                let loggedMessage: unknown
+                try {
+                    loggedMessage = JSON.parse(decodedMessage, (_key, value: unknown) =>
+                        typeof value === 'string' ? value.slice(0, 200) : value)
+                } catch {
+                    loggedMessage = decodedMessage.slice(0, 200)
+                }
+                console.info('socket dropped', ws.getUserData(), loggedMessage)
             }
 
         }).listen(port, (listenSocket) => {
