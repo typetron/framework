@@ -4,7 +4,7 @@ import { AppConfig } from '../Config'
 import { App, WebSocket as uWebSocket } from 'uWebSockets.js'
 import { TextDecoder } from 'util'
 import { ErrorHandlerInterface, HttpError, Response } from '../../Router/Http'
-import { ActionErrorResponse, Handler, WebSocket } from '../../Router/Websockets'
+import { ActionErrorResponse, Handler, WebSocket, WebSocketServer } from '../../Router/Websockets'
 import { ActionRequest, ActionResponse } from '@Typetron/Router/Websockets'
 import { Request } from '@Typetron/Router/Websockets/Request'
 
@@ -155,6 +155,8 @@ export class WebsocketsProvider extends Provider {
                 console.info(`Websocket server started on port ${port}`)
             }
         })
+
+        this.app.set(WebSocketServer, new WebSocketServer(app))
     }
 
     private async handleAction(container: Container, {action, message, '$id': id}: ActionRequest) {

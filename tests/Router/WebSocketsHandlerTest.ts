@@ -1,5 +1,5 @@
 import { suite, test } from '@testdeck/mocha'
-import { Handler, WebSocket } from '../../Router/Websockets'
+import { Handler, WebSocket, WebSocketServer } from '../../Router/Websockets'
 import { expect } from 'chai'
 import { Container, Inject } from '@Typetron/Container'
 import { Action, Body, Controller } from '../../Router'
@@ -31,6 +31,23 @@ class WebSocketsHandlerTest {
             '$id': 'request-id',
             action: 'users.stream',
             message: {type: 'published'},
+        })
+    }
+
+    @test
+    'publishes to a topic without a connection'() {
+        const published: Array<{topic: string, message: string}> = []
+        const app = {
+            publish: (topic: string, message: string) => published.push({topic, message}),
+        }
+
+        new WebSocketServer(app as never).publish('users', 'users.stream', {type: 'published'})
+
+        expect(published[0].topic).to.equal('users')
+        expect(JSON.parse(published[0].message)).to.deep.equal({
+            action: 'users.stream',
+            message: {type: 'published'},
+            status: 'OK',
         })
     }
 

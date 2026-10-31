@@ -136,6 +136,10 @@ Messages sent or published through the injected `WebSocket` while handling an ac
 clients to correlate every streamed message with the action that initiated it, including when multiple actions run concurrently on one
 connection. Messages initiated outside an action may omit `$id`.
 
+To publish from work that may outlive its connection, inject `WebSocketServer`. Unlike `WebSocket.publish`, which skips the sending
+connection and needs that connection to be open, `WebSocketServer.publish(topic, action, body)` reaches every subscriber. Its messages have
+no `$id`.
+
 ## Loading Controllers and Starting Servers
 
 `Router.loadControllers(directory)` imports TypeScript controller files recursively. Importing decorated classes registers their routes and
