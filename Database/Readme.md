@@ -100,7 +100,8 @@ The query builder supports selection, joins, grouping, ordering, limits, aggrega
 `insert`, `insertOne`, `update`, and `delete` to execute work; `insertOne` resolves to the identifier supplied by the active driver.
 
 Without `@Options`, an entity table defaults to the lowercase class name. `@Column('column_name')` maps another column name, while
-`@JSONColumn` serializes objects as JSON. Use `find` or `first` when absence is expected; `findOrFail` throws `EntityNotFoundError`.
+`@Column({type: TextField})` stores a string with no length limit, and `@JSONColumn` serializes objects as JSON. Use `find` or `first` when
+absence is expected; `findOrFail` throws `EntityNotFoundError`.
 `firstOrNew` returns an unsaved entity, while `firstOrCreate` persists it.
 
 ## Relationships

@@ -46,6 +46,9 @@ export class JSONField<T extends Entity> extends ColumnField<T> {
     }
 }
 
+/** Column type for strings with no length limit: `@Column({type: TextField})` */
+export class TextField<T extends Entity> extends ColumnField<T> {}
+
 const casters: Map<Function, (value: never) => unknown> = new Map()
 casters.set(Date, (value: number | string) => value ? new Date(value) : value)
 casters.set(String, (value: object) => value ? String(value) : value)

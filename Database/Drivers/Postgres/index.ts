@@ -1,5 +1,5 @@
 import { Entity } from '../../Entity'
-import { JSONField, PrimaryField } from '../../Fields'
+import { JSONField, PrimaryField, TextField } from '../../Fields'
 
 export * from './PostgresDriver'
 
@@ -11,5 +11,6 @@ export const typesMatches = new Map<any, string>([
     [String, 'varchar(255)'],
     [Date, 'timestamp'],
     [JSONField, 'text'],
+    [TextField, 'text'],
     [Boolean, 'boolean'],
 ])

@@ -1,6 +1,6 @@
 import { suite, test } from '@testdeck/mocha'
 import { expect } from 'chai'
-import { Column, Connection, Entity, Options, PrimaryColumn, Query } from '../../Database'
+import { Column, Connection, Entity, Options, PrimaryColumn, Query, TextField } from '../../Database'
 import { User } from './Entities/User'
 import { Role } from './Entities/Role'
 import { SqliteDriver } from '@Typetron/Database/Drivers'
@@ -27,6 +27,20 @@ class SchemaTest {
         // expect(tableColumns[0]).to.deep.include({name: 'id', type: 'integer'});
         expect(tableColumns[0]).to.deep.include({name: 'roleId'})
         expect(tableColumns[1]).to.deep.include({name: 'userId'})
+    }
+
+    @test
+    async createsTextColumnsAndKeepsStringValues() {
+        await Query.connection.driver.schema.synchronize([Note, NamedNote].pluck('metadata'))
+
+        const columns = await Query.connection.tableColumns(Note.getTable()) as {name: string, type: string}[]
+        expect(columns.find(column => column.name === 'body')?.type.toLowerCase()).to.equal('text')
+        const named = await Query.connection.tableColumns(NamedNote.getTable()) as {name: string, type: string}[]
+        expect(named.find(column => column.name === 'note_body')?.type.toLowerCase()).to.equal('text')
+
+        const body = '{"keeps":"this as a string"}'
+        await Note.create({body})
+        expect((await Note.newQuery().first())?.body).to.equal(body)
     }
 
     @test
@@ -110,6 +124,24 @@ class SchemaTest {
         }
         return queries
     }
+}
+
+@Options({table: 'notes'})
+class Note extends Entity {
+    @PrimaryColumn()
+    id: number
+
+    @Column({type: TextField})
+    body: string
+}
+
+@Options({table: 'named_notes'})
+class NamedNote extends Entity {
+    @PrimaryColumn()
+    id: number
+
+    @Column('note_body', {type: TextField})
+    body: string
 }
 
 @Options({table: 'things'})

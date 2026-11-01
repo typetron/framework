@@ -1,5 +1,5 @@
 import { Entity } from '../../Entity'
-import { JSONField, PrimaryField } from '../../Fields'
+import { JSONField, PrimaryField, TextField } from '../../Fields'
 
 // tslint:disable-next-line:no-any
 export const typesMatches = new Map<any, string>([
@@ -9,5 +9,6 @@ export const typesMatches = new Map<any, string>([
     [String, 'varchar(255)'],
     [Date, 'datetime'],
     [JSONField, 'text'],
+    [TextField, 'text'],
     [Boolean, 'integer'],
 ])

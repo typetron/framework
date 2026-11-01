@@ -64,7 +64,8 @@ function setField<T extends Entity>(entity: T, field: ColumnField<T>) {
 export function Column<T extends Entity>(column?: string | {type: any}, options?: {type: any}): PropertyDecorator {
     return function(entity: Object, name: string | symbol) {
         const actualColumn: string | undefined = typeof column === 'string' ? column : undefined
-        const type = options?.type ?? Reflect.getMetadata('design:type', entity, name)
+        const columnOptions = typeof column === 'string' ? options : column ?? options
+        const type = columnOptions?.type ?? Reflect.getMetadata('design:type', entity, name)
         const field = new ColumnField(entity.constructor as EntityConstructor<T>, String(name), () => type, actualColumn || String(name))
         setField(entity as T, field)
     }
