@@ -25,7 +25,7 @@ class SqliteDriverTest {
         class Test extends Entity {}
 
         await this.schema.synchronize([Test].pluck('metadata'))
-        expectQuery(this.query).toEqual('CREATE TABLE test ( )')
+        expectQuery(this.query).toEqual('CREATE TABLE Test ( )')
     }
 
     @test
@@ -36,7 +36,7 @@ class SqliteDriverTest {
         }
 
         await this.schema.synchronize([Test].pluck('metadata'))
-        expectQuery(this.query).toEqual('CREATE TABLE test ( age integer )')
+        expectQuery(this.query).toEqual('CREATE TABLE Test ( age integer )')
     }
 
     @test
@@ -48,7 +48,7 @@ class SqliteDriverTest {
 
         await this.schema.synchronize([Test].pluck('metadata'))
         expectQuery(this.query).toEqual(`
-            CREATE TABLE test
+            CREATE TABLE Test
             (
                 id integer PRIMARY KEY AUTOINCREMENT
             )
@@ -71,7 +71,7 @@ class SqliteDriverTest {
 
         await this.schema.synchronize([Image].pluck('metadata'))
         expectQuery(this.query).toEqual(`
-            CREATE TABLE image
+            CREATE TABLE Image
             (
                 userId integer
             )
@@ -107,9 +107,9 @@ class SqliteDriverTest {
 
         expect(queries).to.have.length(7)
         expectQuery(queries[0]).toEqual('BEGIN IMMEDIATE')
-        expectQuery(queries[1]).toEqual('DROP TABLE IF EXISTS user_alter_tmp')
+        expectQuery(queries[1]).toEqual('DROP TABLE IF EXISTS User_alter_tmp')
         expectQuery(queries[2]).toEqual(`
-            CREATE TABLE user_alter_tmp
+            CREATE TABLE User_alter_tmp
             (
                 column1 integer,
                 column2 varchar(255)
@@ -117,13 +117,13 @@ class SqliteDriverTest {
         `)
 
         expectQuery(queries[3]).toEqual(`
-            INSERT INTO user_alter_tmp(column2)
+            INSERT INTO User_alter_tmp(column2)
             SELECT column2
-            FROM user
+            FROM User
         `)
 
-        expectQuery(queries[4]).toEqual(`DROP TABLE user`)
-        expectQuery(queries[5]).toEqual(`ALTER TABLE user_alter_tmp RENAME TO user`)
+        expectQuery(queries[4]).toEqual(`DROP TABLE User`)
+        expectQuery(queries[5]).toEqual(`ALTER TABLE User_alter_tmp RENAME TO User`)
         expectQuery(queries[6]).toEqual('COMMIT')
     }
 }

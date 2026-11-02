@@ -2,7 +2,7 @@ import { SchemaContract } from '../SchemaContract'
 import { BelongsToManyField, ColumnField, Entity, EntityConstructor, EntityMetadata, Expression, PrimaryField } from '../..'
 import { ColumnDefinitionOptions } from '.'
 import { Create } from './Create'
-import { AddColumn, AddIdentity, AddPrimaryKey, Alter, AlterColumnType, DropColumn } from './Alter'
+import { AddColumn, AddForeignKey, AddIdentity, AddPrimaryKey, Alter, AlterColumnType, DropColumn } from './Alter'
 
 export abstract class Schema extends SchemaContract {
 
@@ -48,6 +48,8 @@ export abstract class Schema extends SchemaContract {
             }
             await this.syncTableColumns(name, columns)
         }
+
+        await this.syncForeignKeys(entitiesMetadata)
     }
 
     columnMetadataToColumnDefinition(metadata: ColumnField<Entity>): ColumnDefinitionOptions {
@@ -111,6 +113,32 @@ export abstract class Schema extends SchemaContract {
         }
     }
 
+    /**
+     * Runs after every table exists, since a relation can point to a table created later.
+     * Relations to entities outside this synchronization are skipped.
+     */
+    protected async syncForeignKeys(entitiesMetadata: EntityMetadata<Entity, Entity>[]) {
+        const tables = entitiesMetadata.pluck('table')
+        for (const metadata of entitiesMetadata) {
+            const table = metadata.table as string
+            const relationships = Object.values(metadata.relationships).filter(field => tables.includes(field.related.getTable()))
+            if (relationships.empty()) {
+                continue
+            }
+
+            const foreignKeys = await this.driver.tableForeignKeys(table)
+            const missing = relationships.filter(field => !foreignKeys.includes(field.column))
+            if (!missing.empty()) {
+                await this.driver.run(new Alter(table, missing.map(field => new AddForeignKey(
+                    table,
+                    field.column,
+                    field.related.getTable(),
+                    field.related.getPrimaryKey() as string
+                ))).toSQL())
+            }
+        }
+    }
+
     protected createStatement(table: string, columns: ColumnDefinitionOptions[]): Expression {
         return new Create(table, columns)
     }
@@ -135,8 +163,9 @@ export abstract class Schema extends SchemaContract {
         const typePrototype = Array.from(this.typesMatches.keys())
             .find(key => column.type().prototype instanceof key) || String
 
-        return this.typesMatches.get(column.type())
-            ?? this.typesMatches.get(column.constructor)
+        // The field class wins: a JSONField is declared as String but stores unlimited text
+        return this.typesMatches.get(column.constructor)
+            ?? this.typesMatches.get(column.type())
             ?? this.typesMatches.get(typePrototype)
             ?? this.typesMatches.get(String) as string
     }

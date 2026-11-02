@@ -127,7 +127,7 @@ export abstract class Entity {
     }
 
     static getTable<T extends Entity>(this: EntityConstructor<T>): string {
-        return this.metadata.table || this.name.toLowerCase() // TODO make metadata.table un-optional
+        return this.metadata.table || this.name // TODO make metadata.table un-optional
     }
 
     static new<T extends Entity, K extends keyof T>(

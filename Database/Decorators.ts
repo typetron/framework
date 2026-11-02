@@ -40,7 +40,7 @@ export class EntityMetadata<T extends Entity, R extends Entity> extends EntityOp
 
     static get<T extends Entity, R extends Entity>(entity: T) {
         const metadata: EntityMetadata<T, R> = Reflect.getMetadata(EntityMetadataKey, entity) || new this()
-        metadata.table = metadata?.table || entity.constructor.name.toLowerCase()
+        metadata.table = metadata?.table || entity.constructor.name
         return metadata
     }
 }
@@ -49,7 +49,7 @@ export function Options<T extends Entity>(options: EntityOptions<T> = {}) {
     return (entity: object) => {
         const entityClass = entity as unknown as EntityConstructor<T>
         const metadata = EntityMetadata.get(entityClass.prototype)
-        options.table = options.table || entityClass.name.toLowerCase()
+        options.table = options.table || entityClass.name
         Object.assign(metadata, options)
         Reflect.defineMetadata(EntityMetadataKey, metadata, entityClass.prototype)
     }

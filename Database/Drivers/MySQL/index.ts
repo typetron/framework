@@ -8,7 +8,7 @@ export const typesMatches = new Map<any, string>([
     [Number, 'integer'],
     [String, 'varchar(255)'],
     [Date, 'datetime'],
-    [JSONField, 'text'],
+    [JSONField, 'json'],
     [TextField, 'text'],
     [Boolean, 'integer'],
 ])

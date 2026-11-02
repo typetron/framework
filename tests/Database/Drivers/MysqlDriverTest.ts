@@ -24,7 +24,7 @@ class MysqlDriverTest {
         class Test extends Entity {}
 
         await this.schema.synchronize([Test].pluck('metadata'))
-        expectQuery(this.query).toEqual('CREATE TABLE test ( )')
+        expectQuery(this.query).toEqual('CREATE TABLE Test ( )')
     }
 
     @test
@@ -35,7 +35,7 @@ class MysqlDriverTest {
         }
 
         await this.schema.synchronize([Test].pluck('metadata'))
-        expectQuery(this.query).toEqual('CREATE TABLE test ( age integer )')
+        expectQuery(this.query).toEqual('CREATE TABLE Test ( age integer )')
     }
 
     @test
@@ -47,7 +47,7 @@ class MysqlDriverTest {
 
         await this.schema.synchronize([Test].pluck('metadata'))
         expectQuery(this.query).toEqual(`
-            CREATE TABLE test
+            CREATE TABLE Test
             (
                 id integer AUTO_INCREMENT,
                 PRIMARY KEY (id)
@@ -71,7 +71,7 @@ class MysqlDriverTest {
 
         await this.schema.synchronize([Image].pluck('metadata'))
         expectQuery(this.query).toEqual(`
-            CREATE TABLE image
+            CREATE TABLE Image
             (
                 userId integer
             )
@@ -103,7 +103,7 @@ class MysqlDriverTest {
         await this.schema.synchronize([User].pluck('metadata'))
 
         expectQuery(this.query).toEqual(`
-            ALTER TABLE user
+            ALTER TABLE User
                 ADD column1 integer,
             MODIFY column2 varchar(255),
             DROP
@@ -127,12 +127,12 @@ class MysqlDriverTest {
         await this.schema.synchronize([User].pluck('metadata'))
 
         expectQuery(queries[0]).toEqual(`
-            ALTER TABLE user
+            ALTER TABLE User
                 ADD id integer
         `)
 
         expectQuery(queries[1]).toEqual(`
-            ALTER TABLE user
+            ALTER TABLE User
                 ADD CONSTRAINT PRIMARY KEY (id),
                 MODIFY id integer AUTO_INCREMENT
         `)

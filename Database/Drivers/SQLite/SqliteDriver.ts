@@ -115,11 +115,13 @@ export class SqliteDriver extends DatabaseDriver {
         )
     }
 
+    /** SQLite table names are case-insensitive, so `Feedback` finds a `feedback` table */
     tableExists(table: string): Promise<boolean> {
         return this.first(
             `SELECT *
              FROM sqlite_master
-             WHERE name = ?`,
+             WHERE type = 'table'
+               AND name = ? COLLATE NOCASE`,
             [table]
         )
     }

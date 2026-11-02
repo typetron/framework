@@ -1,6 +1,6 @@
 import { suite, test } from '@testdeck/mocha'
 import { expect } from 'chai'
-import { Column, Connection, Entity, Options, PrimaryColumn, Query, TextField } from '../../Database'
+import { Column, Connection, Entity, JSONColumn, Options, PrimaryColumn, Query, TextField } from '../../Database'
 import { User } from './Entities/User'
 import { Role } from './Entities/Role'
 import { SqliteDriver } from '@Typetron/Database/Drivers'
@@ -41,6 +41,21 @@ class SchemaTest {
         const body = '{"keeps":"this as a string"}'
         await Note.create({body})
         expect((await Note.newQuery().first())?.body).to.equal(body)
+    }
+
+    @test
+    async findsTablesRegardlessOfCase() {
+        await Query.connection.driver.run('CREATE TABLE lower_case (id integer)')
+
+        expect(Boolean(await Query.connection.tableExists('Lower_Case'))).to.equal(true)
+    }
+
+    @test
+    async createsJSONColumnsAsText() {
+        await Query.connection.driver.schema.synchronize([Settings].pluck('metadata'))
+
+        const columns = await Query.connection.tableColumns(Settings.getTable()) as {name: string, type: string}[]
+        expect(columns.find(column => column.name === 'options')?.type.toLowerCase()).to.equal('text')
     }
 
     @test
@@ -133,6 +148,15 @@ class Note extends Entity {
 
     @Column({type: TextField})
     body: string
+}
+
+@Options({table: 'settings'})
+class Settings extends Entity {
+    @PrimaryColumn()
+    id: number
+
+    @JSONColumn()
+    options: Record<string, string>
 }
 
 @Options({table: 'named_notes'})

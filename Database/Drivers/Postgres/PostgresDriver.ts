@@ -19,6 +19,16 @@ interface ColumnInfo {
     primaryKey: boolean
 }
 
+/**
+ * Results read like the other drivers: counts and other bigints as numbers,
+ * JSON as text that JSONField parses, so a JSON string value is not parsed twice.
+ */
+const resultParsers = new Map<number, (value: string) => unknown>([
+    [types.builtins.INT8, Number],
+    [types.builtins.JSON, value => value],
+    [types.builtins.JSONB, value => value],
+])
+
 /** Postgres spells some types differently than they are declared */
 const typeAliases: [RegExp, string][] = [
     [/^character varying/, 'varchar'],
@@ -44,8 +54,7 @@ export class PostgresDriver extends DatabaseDriver {
         this.pool = new Pool({
             connectionTimeoutMillis: 30000,
             types: {
-                // Counts and other bigint results come back as numbers, like the other drivers
-                getTypeParser: (id, format) => id === types.builtins.INT8 ? Number : types.getTypeParser(id, format),
+                getTypeParser: (id, format) => resultParsers.get(id) ?? types.getTypeParser(id, format),
             },
             ...poolConfig,
         })

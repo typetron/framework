@@ -51,6 +51,18 @@ export class AddConstraint extends AlterOption {
     }
 }
 
+export class AddForeignKey extends Expression {
+    constructor(public table: string, public column: string, public relatedTable: string, public relatedColumn: string) {
+        super()
+    }
+
+    toSQL(): string {
+        const name = `${this.table}_${this.column}_foreign`
+        return `ADD CONSTRAINT ${wrap(name)} ${Constraints.ForeignKey} (${wrap(this.column)})
+                REFERENCES ${wrap(this.relatedTable)} (${wrap(this.relatedColumn)})`
+    }
+}
+
 export class DropColumn extends Expression {
     constructor(public column: string) {super()}
 

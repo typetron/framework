@@ -41,6 +41,10 @@ Postgres notes:
   synchronized.
 - `limit` is not supported on `update` and `delete` queries and throws an error.
 
+Schema synchronization on MySQL and Postgres adds a foreign key for each `BelongsTo` relation between synchronized entities, named
+`<table>_<column>_foreign`. Existing rows must already match or synchronization fails, and deleting a referenced row fails until the rows
+pointing to it are gone. SQLite tables get no foreign keys, and neither do `BelongsToMany` pivot tables.
+
 ## Queries and Entities
 
 Start a query with `Query.table`, or extend `Entity` and decorate mapped properties. The following example defines an entity and exercises
@@ -99,8 +103,9 @@ await user.save()
 The query builder supports selection, joins, grouping, ordering, limits, aggregates, subqueries, and common `where` variants. Use `first`,
 `insert`, `insertOne`, `update`, and `delete` to execute work; `insertOne` resolves to the identifier supplied by the active driver.
 
-Without `@Options`, an entity table defaults to the lowercase class name. `@Column('column_name')` maps another column name, while
-`@Column({type: TextField})` stores a string with no length limit, and `@JSONColumn` serializes objects as JSON. Use `find` or `first` when
+Without `@Options`, an entity table is named after its class (`BlogPost`). `@Column('column_name')` maps another column name, while
+`@Column({type: TextField})` stores a string with no length limit, and `@JSONColumn` serializes objects as JSON (`jsonb` on Postgres, `json`
+on MySQL, `text` on SQLite). Use `find` or `first` when
 absence is expected; `findOrFail` throws `EntityNotFoundError`.
 `firstOrNew` returns an unsaved entity, while `firstOrCreate` persists it.
 

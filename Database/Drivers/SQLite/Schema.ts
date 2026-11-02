@@ -42,6 +42,9 @@ export class Schema extends BaseSchema {
         }
     }
 
+    /** SQLite can't add a foreign key to an existing table */
+    protected async syncForeignKeys() {}
+
     /** Columns as SQLite declares them, so an unchanged table is left alone */
     private columnsSignature(columns: ColumnDefinitionOptions[]) {
         return columns
